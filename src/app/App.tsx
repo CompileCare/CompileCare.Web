@@ -66,7 +66,6 @@ function Workspace() {
   const [searchLoading,setSearchLoading] = useState(false);
   const [searchError,setSearchError] = useState("");
   const [hasSearched,setHasSearched] = useState(false);
-  const [registrationOpen,setRegistrationOpen] = useState(false);
   const [registrationGivenName,setRegistrationGivenName] = useState("");
   const [registrationMiddleName,setRegistrationMiddleName] = useState("");
   const [registrationFamilyName,setRegistrationFamilyName] = useState("");
@@ -214,7 +213,6 @@ function Workspace() {
     setRegistrationError("");
     setRegistrationSuccess("");
     setAssignedMrn("");
-    setRegistrationOpen(false);
   }
 
   async function handleDuplicateCheck() {
