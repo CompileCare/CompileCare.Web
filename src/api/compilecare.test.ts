@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { ApiError,getCurrentUserTenantContexts,getHospitals,searchPatients } from "./compilecare";
+import { getCurrentUserTenantContexts,getHospitals,searchPatients } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
