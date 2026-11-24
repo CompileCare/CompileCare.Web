@@ -19,7 +19,6 @@ import {
   createWalkIn,
   listQueue,
   transitionQueueEntry,
-  listQueue as listClinicalQueue,
   getOpdEncounterForQueue,
   createOpdEncounterFromQueue,
   updateOpdEncounterNote,
@@ -104,7 +103,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
   }
   async function refreshQueue(){
     setLoadingQueue(true);setQueueError("");setEncounter(null);
-    try{const result=await listClinicalQueue(baseUrl,accessToken,tenantId,hospitalId,departmentId,queueDate);setQueue(result.items);}
+    try{const result=await listQueue(baseUrl,accessToken,tenantId,hospitalId,departmentId,queueDate);setQueue(result.items);}
     catch(error){setQueue([]);setQueueError(getErrorMessage(error));}
     finally{setLoadingQueue(false);}
   }
