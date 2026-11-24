@@ -424,8 +424,8 @@ function Workspace() {
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
         <a className="selected" href="#reception">Reception</a>
-        <span>Queue <small>Next increment</small></span>
-        <span>Clinical <small>Next increment</small></span>
+        <a href="#appointments">Appointments</a>
+        <a href="#queue">Queue</a>
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
@@ -471,7 +471,7 @@ function Workspace() {
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
             <div className="search-row">
-              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
+              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
               <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
             </div>
             <p className="helper-text">Search is limited to the selected hospital. Results are not stored in browser storage.</p>
@@ -479,7 +479,7 @@ function Workspace() {
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
             {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
-              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} onClick={() => { setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
+              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} role="button" tabIndex={0} aria-pressed={selectedPatient?.id===patient.id} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();setSelectedPatient(patient);setBookedAppointment(null);setQueueEntry(null);setBookingError("");setWalkInError("");}}} onClick={() => { setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
                 <div><strong>{patientName(patient)}</strong><span>{patient.dateOfBirth ? `Date of birth: ${patient.dateOfBirth}` : "Date of birth not recorded"}</span></div>
                 <small>Registered patient</small>
               </article>)}
@@ -489,7 +489,7 @@ function Workspace() {
         </section>
 
 
-        <section className="section appointment-section">
+        <section className="section appointment-section" id="appointments">
           <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
@@ -502,7 +502,7 @@ function Workspace() {
             {availabilityError&&<p className="inline-error" role="alert">{availabilityError}</p>}
             {availabilitySessions.length>0&&<div className="slot-panel">
               <label htmlFor="availability-session">Provider availability</label>
-              <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Provider · {session.providerStaffId.slice(0,8)} · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
+              <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Session · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
               {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}
               {slots.length>0&&<div className="slot-grid" role="group" aria-label="Available appointment slots">{slots.map(slot=><button type="button" key={slot.startsAtUtc} className={selectedSlotStart===slot.startsAtUtc?"slot-selected":""} disabled={!slot.isAvailable} onClick={()=>setSelectedSlotStart(slot.startsAtUtc)}>{new Date(slot.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:selectedSession?.timeZoneId})}<small>{slot.isAvailable?"Available":"Unavailable"}</small></button>)}</div>}
             </div>}
@@ -527,7 +527,7 @@ function Workspace() {
           </div>
         </section>
 
-        <section className="section queue-section">
+        <section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} onChange={e=>setSelectedDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} onChange={e=>setQueueDate(e.target.value)} /></div></div>
