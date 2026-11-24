@@ -600,16 +600,13 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        <a className="selected" href="#reception">Reception</a>
-        <a href="#appointments">Appointments</a>
-        <a href="#queue">Queue</a>
-        {selectedContext?.role === "ClinicalUser" && <a href="#clinical">Clinical workspace</a>}
+        {selectedContext?.role === "ClinicalUser" ? <a className="selected" href="#clinical">Clinical workspace</a> : <><a className="selected" href="#reception">Reception</a><a href="#appointments">Appointments</a><a href="#queue">Queue</a></>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
     <main className="content" id="reception">
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>Reception workspace</h1></div>
+        <div><label>HOSPITAL OPERATIONS</label><h1>{selectedContext?.role === "ClinicalUser" ? "Clinical workspace" : "Reception workspace"}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -644,7 +641,7 @@ function Workspace() {
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
 
-        <section className="section reception-section">
+        {selectedContext?.role !== "ClinicalUser" && (<section className="section reception-section">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
@@ -664,10 +661,10 @@ function Workspace() {
             </div>}
             {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
           </div>
-        </section>
+        </section>)}
 
 
-        <section className="section appointment-section" id="appointments">
+        {selectedContext?.role !== "ClinicalUser" && (<section className="section appointment-section" id="appointments">
           <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
@@ -694,18 +691,18 @@ function Workspace() {
             {checkInError&&<p className="inline-error" role="alert">{checkInError}</p>}
             {queueEntry&&<div className="token-card" role="status"><small>QUEUE TOKEN</small><strong>{queueEntry.tokenNumber.toString().padStart(2,"0")}</strong><span>{queueEntry.status} · {queueEntry.queueDateLocal}</span></div>}
           </div>
-        </section>
+        </section>)}
 
-        <section className="section walkin-section">
+        {selectedContext?.role !== "ClinicalUser" && (<section className="section walkin-section">
           <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
           <div className="search-panel walkin-panel">
             <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
             <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><label htmlFor="walkin-timezone">Hospital time zone</label><input id="walkin-timezone" value={hospitalTimeZone} onChange={e=>setHospitalTimeZone(e.target.value)} maxLength={100} /></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading||!!queueEntry}>{walkInLoading?"Registering…":queueEntry?"Added to queue":"Add to queue"}</button></div>
             {walkInError&&<p className="inline-error" role="alert">{walkInError}</p>}
           </div>
-        </section>
+        </section>)}
 
-        <section className="section queue-section" id="queue">
+        {selectedContext?.role !== "ClinicalUser" && (<section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
@@ -724,11 +721,11 @@ function Workspace() {
               </div>
             </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
-        </section>
+        </section>)}
 
         {selectedContext?.role === "ClinicalUser" && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} onBusyChange={setClinicalBusy}/>}
 
-        <section className="section registration-section">
+        {selectedContext?.role !== "ClinicalUser" && (<section className="section registration-section">
           <div className="section-heading">
             <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
           </div>
@@ -770,7 +767,7 @@ function Workspace() {
               </button>
             </div>
           </form>
-        </section>
+        </section>)}
       </>}
 
       {!user && !sessionLoading && <section className="hero"><label>YOUR HOSPITAL, ONE WORKSPACE</label><h2>Good care starts with<br/><em>connected workflows.</em></h2><p>Sign in with your hospital identity to access the work areas assigned to you.</p><div className="symbol" aria-hidden="true">✚</div></section>}
