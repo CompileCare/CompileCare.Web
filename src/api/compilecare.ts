@@ -93,9 +93,10 @@ export function searchPatients(
   accessToken: string,
   tenantId: string,
   hospitalId: string,
-  query: string
+  query: string,
+  page = 1
 ): Promise<Page<Patient>> {
-  const parameters = new URLSearchParams({ query: query.trim(), page: "1", pageSize: "25" });
+  const parameters = new URLSearchParams({ query: query.trim(), page: String(page), pageSize: "25" });
   return getJson(
     baseUrl,
     `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients?${parameters.toString()}`,
