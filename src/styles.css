@@ -143,3 +143,7 @@
 .amendment-item small{font-size:10px;color:#738896}
 .clinical-actions button:focus-visible,.clinical-queue-row button:focus-visible,.amendment-panel>button:focus-visible,.clinical-cancel button:focus-visible{outline:3px solid #7bd4c8;outline-offset:2px}
 @media(max-width:760px){.clinical-queue-row{grid-template-columns:1fr auto}.clinical-queue-row button{grid-column:1/-1;width:100%}.clinical-note-grid{grid-template-columns:1fr}.clinical-plan{grid-column:auto}.clinical-cancel{grid-template-columns:1fr}.clinical-cancel label{grid-column:auto}.clinical-cancel button{width:100%}.encounter-heading{align-items:flex-start;flex-direction:column}}
+
+.clinical-patient-banner{display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid #d7ebe6;background:#f1faf7;border-radius:10px;padding:14px 16px}
+.clinical-patient-banner>div{display:grid;gap:5px}.clinical-patient-banner small{font-size:9px;font-weight:800;letter-spacing:1.1px;color:#287d79}.clinical-patient-banner strong{font-size:15px;color:#193247}.clinical-patient-banner span{font-size:11px;color:#617987}
+@media(max-width:600px){.clinical-patient-banner{align-items:flex-start;flex-direction:column}}
