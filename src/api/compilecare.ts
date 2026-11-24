@@ -409,3 +409,53 @@ export function transitionQueueEntry(
     input
   );
 }
+
+
+export type OpdEncounterStatus = "InProgress" | "Signed" | "Closed" | "Cancelled" | string;
+export interface OpdEncounterAmendment { id:string; reason:string; content:string; authorIssuer:string; authorSubject:string; createdAtUtc:string; }
+export interface OpdEncounter {
+  id:string; hospitalId:string; departmentId:string; patientId:string; queueEntryId:string;
+  status:OpdEncounterStatus; chiefComplaint:string|null; history:string|null; examination:string|null;
+  assessment:string|null; plan:string|null; createdByIssuer:string; createdBySubject:string;
+  startedAtUtc:string; signedByIssuer:string|null; signedBySubject:string|null; signedAtUtc:string|null;
+  closedAtUtc:string|null; cancellationReason:string|null; amendments:OpdEncounterAmendment[];
+}
+export interface OpdEncounterNoteInput { chiefComplaint:string|null; history:string|null; examination:string|null; assessment:string|null; plan:string|null; }
+export interface OpdEncounterAmendmentInput { reason:string; content:string; }
+export interface OpdEncounterCancelInput { reason:string; }
+
+async function putJson<T>(baseUrl:string,path:string,accessToken:string,tenantId:string,body:unknown):Promise<T> {
+  if(!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if(!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
+  if(!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
+  const headers=new Headers({Accept:"application/json",Authorization:`Bearer ${accessToken}`,"X-Tenant-ID":tenantId,"Content-Type":"application/json"});
+  const response=await fetch(endpoint(baseUrl,path),{method:"PUT",headers,body:JSON.stringify(body),cache:"no-store",credentials:"omit"});
+  if(!response.ok) throw new ApiError(response.status);
+  return response.json() as Promise<T>;
+}
+const opdQueueEncounterPath=(hospitalId:string,queueEntryId:string)=>`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/opd/queue/${encodeURIComponent(queueEntryId)}/encounter`;
+const opdEncounterPath=(hospitalId:string,encounterId:string)=>`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/opd/encounters/${encodeURIComponent(encounterId)}`;
+export function getOpdEncounterForQueue(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,queueEntryId:string):Promise<OpdEncounter>{
+  return getJson(baseUrl,opdQueueEncounterPath(hospitalId,queueEntryId),accessToken,tenantId);
+}
+export function createOpdEncounterFromQueue(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,queueEntryId:string):Promise<OpdEncounter>{
+  return postJson(baseUrl,opdQueueEncounterPath(hospitalId,queueEntryId),accessToken,tenantId);
+}
+export function getOpdEncounter(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string):Promise<OpdEncounter>{
+  return getJson(baseUrl,opdEncounterPath(hospitalId,encounterId),accessToken,tenantId);
+}
+export function updateOpdEncounterNote(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string,input:OpdEncounterNoteInput):Promise<OpdEncounter>{
+  return putJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/note`,accessToken,tenantId,input);
+}
+export function signOpdEncounter(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string):Promise<OpdEncounter>{
+  return postJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/sign`,accessToken,tenantId);
+}
+export function addOpdEncounterAmendment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string,input:OpdEncounterAmendmentInput):Promise<OpdEncounter>{
+  return postJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/amendments`,accessToken,tenantId,input);
+}
+export function closeOpdEncounter(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string):Promise<OpdEncounter>{
+  return postJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/close`,accessToken,tenantId);
+}
+export function cancelOpdEncounter(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string,input:OpdEncounterCancelInput):Promise<OpdEncounter>{
+  return postJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/cancel`,accessToken,tenantId,input);
+}
