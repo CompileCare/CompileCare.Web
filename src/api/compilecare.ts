@@ -387,3 +387,25 @@ export function createWalkIn(
     input
   );
 }
+
+
+export type QueueAction = "call" | "recall" | "start" | "complete" | "cancel" | "noshow";
+export interface QueueActionInput { reason?: string | null; }
+
+export function transitionQueueEntry(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  queueEntryId: string,
+  action: QueueAction,
+  input: QueueActionInput = {}
+): Promise<QueueEntry> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/queue/${encodeURIComponent(queueEntryId)}/${action}`,
+    accessToken,
+    tenantId,
+    input
+  );
+}

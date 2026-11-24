@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients } from "./compilecare";
+import { assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -140,3 +140,29 @@ describe("appointment and arrival API client",()=>{
 
 
 describe("department and queue read API client",()=>{ const fetchMock=vi.fn(); beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);}); afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();}); it("loads departments in the selected hospital",async()=>{ fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200})); await listDepartments("https://api.example.test","access-token","tenant-123","hospital-456"); const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit]; expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/departments?page=1&pageSize=100"); expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123"); }); it("loads the queue by department and local date",async()=>{ fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:50,totalCount:0,totalPages:0}),{status:200})); await listQueue("https://api.example.test","access-token","tenant-123","hospital-456","department-789","2026-12-10"); const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit]; expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/queue?departmentId=department-789&date=2026-12-10&page=1&pageSize=50"); expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123"); }); });
+
+
+describe("queue operation API client",()=>{
+ const fetchMock=vi.fn();
+ beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
+ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
+ it.each(["call","recall","start","complete"] as const)("posts the %s transition within the selected tenant and hospital",async action=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"queue-1",tokenNumber:12,status:"Called"}),{status:200}));
+  await transitionQueueEntry("https://api.example.test","access-token","tenant-123","hospital-456","queue-1",action);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe(`https://api.example.test/api/v1/hospitals/hospital-456/queue/queue-1/${action}`);
+  expect(options.method).toBe("POST");
+  expect(JSON.parse(String(options.body))).toEqual({});
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+ it.each(["cancel","noshow"] as const)("sends the required reason for %s",async action=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"queue-1",tokenNumber:12,status:action==="cancel"?"Cancelled":"NoShow"}),{status:200}));
+  await transitionQueueEntry("https://api.example.test","access-token","tenant-123","hospital-456","queue-1",action,{reason:"Confirmed with reception"});
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toContain(`/queue/queue-1/${action}`);
+  expect(JSON.parse(String(options.body))).toEqual({reason:"Confirmed with reception"});
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+});
