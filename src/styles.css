@@ -100,3 +100,8 @@
 .queue-row span{font-size:11px;color:#486477}
 .queue-row small{text-align:right;font-size:10px;color:#7a8f9d}
 @media(max-width:600px){.appointment-grid{grid-template-columns:1fr}.walkin-action{grid-template-columns:1fr}.walkin-action button{min-height:43px}.arrival-success{align-items:stretch;flex-direction:column}.arrival-success button{min-height:42px}}
+
+.sidebar nav a:not(.selected){border:1px solid transparent}
+.sidebar nav a:not(.selected):hover{background:#173c55;border-color:#2c536b}
+.sidebar nav a:focus-visible,.patient-result-selectable:focus-visible,.slot-grid button:focus-visible,.registration-actions button:focus-visible{outline:3px solid #7bd4c8;outline-offset:2px}
+.patient-result-selectable:focus-visible{border-radius:8px}
