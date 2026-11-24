@@ -11,11 +11,23 @@ import {
   checkPatientDuplicateCandidates,
   registerPatient,
   assignPatientMedicalRecordNumber,
+  listDepartments,
+  listAvailabilitySessions,
+  getAppointmentSlots,
+  bookAppointment,
+  checkInAppointment,
+  createWalkIn,
+  listQueue,
   type PatientRegistrationInput,
   type PatientDuplicateCheck,
   type Hospital,
   type Patient,
-  type UserTenantContext
+  type UserTenantContext,
+  type Department,
+  type AvailabilitySession,
+  type AppointmentSlot,
+  type Appointment,
+  type QueueEntry
 } from "../api/compilecare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -76,7 +88,34 @@ function Workspace() {
   const [duplicateAcknowledged,setDuplicateAcknowledged] = useState(false);
   const [registrationLoading,setRegistrationLoading] = useState(false);
   const [registrationError,setRegistrationError] = useState("");
+
   const [registrationSuccess,setRegistrationSuccess] = useState("");
+  const [departments,setDepartments] = useState<Department[]>([]);
+  const [departmentsLoading,setDepartmentsLoading] = useState(false);
+  const [departmentsError,setDepartmentsError] = useState("");
+  const [selectedDepartmentId,setSelectedDepartmentId] = useState("");
+  const [selectedPatient,setSelectedPatient] = useState<Patient|null>(null);
+  const [appointmentDate,setAppointmentDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [availabilitySessions,setAvailabilitySessions] = useState<AvailabilitySession[]>([]);
+  const [availabilityLoading,setAvailabilityLoading] = useState(false);
+  const [availabilityError,setAvailabilityError] = useState("");
+  const [selectedSessionId,setSelectedSessionId] = useState("");
+  const [slots,setSlots] = useState<AppointmentSlot[]>([]);
+  const [slotsLoading,setSlotsLoading] = useState(false);
+  const [selectedSlotStart,setSelectedSlotStart] = useState("");
+  const [appointmentReason,setAppointmentReason] = useState("");
+  const [bookingLoading,setBookingLoading] = useState(false);
+  const [bookingError,setBookingError] = useState("");
+  const [bookedAppointment,setBookedAppointment] = useState<Appointment|null>(null);
+  const [checkInLoading,setCheckInLoading] = useState(false);
+  const [checkInError,setCheckInError] = useState("");
+  const [queueEntry,setQueueEntry] = useState<QueueEntry|null>(null);
+  const [walkInLoading,setWalkInLoading] = useState(false);
+  const [walkInError,setWalkInError] = useState("");
+  const [queueEntries,setQueueEntries] = useState<QueueEntry[]>([]);
+  const [queueLoading,setQueueLoading] = useState(false);
+  const [queueError,setQueueError] = useState("");
+  const [queueDate,setQueueDate] = useState(new Date().toLocaleDateString("en-CA"));
 
   useEffect(() => {
     const manager = userManager;
@@ -150,7 +189,85 @@ function Workspace() {
     return () => { active = false; };
   },[user,selectedTenantId]);
 
+
+  useEffect(() => {
+    if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) {
+      setDepartments([]); setSelectedDepartmentId(""); return;
+    }
+    let active=true;
+    setDepartmentsLoading(true); setDepartmentsError("");
+    listDepartments(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId)
+      .then(page=>{if(active){setDepartments(page.items);setSelectedDepartmentId(current=>page.items.some(x=>x.id===current)?current:page.items.length===1?page.items[0].id:"");}})
+      .catch(error=>{if(active)setDepartmentsError(getErrorMessage(error));})
+      .finally(()=>{if(active)setDepartmentsLoading(false);});
+    return ()=>{active=false;};
+  },[user,selectedTenantId,selectedHospitalId]);
+
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
+  const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
+  const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
+
+  async function loadAvailability() {
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
+    setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setBookedAppointment(null);setQueueEntry(null);
+    try {
+      const page=await listAvailabilitySessions(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,appointmentDate,selectedDepartmentId);
+      setAvailabilitySessions(page.items);
+      if(page.items.length===0)setAvailabilityError("No provider availability is published for this department and date.");
+    } catch(error){setAvailabilityError(getErrorMessage(error));}
+    finally{setAvailabilityLoading(false);}
+  }
+
+  async function selectAvailabilitySession(sessionId:string) {
+    setSelectedSessionId(sessionId);setSlots([]);setSelectedSlotStart("");setAvailabilityError("");
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!sessionId)return;
+    setSlotsLoading(true);
+    try{setSlots(await getAppointmentSlots(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,sessionId));}
+    catch(error){setAvailabilityError(getErrorMessage(error));}
+    finally{setSlotsLoading(false);}
+  }
+
+  async function handleBookAppointment(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedPatient||!selectedSession||!selectedSlotStart)return;
+    setBookingLoading(true);setBookingError("");setBookedAppointment(null);setQueueEntry(null);
+    try{
+      const result=await bookAppointment(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,{
+        availabilitySessionId:selectedSession.id,patientId:selectedPatient.id,slotStartsAtUtc:selectedSlotStart,reason:appointmentReason.trim()||null
+      });
+      setBookedAppointment(result);
+      await loadAvailability();
+    }catch(error){setBookingError(getErrorMessage(error));}
+    finally{setBookingLoading(false);}
+  }
+
+  async function handleAppointmentCheckIn() {
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!bookedAppointment)return;
+    setCheckInLoading(true);setCheckInError("");
+    try{setQueueEntry(await checkInAppointment(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,bookedAppointment.id));}
+    catch(error){setCheckInError(getErrorMessage(error));}
+    finally{setCheckInLoading(false);}
+  }
+
+  async function handleWalkIn() {
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedPatient||!selectedDepartmentId)return;
+    setWalkInLoading(true);setWalkInError("");
+    try{
+      const entry=await createWalkIn(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,{departmentId:selectedDepartmentId,patientId:selectedPatient.id,timeZoneId:"Asia/Kolkata"});
+      setQueueEntry(entry);
+      await loadQueue();
+    }catch(error){setWalkInError(getErrorMessage(error));}
+    finally{setWalkInLoading(false);}
+  }
+
+  async function loadQueue() {
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
+    setQueueLoading(true);setQueueError("");
+    try{const page=await listQueue(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,selectedDepartmentId,queueDate);setQueueEntries(page.items);}
+    catch(error){setQueueEntries([]);setQueueError(getErrorMessage(error));}
+    finally{setQueueLoading(false);}
+  }
+
 
   async function handlePatientSearch(pageNumber = 1) {
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
@@ -274,6 +391,7 @@ function Workspace() {
 
   function changeTenant(tenantId: string) {
     setSelectedTenantId(tenantId);
+    setSelectedPatient(null); setAvailabilitySessions([]); setSlots([]); setBookedAppointment(null); setQueueEntry(null); setQueueEntries([]);
     setSelectedHospitalId("");
     setHospitals([]);
     setPatients([]);
@@ -288,6 +406,7 @@ function Workspace() {
 
   function changeHospital(hospitalId: string) {
     setSelectedHospitalId(hospitalId);
+    setSelectedPatient(null); setAvailabilitySessions([]); setSlots([]); setBookedAppointment(null); setQueueEntry(null); setQueueEntries([]);
     setPatients([]);
     setPatientTotal(0);
     setPatientTotalPages(0);
@@ -359,12 +478,61 @@ function Workspace() {
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
             {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
-              {patients.map(patient => <article className="patient-result" key={patient.id}>
+              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} onClick={() => { setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
                 <div><strong>{patientName(patient)}</strong><span>{patient.dateOfBirth ? `Date of birth: ${patient.dateOfBirth}` : "Date of birth not recorded"}</span></div>
                 <small>Registered patient</small>
               </article>)}
             </div>}
             {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
+          </div>
+        </section>
+
+
+        <section className="section appointment-section">
+          <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
+          <div className="search-panel">
+            <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
+            <div className="appointment-grid">
+              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);}} disabled={departmentsLoading||departments.length===0}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
+              <div><label htmlFor="appointment-date">Appointment date</label><input id="appointment-date" type="date" min={new Date().toLocaleDateString("en-CA")} value={appointmentDate} onChange={e=>{setAppointmentDate(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}} /></div>
+            </div>
+            {departmentsError&&<p className="inline-error" role="alert">{departmentsError}</p>}
+            <div className="registration-actions"><button type="button" onClick={loadAvailability} disabled={!selectedPatient||!selectedDepartmentId||!appointmentDate||availabilityLoading}>{availabilityLoading?"Finding availability…":"Find available appointments"}</button></div>
+            {availabilityError&&<p className="inline-error" role="alert">{availabilityError}</p>}
+            {availabilitySessions.length>0&&<div className="slot-panel">
+              <label htmlFor="availability-session">Provider availability</label>
+              <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Provider · {session.providerStaffId.slice(0,8)} · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
+              {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}
+              {slots.length>0&&<div className="slot-grid" role="group" aria-label="Available appointment slots">{slots.map(slot=><button type="button" key={slot.startsAtUtc} className={selectedSlotStart===slot.startsAtUtc?"slot-selected":""} disabled={!slot.isAvailable} onClick={()=>setSelectedSlotStart(slot.startsAtUtc)}>{new Date(slot.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:selectedSession?.timeZoneId})}<small>{slot.isAvailable?"Available":"Unavailable"}</small></button>)}</div>}
+            </div>}
+            {selectedSlotStart&&<form onSubmit={handleBookAppointment} className="booking-review">
+              <div className="review-summary"><strong>Review appointment</strong><span>{selectedPatient?patientName(selectedPatient):""} · {selectedDepartment?.name}</span><span>{new Date(selectedSlotStart).toLocaleString([],{dateStyle:"medium",timeStyle:"short",timeZone:selectedSession?.timeZoneId})} ({selectedSession?.timeZoneId})</span></div>
+              <label htmlFor="appointment-reason">Visit reason (optional)</label><input id="appointment-reason" maxLength={250} value={appointmentReason} onChange={e=>setAppointmentReason(e.target.value)} placeholder="e.g. Follow-up" />
+              {bookingError&&<p className="inline-error" role="alert">{bookingError}</p>}
+              <div className="registration-actions"><button type="submit" disabled={bookingLoading}>{bookingLoading?"Confirming booking…":"Confirm appointment"}</button></div>
+            </form>}
+            {bookedAppointment&&<div className="arrival-success" role="status"><div><strong>Appointment confirmed</strong><span>Reference {bookedAppointment.id.slice(0,8)} · {bookedAppointment.status}</span></div><button type="button" onClick={handleAppointmentCheckIn} disabled={checkInLoading||!!queueEntry}>{checkInLoading?"Checking in…":queueEntry?"Checked in":"Check in patient"}</button></div>}
+            {checkInError&&<p className="inline-error" role="alert">{checkInError}</p>}
+            {queueEntry&&<div className="token-card" role="status"><small>QUEUE TOKEN</small><strong>{queueEntry.tokenNumber.toString().padStart(2,"0")}</strong><span>{queueEntry.status} · {queueEntry.queueDateLocal}</span></div>}
+          </div>
+        </section>
+
+        <section className="section walkin-section">
+          <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
+          <div className="search-panel walkin-panel">
+            <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
+            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><small>Hospital local timezone · Asia/Kolkata</small></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading}>{walkInLoading?"Registering…":"Add to queue"}</button></div>
+            {walkInError&&<p className="inline-error" role="alert">{walkInError}</p>}
+          </div>
+        </section>
+
+        <section className="section queue-section">
+          <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
+          <div className="search-panel">
+            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} onChange={e=>setSelectedDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} onChange={e=>setQueueDate(e.target.value)} /></div></div>
+            <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
+            {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
+            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><div className="queue-row" key={entry.id}><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><span>{entry.status}</span><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
         </section>
 
