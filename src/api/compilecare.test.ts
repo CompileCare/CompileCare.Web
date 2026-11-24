@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
