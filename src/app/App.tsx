@@ -19,6 +19,16 @@ import {
   createWalkIn,
   listQueue,
   transitionQueueEntry,
+  listQueue as listClinicalQueue,
+  getOpdEncounterForQueue,
+  createOpdEncounterFromQueue,
+  updateOpdEncounterNote,
+  signOpdEncounter,
+  addOpdEncounterAmendment,
+  closeOpdEncounter,
+  cancelOpdEncounter,
+  type OpdEncounter,
+  type OpdEncounterNoteInput,
   type PatientRegistrationInput,
   type PatientDuplicateCheck,
   type Hospital,
@@ -60,6 +70,150 @@ function getErrorMessage(error: unknown): string {
 
 function patientName(patient: Patient): string {
   return [patient.givenName,patient.middleName,patient.familyName].filter(Boolean).join(" ");
+}
+
+
+function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,onBusyChange}:{baseUrl:string;accessToken:string;tenantId:string;hospitalId:string;departments:Department[];onBusyChange:(busy:boolean)=>void}) {
+  const [departmentId,setDepartmentId]=useState("");
+  const [queueDate,setQueueDate]=useState(localDateToday());
+  const [queue,setQueue]=useState<QueueEntry[]>([]);
+  const [loadingQueue,setLoadingQueue]=useState(false);
+  const [queueError,setQueueError]=useState("");
+  const [encounter,setEncounter]=useState<OpdEncounter|null>(null);
+  const [openingId,setOpeningId]=useState("");
+  const [actionBusy,setActionBusy]=useState(false);
+  const [actionError,setActionError]=useState("");
+  const [actionSuccess,setActionSuccess]=useState("");
+  const [chiefComplaint,setChiefComplaint]=useState("");
+  const [history,setHistory]=useState("");
+  const [examination,setExamination]=useState("");
+  const [assessment,setAssessment]=useState("");
+  const [plan,setPlan]=useState("");
+  const [cancelReason,setCancelReason]=useState("");
+  const [amendmentReason,setAmendmentReason]=useState("");
+  const [amendmentContent,setAmendmentContent]=useState("");
+
+  useEffect(()=>{setDepartmentId(current=>departments.some(x=>x.id===current)?current:departments.length===1?departments[0].id:"");},[departments]);
+  const inProgressQueue=queue.filter(x=>x.status==="InProgress");
+  const editable=encounter?.status==="InProgress";
+  const setBusy=(busy:boolean)=>{setActionBusy(busy);onBusyChange(busy);};
+  function applyEncounter(value:OpdEncounter){
+    setEncounter(value);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
+    setExamination(value.examination??"");setAssessment(value.assessment??"");setPlan(value.plan??"");
+    setCancelReason("");setActionError("");setActionSuccess("");
+  }
+  async function refreshQueue(){
+    setLoadingQueue(true);setQueueError("");setEncounter(null);
+    try{const result=await listClinicalQueue(baseUrl,accessToken,tenantId,hospitalId,departmentId,queueDate);setQueue(result.items);}
+    catch(error){setQueue([]);setQueueError(getErrorMessage(error));}
+    finally{setLoadingQueue(false);}
+  }
+  async function openEncounter(entry:QueueEntry){
+    setOpeningId(entry.id);setBusy(true);setActionError("");setActionSuccess("");
+    try{
+      let value:OpdEncounter;
+      try{value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
+      catch(error){
+        if(!(error instanceof ApiError)||error.status!==404)throw error;
+        try{value=await createOpdEncounterFromQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
+        catch(createError){
+          if(!(createError instanceof ApiError)||createError.status!==409)throw createError;
+          value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);
+        }
+      }
+      applyEncounter(value);
+    }catch(error){setActionError(getErrorMessage(error));}
+    finally{setOpeningId("");setBusy(false);}
+  }
+  function noteInput():OpdEncounterNoteInput{
+    return {chiefComplaint:chiefComplaint.trim()||null,history:history.trim()||null,examination:examination.trim()||null,assessment:assessment.trim()||null,plan:plan.trim()||null};
+  }
+  async function saveDraft(){
+    if(!encounter||!editable)return;
+    setBusy(true);setActionError("");setActionSuccess("");
+    try{applyEncounter(await updateOpdEncounterNote(baseUrl,accessToken,tenantId,hospitalId,encounter.id,noteInput()));setActionSuccess("Draft note saved.");}
+    catch(error){setActionError(getErrorMessage(error));}
+    finally{setBusy(false);}
+  }
+  async function signEncounter(){
+    if(!encounter||!editable)return;
+    if(!chiefComplaint.trim()||!assessment.trim()){setActionError("Chief complaint and assessment are required before signing.");return;}
+    setBusy(true);setActionError("");setActionSuccess("");
+    try{
+      const saved=await updateOpdEncounterNote(baseUrl,accessToken,tenantId,hospitalId,encounter.id,noteInput());
+      const signed=await signOpdEncounter(baseUrl,accessToken,tenantId,hospitalId,saved.id);
+      applyEncounter(signed);setActionSuccess("Encounter signed. The original note is now read-only.");
+    }catch(error){setActionError(getErrorMessage(error));}
+    finally{setBusy(false);}
+  }
+  async function closeEncounter(){
+    if(!encounter||encounter.status!=="Signed")return;
+    setBusy(true);setActionError("");setActionSuccess("");
+    try{applyEncounter(await closeOpdEncounter(baseUrl,accessToken,tenantId,hospitalId,encounter.id));setActionSuccess("Encounter closed.");}
+    catch(error){setActionError(getErrorMessage(error));}
+    finally{setBusy(false);}
+  }
+  async function cancelEncounter(){
+    if(!encounter||!editable)return;
+    if(!cancelReason.trim()){setActionError("A cancellation reason is required.");return;}
+    setBusy(true);setActionError("");setActionSuccess("");
+    try{applyEncounter(await cancelOpdEncounter(baseUrl,accessToken,tenantId,hospitalId,encounter.id,{reason:cancelReason.trim()}));setActionSuccess("Unsigned encounter cancelled.");}
+    catch(error){setActionError(getErrorMessage(error));}
+    finally{setBusy(false);}
+  }
+  async function addAmendment(){
+    if(!encounter||!(encounter.status==="Signed"||encounter.status==="Closed"))return;
+    if(!amendmentReason.trim()||!amendmentContent.trim()){setActionError("Both amendment reason and content are required.");return;}
+    setBusy(true);setActionError("");setActionSuccess("");
+    try{
+      applyEncounter(await addOpdEncounterAmendment(baseUrl,accessToken,tenantId,hospitalId,encounter.id,{reason:amendmentReason.trim(),content:amendmentContent.trim()}));
+      setAmendmentReason("");setAmendmentContent("");setActionSuccess("Append-only amendment added.");
+    }catch(error){setActionError(getErrorMessage(error));}
+    finally{setBusy(false);}
+  }
+  return <section className="section clinical-section" id="clinical">
+    <div className="section-heading"><div><label>CLINICAL WORKSPACE</label><h2>Outpatient consultations</h2><p className="helper-text">Clinical records are separate from queue operations. Only authorized ClinicalUser memberships can access this workspace.</p></div></div>
+    <div className="search-panel clinical-panel">
+      <div className="appointment-grid">
+        <div><label htmlFor="clinical-department">Department</label><select id="clinical-department" value={departmentId} onChange={e=>{setDepartmentId(e.target.value);setQueue([]);setEncounter(null);}} disabled={actionBusy||loadingQueue}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
+        <div><label htmlFor="clinical-queue-date">Queue date</label><input id="clinical-queue-date" type="date" value={queueDate} onChange={e=>{setQueueDate(e.target.value);setQueue([]);setEncounter(null);}} disabled={actionBusy||loadingQueue}/></div>
+      </div>
+      <div className="registration-actions"><button type="button" onClick={refreshQueue} disabled={!departmentId||loadingQueue||actionBusy}>{loadingQueue?"Loading clinical queue…":"Refresh clinical queue"}</button></div>
+      <p className="helper-text">The queue view contains operational tokens only. Patient identity and clinical details are not exposed in queue rows.</p>
+      {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
+      {queue.length>0?<div className="clinical-queue" aria-label="In-progress queue entries">
+        {inProgressQueue.map(entry=><article className="clinical-queue-row" key={entry.id}>
+          <div><strong>Token #{String(entry.tokenNumber).padStart(2,"0")}</strong><small>Started {entry.startedAtUtc?new Date(entry.startedAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Time not available"}</small></div>
+          <span className="queue-status queue-status-inprogress">In progress</span>
+          <button type="button" onClick={()=>openEncounter(entry)} disabled={actionBusy||loadingQueue}>{openingId===entry.id?"Opening…":"Open encounter"}</button>
+        </article>)}
+        {inProgressQueue.length===0&&<p className="inline-status">No in-progress queue entries are available for this department and date.</p>}
+      </div>:!loadingQueue&&!queueError&&<p className="inline-status">Refresh the clinical queue to see in-progress consultations.</p>}
+    </div>
+    {encounter&&<div className="search-panel encounter-panel">
+      <div className="encounter-heading"><div><label>ENCOUNTER RECORD</label><h3>Consultation note</h3><p className="helper-text">Started {new Date(encounter.startedAtUtc).toLocaleString()}</p></div><span className={"queue-status queue-status-"+encounter.status.toLowerCase()}>{encounter.status}</span></div>
+      <p className="helper-text">Patient and encounter identifiers are handled by the API. Do not copy clinical note text into general logs, URLs or support messages.</p>
+      <div className="clinical-note-grid">
+        <div><label htmlFor="clinical-chief">Chief complaint *</label><textarea id="clinical-chief" rows={3} maxLength={500} value={chiefComplaint} onChange={e=>setChiefComplaint(e.target.value)} disabled={!editable||actionBusy}/><small>{chiefComplaint.length}/500</small></div>
+        <div><label htmlFor="clinical-history">History</label><textarea id="clinical-history" rows={4} maxLength={4000} value={history} onChange={e=>setHistory(e.target.value)} disabled={!editable||actionBusy}/><small>{history.length}/4000</small></div>
+        <div><label htmlFor="clinical-examination">Examination</label><textarea id="clinical-examination" rows={4} maxLength={4000} value={examination} onChange={e=>setExamination(e.target.value)} disabled={!editable||actionBusy}/><small>{examination.length}/4000</small></div>
+        <div><label htmlFor="clinical-assessment">Assessment *</label><textarea id="clinical-assessment" rows={3} maxLength={2000} value={assessment} onChange={e=>setAssessment(e.target.value)} disabled={!editable||actionBusy}/><small>{assessment.length}/2000</small></div>
+        <div className="clinical-plan"><label htmlFor="clinical-plan">Plan</label><textarea id="clinical-plan" rows={4} maxLength={4000} value={plan} onChange={e=>setPlan(e.target.value)} disabled={!editable||actionBusy}/><small>{plan.length}/4000</small></div>
+      </div>
+      {editable&&<div className="clinical-actions"><button type="button" className="clinical-secondary" onClick={saveDraft} disabled={actionBusy}>{actionBusy?"Saving…":"Save draft"}</button><button type="button" onClick={signEncounter} disabled={actionBusy||!chiefComplaint.trim()||!assessment.trim()}>Review and sign</button></div>}
+      {editable&&<div className="clinical-cancel"><label htmlFor="clinical-cancel-reason">Cancellation reason (required to cancel an unsigned encounter)</label><input id="clinical-cancel-reason" value={cancelReason} maxLength={250} onChange={e=>setCancelReason(e.target.value)} disabled={actionBusy}/><button type="button" className="queue-action-danger" onClick={cancelEncounter} disabled={actionBusy||!cancelReason.trim()}>Cancel encounter</button></div>}
+      {encounter.status==="Signed"&&<div className="clinical-actions"><button type="button" onClick={closeEncounter} disabled={actionBusy}>{actionBusy?"Closing…":"Close encounter"}</button></div>}
+      {(encounter.status==="Signed"||encounter.status==="Closed")&&<div className="amendment-panel">
+        <h4>Amendment history</h4>
+        {encounter.amendments.length>0?encounter.amendments.map(item=><article className="amendment-item" key={item.id}><strong>{item.reason}</strong><p>{item.content}</p><small>{new Date(item.createdAtUtc).toLocaleString()} · Author {item.authorSubject}</small></article>):<p className="inline-status">No amendments have been added.</p>}
+        <label htmlFor="amendment-reason">Amendment reason</label><input id="amendment-reason" value={amendmentReason} maxLength={250} onChange={e=>setAmendmentReason(e.target.value)} disabled={actionBusy}/>
+        <label htmlFor="amendment-content">Addendum / correction</label><textarea id="amendment-content" rows={3} maxLength={4000} value={amendmentContent} onChange={e=>setAmendmentContent(e.target.value)} disabled={actionBusy}/>
+        <button type="button" onClick={addAmendment} disabled={actionBusy||!amendmentReason.trim()||!amendmentContent.trim()}>Add append-only amendment</button>
+      </div>}
+      {actionError&&<p className="inline-error" role="alert">{actionError}</p>}
+      {actionSuccess&&<p className="registration-success" role="status">{actionSuccess}</p>}
+    </div>}
+  </section>;
 }
 
 function Workspace() {
@@ -123,6 +277,7 @@ function Workspace() {
   const [queueActionReason,setQueueActionReason] = useState("");
   const [queueDate,setQueueDate] = useState(localDateToday());
   const [hospitalTimeZone,setHospitalTimeZone] = useState("Asia/Kolkata");
+  const [clinicalBusy,setClinicalBusy] = useState(false);
 
   useEffect(() => {
     const manager = userManager;
@@ -213,7 +368,7 @@ function Workspace() {
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
-  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId;
+  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
@@ -449,6 +604,7 @@ function Workspace() {
         <a className="selected" href="#reception">Reception</a>
         <a href="#appointments">Appointments</a>
         <a href="#queue">Queue</a>
+        {selectedContext?.role === "ClinicalUser" && <a href="#clinical">Clinical workspace</a>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
@@ -570,6 +726,8 @@ function Workspace() {
             </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
         </section>
+
+        {selectedContext?.role === "ClinicalUser" && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} onBusyChange={setClinicalBusy}/>}
 
         <section className="section registration-section">
           <div className="section-heading">
