@@ -3,12 +3,10 @@ import { MemoryRouter } from "react-router-dom";
 import { describe,it,expect } from "vitest";
 import { App } from "./App";
 
-describe("workspace shell",()=>{
- it("renders the workspace areas without inventing authenticated capabilities",()=>{
+describe("reception workspace",()=>{
+ it("renders a sign-in entry point without inventing a hospital or patient context",()=>{
   render(<MemoryRouter><App/></MemoryRouter>);
-  expect(screen.getByRole("heading",{name:"Workspace overview"})).toBeInTheDocument();
-  expect(screen.getAllByText("Reception").length).toBeGreaterThan(0);
-  expect(screen.getAllByText("Queue").length).toBeGreaterThan(0);
-  expect(screen.getAllByText("Clinical workspace").length).toBeGreaterThan(0);
+  expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
+  expect(screen.getByText(/Sign in with your hospital identity/)).toBeInTheDocument();
  });
 });
