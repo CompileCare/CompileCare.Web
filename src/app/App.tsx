@@ -55,6 +55,8 @@ function Workspace() {
   const [patientQuery,setPatientQuery] = useState("");
   const [patients,setPatients] = useState<Patient[]>([]);
   const [patientTotal,setPatientTotal] = useState(0);
+  const [patientPage,setPatientPage] = useState(1);
+  const [patientTotalPages,setPatientTotalPages] = useState(0);
   const [searchLoading,setSearchLoading] = useState(false);
   const [searchError,setSearchError] = useState("");
   const [hasSearched,setHasSearched] = useState(false);
@@ -132,27 +134,31 @@ function Workspace() {
 
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
 
-  async function handlePatientSearch() {
+  async function handlePatientSearch(pageNumber = 1) {
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
     if (patientQuery.trim().length < 2) {
       setSearchError("Enter at least two characters to search.");
       setPatients([]);
       setPatientTotal(0);
+      setPatientTotalPages(0);
       setHasSearched(false);
       return;
     }
     setSearchLoading(true);
     setSearchError("");
     setHasSearched(false);
+    setPatientPage(pageNumber);
     try {
       const page = await searchPatients(
-        apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patientQuery);
+        apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patientQuery,pageNumber);
       setPatients(page.items);
       setPatientTotal(page.totalCount);
+      setPatientTotalPages(page.totalPages);
       setHasSearched(true);
     } catch (error) {
       setPatients([]);
       setPatientTotal(0);
+      setPatientTotalPages(0);
       setSearchError(getErrorMessage(error));
     } finally {
       setSearchLoading(false);
@@ -164,6 +170,9 @@ function Workspace() {
     setSelectedHospitalId("");
     setHospitals([]);
     setPatients([]);
+    setPatientTotal(0);
+    setPatientTotalPages(0);
+    setPatientPage(1);
     setPatientQuery("");
     setHasSearched(false);
     setSearchError("");
@@ -172,6 +181,9 @@ function Workspace() {
   function changeHospital(hospitalId: string) {
     setSelectedHospitalId(hospitalId);
     setPatients([]);
+    setPatientTotal(0);
+    setPatientTotalPages(0);
+    setPatientPage(1);
     setPatientQuery("");
     setHasSearched(false);
     setSearchError("");
@@ -230,12 +242,12 @@ function Workspace() {
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
             <div className="search-row">
-              <input id="patient-search" type="search" value={patientQuery} onChange={event => setPatientQuery(event.target.value)} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
+              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
               <button onClick={handlePatientSearch} disabled={!selectedHospitalId || searchLoading || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
             </div>
             <p className="helper-text">Search is limited to the selected hospital. Results are not stored in browser storage.</p>
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
-            {hasSearched && <p className="result-count" role="status">{patientTotal} matching patient{patientTotal === 1 ? "" : "s"}</p>}
+            {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
             {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
               {patients.map(patient => <article className="patient-result" key={patient.id}>
