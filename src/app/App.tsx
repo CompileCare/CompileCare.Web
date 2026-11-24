@@ -116,7 +116,7 @@ function Workspace() {
   const [queueEntries,setQueueEntries] = useState<QueueEntry[]>([]);
   const [queueLoading,setQueueLoading] = useState(false);
   const [queueError,setQueueError] = useState("");
-  const [queueDate,setQueueDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [queueDate,setQueueDate] = useState(localDateToday());
 
   useEffect(() => {
     const manager = userManager;
@@ -210,7 +210,7 @@ function Workspace() {
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
-    setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setQueueEntry(null);
+    setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setBookedAppointment(null);setQueueEntry(null);
     try {
       const page=await listAvailabilitySessions(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,appointmentDate,selectedDepartmentId);
       setAvailabilitySessions(page.items);
@@ -237,7 +237,6 @@ function Workspace() {
         availabilitySessionId:selectedSession.id,patientId:selectedPatient.id,slotStartsAtUtc:selectedSlotStart,reason:appointmentReason.trim()||null
       });
       setBookedAppointment(result);
-      await loadAvailability();
     }catch(error){setBookingError(getErrorMessage(error));}
     finally{setBookingLoading(false);}
   }
@@ -494,16 +493,16 @@ function Workspace() {
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
             <div className="appointment-grid">
-              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);}} disabled={departmentsLoading||departments.length===0}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
+              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}} disabled={departmentsLoading||departments.length===0}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
               <div><label htmlFor="appointment-date">Appointment date</label><input id="appointment-date" type="date" min={new Date().toLocaleDateString("en-CA")} value={appointmentDate} onChange={e=>{setAppointmentDate(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}} /></div>
             </div>
-            {departmentsError&&<p className="inline-error" role="alert">{departmentsError}</p>}
+            {departmentsLoading&&<p className="inline-status" role="status">Loading departments available to your hospital context…</p>}{departmentsError&&<p className="inline-error" role="alert">{departmentsError}</p>}
             <div className="registration-actions"><button type="button" onClick={loadAvailability} disabled={!selectedPatient||!selectedDepartmentId||!appointmentDate||availabilityLoading}>{availabilityLoading?"Finding availability…":"Find available appointments"}</button></div>
             {availabilityError&&<p className="inline-error" role="alert">{availabilityError}</p>}
             {availabilitySessions.length>0&&<div className="slot-panel">
               <label htmlFor="availability-session">Provider availability</label>
               <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Session · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
-              {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}
+              {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}{selectedSessionId&&!slotsLoading&&slots.length===0&&<p className="inline-status">No slots are available in this session.</p>}
               {slots.length>0&&<div className="slot-grid" role="group" aria-label="Available appointment slots">{slots.map(slot=><button type="button" key={slot.startsAtUtc} className={selectedSlotStart===slot.startsAtUtc?"slot-selected":""} disabled={!slot.isAvailable} onClick={()=>setSelectedSlotStart(slot.startsAtUtc)}>{new Date(slot.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:selectedSession?.timeZoneId})}<small>{slot.isAvailable?"Available":"Unavailable"}</small></button>)}</div>}
             </div>}
             {selectedSlotStart&&<form onSubmit={handleBookAppointment} className="booking-review">
@@ -530,7 +529,7 @@ function Workspace() {
         <section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
-            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} onChange={e=>setSelectedDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} onChange={e=>setQueueDate(e.target.value)} /></div></div>
+            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} onChange={e=>setSelectedDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
             <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
             {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
             {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><div className="queue-row" key={entry.id}><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><span>{entry.status}</span><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
