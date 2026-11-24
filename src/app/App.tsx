@@ -204,7 +204,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       {encounter.status==="Signed"&&<div className="clinical-actions"><button type="button" onClick={closeEncounter} disabled={actionBusy}>{actionBusy?"Closing…":"Close encounter"}</button></div>}
       {(encounter.status==="Signed"||encounter.status==="Closed")&&<div className="amendment-panel">
         <h4>Amendment history</h4>
-        {encounter.amendments.length>0?encounter.amendments.map(item=><article className="amendment-item" key={item.id}><strong>{item.reason}</strong><p>{item.content}</p><small>{new Date(item.createdAtUtc).toLocaleString()} · Author {item.authorSubject}</small></article>):<p className="inline-status">No amendments have been added.</p>}
+        {encounter.amendments.length>0?encounter.amendments.map(item=><article className="amendment-item" key={item.id}><strong>{item.reason}</strong><p>{item.content}</p><small>Added {new Date(item.createdAtUtc).toLocaleString()}</small></article>):<p className="inline-status">No amendments have been added.</p>}
         <label htmlFor="amendment-reason">Amendment reason</label><input id="amendment-reason" value={amendmentReason} maxLength={250} onChange={e=>setAmendmentReason(e.target.value)} disabled={actionBusy}/>
         <label htmlFor="amendment-content">Addendum / correction</label><textarea id="amendment-content" rows={3} maxLength={4000} value={amendmentContent} onChange={e=>setAmendmentContent(e.target.value)} disabled={actionBusy}/>
         <button type="button" onClick={addAmendment} disabled={actionBusy||!amendmentReason.trim()||!amendmentContent.trim()}>Add append-only amendment</button>
