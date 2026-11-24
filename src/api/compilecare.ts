@@ -36,6 +36,39 @@ export interface Patient {
   registeredAtUtc: string;
 }
 
+export interface PatientRegistrationInput {
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  dateOfBirth: string | null;
+}
+
+export interface PatientDuplicateCandidate {
+  patientId: string;
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  dateOfBirth: string;
+  registeredAtUtc: string;
+  matchSignals: string[];
+}
+
+export interface PatientDuplicateCheck {
+  evaluated: boolean;
+  evaluationMessage: string | null;
+  candidates: PatientDuplicateCandidate[];
+  hasMoreCandidates: boolean;
+}
+
+export interface PatientIdentifier {
+  id: string;
+  patientId: string;
+  hospitalId: string;
+  typeCode: string;
+  value: string;
+  assignedAtUtc: string;
+}
+
 export class ApiError extends Error {
   constructor(readonly status: number) {
     super(status === 401 ? "Your sign-in session is not authorized for the API." :
@@ -103,4 +136,82 @@ export function searchPatients(
     accessToken,
     tenantId
   );
+}
+
+
+export function checkPatientDuplicateCandidates(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: PatientRegistrationInput
+): Promise<PatientDuplicateCheck> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients/duplicate-candidates`,
+    accessToken,
+    tenantId,
+    input
+  );
+}
+
+export function registerPatient(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: PatientRegistrationInput
+): Promise<Patient> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients`,
+    accessToken,
+    tenantId,
+    input
+  );
+}
+
+export function assignPatientMedicalRecordNumber(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  patientId: string
+): Promise<PatientIdentifier> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients/${encodeURIComponent(patientId)}/identifiers/mrn`,
+    accessToken,
+    tenantId
+  );
+}
+
+async function postJson<T>(
+  baseUrl: string,
+  path: string,
+  accessToken: string,
+  tenantId: string,
+  body?: unknown
+): Promise<T> {
+  if (!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if (!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
+  if (!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
+
+  const headers = new Headers({
+    Accept: "application/json",
+    Authorization: `Bearer ${accessToken}`,
+    "X-Tenant-ID": tenantId
+  });
+  if (body !== undefined) headers.set("Content-Type", "application/json");
+
+  const response = await fetch(endpoint(baseUrl, path), {
+    method: "POST",
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+    credentials: "omit"
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+  return response.json() as Promise<T>;
 }
