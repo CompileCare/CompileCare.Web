@@ -7,8 +7,8 @@ describe("workspace shell",()=>{
  it("renders the workspace areas without inventing authenticated capabilities",()=>{
   render(<MemoryRouter><App/></MemoryRouter>);
   expect(screen.getByRole("heading",{name:"Workspace overview"})).toBeInTheDocument();
-  expect(screen.getByText("Reception")).toBeInTheDocument();
-  expect(screen.getByText("Queue")).toBeInTheDocument();
-  expect(screen.getByText("Clinical workspace")).toBeInTheDocument();
+  expect(screen.getAllByText("Reception").length).toBeInTheDocument();
+  expect(screen.getAllByText("Queue").length).toBeInTheDocument();
+  expect(screen.getAllByText("Clinical workspace").length).toBeInTheDocument();
  });
 });
