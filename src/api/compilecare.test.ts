@@ -39,6 +39,6 @@ describe("CompileCare API client",()=>{
  it("does not expose server response bodies when authorization is denied",async()=>{
   fetchMock.mockResolvedValueOnce(new Response("sensitive server detail",{status:403}));
   await expect(getCurrentUserTenantContexts("https://api.example.test","access-token"))
-   .rejects.toMatchObject<ApiError>({status:403,message:"Your account does not have permission for this operation."});
+   .rejects.toMatchObject({status:403,message:"Your account does not have permission for this operation."});
  });
 });
