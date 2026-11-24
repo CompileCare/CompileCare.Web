@@ -81,6 +81,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
   const [queueError,setQueueError]=useState("");
   const [encounter,setEncounter]=useState<OpdEncounter|null>(null);
   const [clinicalPatient,setClinicalPatient]=useState<Patient|null>(null);
+  const [identityConfirmed,setIdentityConfirmed]=useState(false);
   const [openingId,setOpeningId]=useState("");
   const [actionBusy,setActionBusy]=useState(false);
   const [actionError,setActionError]=useState("");
@@ -96,15 +97,15 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
 
   useEffect(()=>{setDepartmentId(current=>departments.some(x=>x.id===current)?current:departments.length===1?departments[0].id:"");},[departments]);
   const clinicalQueue=queue.filter(x=>x.status==="InProgress"||x.status==="Completed");
-  const editable=encounter?.status==="InProgress";
+  const editable=encounter?.status==="InProgress"&&identityConfirmed;
   const setBusy=(busy:boolean)=>{setActionBusy(busy);onBusyChange(busy);};
-  function applyEncounter(value:OpdEncounter,patientValue:Patient|null=clinicalPatient){
-    setEncounter(value);setClinicalPatient(patientValue);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
+  function applyEncounter(value:OpdEncounter,patientValue:Patient|null=clinicalPatient,resetIdentity=false){
+    setEncounter(value);setClinicalPatient(patientValue);if(resetIdentity)setIdentityConfirmed(false);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
     setExamination(value.examination??"");setAssessment(value.assessment??"");setPlan(value.plan??"");
     setCancelReason("");setActionError("");setActionSuccess("");
   }
   async function refreshQueue(){
-    setLoadingQueue(true);setQueueError("");setEncounter(null);setClinicalPatient(null);
+    setLoadingQueue(true);setQueueError("");setEncounter(null);setClinicalPatient(null);setIdentityConfirmed(false);
     try{const result=await listQueue(baseUrl,accessToken,tenantId,hospitalId,departmentId,queueDate);setQueue(result.items);}
     catch(error){setQueue([]);setQueueError(getErrorMessage(error));}
     finally{setLoadingQueue(false);}
@@ -125,7 +126,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
         }
       }
       const verifiedPatient=await getHospitalPatient(baseUrl,accessToken,tenantId,hospitalId,value.patientId);
-      applyEncounter(value,verifiedPatient);
+      applyEncounter(value,verifiedPatient,true);
     }catch(error){setActionError(getErrorMessage(error));}
     finally{setOpeningId("");setBusy(false);}
   }
@@ -196,8 +197,10 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
     </div>
     {encounter&&<div className="search-panel encounter-panel">
       <div className="encounter-heading"><div><label>ENCOUNTER RECORD</label><h3>Consultation note</h3><p className="helper-text">Started {new Date(encounter.startedAtUtc).toLocaleString()}</p></div><span className={"queue-status queue-status-"+encounter.status.toLowerCase()}>{encounter.status}</span></div>
-      {clinicalPatient&&<div className="clinical-patient-banner"><div><small>VERIFIED HOSPITAL REGISTRATION</small><strong>{patientName(clinicalPatient)}</strong><span>{clinicalPatient.dateOfBirth?"Date of birth: "+clinicalPatient.dateOfBirth:"Date of birth not recorded"}</span></div><span>Patient identity loaded from the selected hospital</span></div>}
+      {clinicalPatient&&<div className="clinical-patient-banner"><div><small>VERIFIED HOSPITAL REGISTRATION</small><strong>{patientName(clinicalPatient)}</strong><span>{clinicalPatient.dateOfBirth?"Date of birth: "+clinicalPatient.dateOfBirth:"Date of birth not recorded"}</span></div><span>Patient identity loaded from the selected hospital</span><label className="clinical-identity-confirm"><input type="checkbox" checked={identityConfirmed} onChange={e=>setIdentityConfirmed(e.target.checked)} disabled={actionBusy}/> I have verified the patient identity before documenting</label></div>}
       <p className="helper-text">Patient identity is retrieved through the hospital-scoped patient API. Do not copy clinical note text into general logs, URLs or support messages.</p>
+      {!identityConfirmed&&<p className="inline-status" role="status">Verify the patient identity above to view or edit this encounter note.</p>}
+      {identityConfirmed&&<>
       <div className="clinical-note-grid">
         <div><label htmlFor="clinical-chief">Chief complaint *</label><textarea id="clinical-chief" rows={3} maxLength={500} value={chiefComplaint} onChange={e=>setChiefComplaint(e.target.value)} disabled={!editable||actionBusy}/><small>{chiefComplaint.length}/500</small></div>
         <div><label htmlFor="clinical-history">History</label><textarea id="clinical-history" rows={4} maxLength={4000} value={history} onChange={e=>setHistory(e.target.value)} disabled={!editable||actionBusy}/><small>{history.length}/4000</small></div>
@@ -215,6 +218,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
         <label htmlFor="amendment-content">Addendum / correction</label><textarea id="amendment-content" rows={3} maxLength={4000} value={amendmentContent} onChange={e=>setAmendmentContent(e.target.value)} disabled={actionBusy}/>
         <button type="button" onClick={addAmendment} disabled={actionBusy||!amendmentReason.trim()||!amendmentContent.trim()}>Add append-only amendment</button>
       </div>}
+      </>}
       {actionError&&<p className="inline-error" role="alert">{actionError}</p>}
       {actionSuccess&&<p className="registration-success" role="status">{actionSuccess}</p>}
     </div>}
