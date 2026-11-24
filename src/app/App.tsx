@@ -243,7 +243,7 @@ function Workspace() {
             <label htmlFor="patient-search">Patient name</label>
             <div className="search-row">
               <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
-              <button onClick={handlePatientSearch} disabled={!selectedHospitalId || searchLoading || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
+              <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
             </div>
             <p className="helper-text">Search is limited to the selected hospital. Results are not stored in browser storage.</p>
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
