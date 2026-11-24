@@ -255,6 +255,7 @@ function Workspace() {
                 <small>Registered patient</small>
               </article>)}
             </div>}
+            {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
           </div>
         </section>
       </>}
