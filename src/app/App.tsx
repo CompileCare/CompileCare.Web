@@ -95,7 +95,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
   const [amendmentContent,setAmendmentContent]=useState("");
 
   useEffect(()=>{setDepartmentId(current=>departments.some(x=>x.id===current)?current:departments.length===1?departments[0].id:"");},[departments]);
-  const inProgressQueue=queue.filter(x=>x.status==="InProgress");
+  const clinicalQueue=queue.filter(x=>x.status==="InProgress"||x.status==="Completed");
   const editable=encounter?.status==="InProgress";
   const setBusy=(busy:boolean)=>{setActionBusy(busy);onBusyChange(busy);};
   function applyEncounter(value:OpdEncounter,patientValue:Patient|null=clinicalPatient){
@@ -116,10 +116,12 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       try{value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
       catch(error){
         if(!(error instanceof ApiError)||error.status!==404)throw error;
+        if(entry.status!=="InProgress")throw error;
         try{value=await createOpdEncounterFromQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
         catch(createError){
           if(!(createError instanceof ApiError)||createError.status!==409)throw createError;
-          value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);
+          try{value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
+          catch(resumeError){if(resumeError instanceof ApiError&&resumeError.status===404)throw createError;throw resumeError;}
         }
       }
       const verifiedPatient=await getHospitalPatient(baseUrl,accessToken,tenantId,hospitalId,value.patientId);
@@ -183,14 +185,14 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       <div className="registration-actions"><button type="button" onClick={refreshQueue} disabled={!departmentId||loadingQueue||actionBusy}>{loadingQueue?"Loading clinical queue…":"Refresh clinical queue"}</button></div>
       <p className="helper-text">The queue view contains operational tokens only. Patient identity and clinical details are not exposed in queue rows.</p>
       {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
-      {queue.length>0?<div className="clinical-queue" aria-label="In-progress queue entries">
-        {inProgressQueue.map(entry=><article className="clinical-queue-row" key={entry.id}>
-          <div><strong>Token #{String(entry.tokenNumber).padStart(2,"0")}</strong><small>Started {entry.startedAtUtc?new Date(entry.startedAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Time not available"}</small></div>
-          <span className="queue-status queue-status-inprogress">In progress</span>
-          <button type="button" onClick={()=>openEncounter(entry)} disabled={actionBusy||loadingQueue}>{openingId===entry.id?"Opening…":"Open encounter"}</button>
+      {queue.length>0?<div className="clinical-queue" aria-label="Clinical queue and recent completed visits">
+        {clinicalQueue.map(entry=><article className="clinical-queue-row" key={entry.id}>
+          <div><strong>Token #{String(entry.tokenNumber).padStart(2,"0")}</strong><small>{entry.status==="InProgress"?"Consultation in progress":"Queue completed"} · {entry.startedAtUtc?new Date(entry.startedAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Start time unavailable"}</small></div>
+          <span className={"queue-status queue-status-"+entry.status.toLowerCase()}>{entry.status}</span>
+          <button type="button" onClick={()=>openEncounter(entry)} disabled={actionBusy||loadingQueue}>{openingId===entry.id?"Opening…":entry.status==="InProgress"?"Open / start encounter":"Resume encounter"}</button>
         </article>)}
-        {inProgressQueue.length===0&&<p className="inline-status">No in-progress queue entries are available for this department and date.</p>}
-      </div>:!loadingQueue&&!queueError&&<p className="inline-status">Refresh the clinical queue to see in-progress consultations.</p>}
+        {clinicalQueue.length===0&&<p className="inline-status">No in-progress consultations or completed visits are available for this department and date.</p>}
+      </div>:!loadingQueue&&!queueError&&<p className="inline-status">Refresh the clinical queue to see in-progress consultations and completed visits.</p>}
     </div>
     {encounter&&<div className="search-panel encounter-panel">
       <div className="encounter-heading"><div><label>ENCOUNTER RECORD</label><h3>Consultation note</h3><p className="helper-text">Started {new Date(encounter.startedAtUtc).toLocaleString()}</p></div><span className={"queue-status queue-status-"+encounter.status.toLowerCase()}>{encounter.status}</span></div>
