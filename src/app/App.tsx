@@ -20,6 +20,7 @@ import {
   listQueue,
   transitionQueueEntry,
   getOpdEncounterForQueue,
+  getHospitalPatient,
   createOpdEncounterFromQueue,
   updateOpdEncounterNote,
   signOpdEncounter,
@@ -79,6 +80,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
   const [loadingQueue,setLoadingQueue]=useState(false);
   const [queueError,setQueueError]=useState("");
   const [encounter,setEncounter]=useState<OpdEncounter|null>(null);
+  const [clinicalPatient,setClinicalPatient]=useState<Patient|null>(null);
   const [openingId,setOpeningId]=useState("");
   const [actionBusy,setActionBusy]=useState(false);
   const [actionError,setActionError]=useState("");
@@ -96,13 +98,13 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
   const inProgressQueue=queue.filter(x=>x.status==="InProgress");
   const editable=encounter?.status==="InProgress";
   const setBusy=(busy:boolean)=>{setActionBusy(busy);onBusyChange(busy);};
-  function applyEncounter(value:OpdEncounter){
-    setEncounter(value);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
+  function applyEncounter(value:OpdEncounter,patientValue:Patient|null=clinicalPatient){
+    setEncounter(value);setClinicalPatient(patientValue);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
     setExamination(value.examination??"");setAssessment(value.assessment??"");setPlan(value.plan??"");
     setCancelReason("");setActionError("");setActionSuccess("");
   }
   async function refreshQueue(){
-    setLoadingQueue(true);setQueueError("");setEncounter(null);
+    setLoadingQueue(true);setQueueError("");setEncounter(null);setClinicalPatient(null);
     try{const result=await listQueue(baseUrl,accessToken,tenantId,hospitalId,departmentId,queueDate);setQueue(result.items);}
     catch(error){setQueue([]);setQueueError(getErrorMessage(error));}
     finally{setLoadingQueue(false);}
@@ -120,7 +122,8 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
           value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);
         }
       }
-      applyEncounter(value);
+      const verifiedPatient=await getHospitalPatient(baseUrl,accessToken,tenantId,hospitalId,value.patientId);
+      applyEncounter(value,verifiedPatient);
     }catch(error){setActionError(getErrorMessage(error));}
     finally{setOpeningId("");setBusy(false);}
   }
@@ -191,7 +194,8 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
     </div>
     {encounter&&<div className="search-panel encounter-panel">
       <div className="encounter-heading"><div><label>ENCOUNTER RECORD</label><h3>Consultation note</h3><p className="helper-text">Started {new Date(encounter.startedAtUtc).toLocaleString()}</p></div><span className={"queue-status queue-status-"+encounter.status.toLowerCase()}>{encounter.status}</span></div>
-      <p className="helper-text">Patient and encounter identifiers are handled by the API. Do not copy clinical note text into general logs, URLs or support messages.</p>
+      {clinicalPatient&&<div className="clinical-patient-banner"><div><small>VERIFIED HOSPITAL REGISTRATION</small><strong>{patientName(clinicalPatient)}</strong><span>{clinicalPatient.dateOfBirth?"Date of birth: "+clinicalPatient.dateOfBirth:"Date of birth not recorded"}</span></div><span>Patient identity loaded from the selected hospital</span></div>}
+      <p className="helper-text">Patient identity is retrieved through the hospital-scoped patient API. Do not copy clinical note text into general logs, URLs or support messages.</p>
       <div className="clinical-note-grid">
         <div><label htmlFor="clinical-chief">Chief complaint *</label><textarea id="clinical-chief" rows={3} maxLength={500} value={chiefComplaint} onChange={e=>setChiefComplaint(e.target.value)} disabled={!editable||actionBusy}/><small>{chiefComplaint.length}/500</small></div>
         <div><label htmlFor="clinical-history">History</label><textarea id="clinical-history" rows={4} maxLength={4000} value={history} onChange={e=>setHistory(e.target.value)} disabled={!editable||actionBusy}/><small>{history.length}/4000</small></div>
