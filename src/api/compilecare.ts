@@ -273,6 +273,17 @@ export interface QueueEntry {
 
 export interface QueuePage extends Page<QueueEntry> {}
 
+export interface Department { id: string; hospitalId: string; name: string; code: string | null; }
+
+export function listDepartments(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<Page<Department>> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments?page=1&pageSize=100`,accessToken,tenantId);
+}
+
+export function listQueue(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string,date:string,page=1):Promise<QueuePage> {
+  const parameters=new URLSearchParams({departmentId,date,page:String(page),pageSize:"50"});
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/queue?${parameters.toString()}`,accessToken,tenantId);
+}
+
 export interface WalkInCreateInput {
   departmentId: string;
   patientId: string;
