@@ -77,7 +77,6 @@ function Workspace() {
   const [registrationLoading,setRegistrationLoading] = useState(false);
   const [registrationError,setRegistrationError] = useState("");
   const [registrationSuccess,setRegistrationSuccess] = useState("");
-  const [assignedMrn,setAssignedMrn] = useState("");
 
   useEffect(() => {
     const manager = userManager;
@@ -199,7 +198,6 @@ function Workspace() {
     setDuplicateAcknowledged(false);
     setRegistrationError("");
     setRegistrationSuccess("");
-    setAssignedMrn("");
   }
 
   function clearRegistrationDraft() {
@@ -255,8 +253,7 @@ function Workspace() {
       try {
         const identifier = await assignPatientMedicalRecordNumber(
           apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patient.id);
-        setAssignedMrn(identifier.value);
-        setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully and MRN ${identifier.value} was assigned.`);
+            setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully and MRN ${identifier.value} was assigned.`);
       } catch {
         setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully. MRN assignment is pending; ask an authorized administrator to verify the hospital MRN policy and your identifier permissions.`);
       }
