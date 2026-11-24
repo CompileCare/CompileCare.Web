@@ -105,6 +105,7 @@ function Workspace() {
       setSelectedTenantId("");
       setHospitals([]);
       setSelectedHospitalId("");
+      clearRegistrationDraft();
       return;
     }
     if (!apiBaseUrl) {
@@ -202,6 +203,20 @@ function Workspace() {
     setAssignedMrn("");
   }
 
+  function clearRegistrationDraft() {
+    setRegistrationGivenName("");
+    setRegistrationMiddleName("");
+    setRegistrationFamilyName("");
+    setRegistrationDob("");
+    setDuplicateCheck(null);
+    setDuplicateError("");
+    setDuplicateAcknowledged(false);
+    setRegistrationError("");
+    setRegistrationSuccess("");
+    setAssignedMrn("");
+    setRegistrationOpen(false);
+  }
+
   async function handleDuplicateCheck() {
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
     if (!registrationGivenName.trim()) {
@@ -275,6 +290,7 @@ function Workspace() {
     setPatientQuery("");
     setHasSearched(false);
     setSearchError("");
+    clearRegistrationDraft();
   }
 
   function changeHospital(hospitalId: string) {
@@ -286,6 +302,7 @@ function Workspace() {
     setPatientQuery("");
     setHasSearched(false);
     setSearchError("");
+    clearRegistrationDraft();
   }
 
   return <div className="shell">
@@ -317,12 +334,12 @@ function Workspace() {
           <div><label>ACTIVE ORGANIZATION</label><h2>Select your hospital context</h2><p>Only active memberships assigned to your validated sign-in are listed.</p></div>
           <div className="context-controls">
             <label htmlFor="tenant-select">Tenant</label>
-            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0}>
+            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || duplicateLoading || registrationLoading}>
               <option value="">Select a tenant</option>
               {contexts.map(context => <option key={context.tenantId} value={context.tenantId}>{context.tenantName} · {context.role}</option>)}
             </select>
             <label htmlFor="hospital-select">Hospital</label>
-            <select id="hospital-select" value={selectedHospitalId} onChange={event => changeHospital(event.target.value)} disabled={!selectedTenantId || hospitalsLoading || hospitals.length === 0}>
+            <select id="hospital-select" value={selectedHospitalId} onChange={event => changeHospital(event.target.value)} disabled={!selectedTenantId || hospitalsLoading || hospitals.length === 0 || duplicateLoading || registrationLoading}>
               <option value="">Select a hospital</option>
               {hospitals.map(hospital => <option key={hospital.id} value={hospital.id}>{hospital.name}{hospital.code ? ` · ${hospital.code}` : ""}</option>)}
             </select>
