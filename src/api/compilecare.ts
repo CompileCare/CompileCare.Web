@@ -215,3 +215,162 @@ async function postJson<T>(
   if (!response.ok) throw new ApiError(response.status);
   return response.json() as Promise<T>;
 }
+
+
+export interface AvailabilitySession {
+  id: string;
+  hospitalId: string;
+  departmentId: string;
+  providerStaffId: string;
+  localDate: string;
+  startsAtUtc: string;
+  endsAtUtc: string;
+  slotDurationMinutes: number;
+  timeZoneId: string;
+  createdAtUtc: string;
+}
+
+export interface AppointmentSlot {
+  startsAtUtc: string;
+  endsAtUtc: string;
+  isAvailable: boolean;
+}
+
+export interface Appointment {
+  id: string;
+  hospitalId: string;
+  departmentId: string;
+  patientId: string;
+  providerStaffId: string;
+  availabilitySessionId: string;
+  slotStartsAtUtc: string;
+  slotEndsAtUtc: string;
+  status: "Booked" | "Cancelled" | "Completed" | "NoShow" | string;
+  reason: string | null;
+  createdAtUtc: string;
+  rescheduledFromAppointmentId: string | null;
+}
+
+export interface AppointmentBookInput {
+  availabilitySessionId: string;
+  patientId: string;
+  slotStartsAtUtc: string;
+  reason: string | null;
+}
+
+export interface QueueEntry {
+  id: string;
+  hospitalId: string;
+  departmentId: string;
+  queueDateLocal: string;
+  tokenNumber: number;
+  status: "Waiting" | "Called" | "InProgress" | "Completed" | "Cancelled" | "NoShow" | string;
+  checkedInAtUtc: string;
+  calledAtUtc: string | null;
+  startedAtUtc: string | null;
+  completedAtUtc: string | null;
+}
+
+export interface QueuePage extends Page<QueueEntry> {}
+
+export interface WalkInCreateInput {
+  departmentId: string;
+  patientId: string;
+  timeZoneId: string;
+}
+
+export function listAvailabilitySessions(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  date: string,
+  departmentId?: string,
+  page = 1
+): Promise<Page<AvailabilitySession>> {
+  const parameters = new URLSearchParams({ date, page: String(page), pageSize: "50" });
+  if (departmentId) parameters.set("departmentId", departmentId);
+  return getJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/availability-sessions?${parameters.toString()}`,
+    accessToken,
+    tenantId
+  );
+}
+
+export function getAppointmentSlots(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  sessionId: string
+): Promise<AppointmentSlot[]> {
+  return getJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/availability-sessions/${encodeURIComponent(sessionId)}/slots`,
+    accessToken,
+    tenantId
+  );
+}
+
+export function bookAppointment(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: AppointmentBookInput
+): Promise<Appointment> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments`,
+    accessToken,
+    tenantId,
+    input
+  );
+}
+
+export function getAppointment(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  appointmentId: string
+): Promise<Appointment> {
+  return getJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments/${encodeURIComponent(appointmentId)}`,
+    accessToken,
+    tenantId
+  );
+}
+
+export function checkInAppointment(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  appointmentId: string
+): Promise<QueueEntry> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments/${encodeURIComponent(appointmentId)}/check-in`,
+    accessToken,
+    tenantId
+  );
+}
+
+export function createWalkIn(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: WalkInCreateInput
+): Promise<QueueEntry> {
+  return postJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/queue/walk-ins`,
+    accessToken,
+    tenantId,
+    input
+  );
+}
