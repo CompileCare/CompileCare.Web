@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -227,5 +227,20 @@ describe("OPD encounter API client",()=>{
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe(`${base}/api/v1/hospitals/${hospital}/opd/encounters/${encounter}/cancel`);
   expect(JSON.parse(String(options.body))).toEqual({reason:"Entered in error"});
+ });
+});
+
+
+describe("clinical patient identity API client",()=>{
+ const fetchMock=vi.fn();
+ beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
+ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
+ it("loads the registered patient linked to an encounter within the selected hospital",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"patient-1",givenName:"Ravi",middleName:null,familyName:"Deshmukh",dateOfBirth:"1990-01-02",hospitalId:"hospital-456",registeredAtUtc:"2026-11-24T00:00:00Z"}),{status:200}));
+  await getHospitalPatient("https://api.example.test","access-token","tenant-123","hospital-456","patient-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/patient-1");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");expect(options.credentials).toBe("omit");
  });
 });
