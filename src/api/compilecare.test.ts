@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { getCurrentUserTenantContexts,getHospitals,searchPatients } from "./compilecare";
+import { assignPatientMedicalRecordNumber,checkPatientDuplicateCandidates,getCurrentUserTenantContexts,getHospitals,registerPatient,searchPatients } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -40,5 +40,40 @@ describe("CompileCare API client",()=>{
   fetchMock.mockResolvedValueOnce(new Response("sensitive server detail",{status:403}));
   await expect(getCurrentUserTenantContexts("https://api.example.test","access-token"))
    .rejects.toMatchObject({status:403,message:"Your account does not have permission for this operation."});
+ });
+
+ it("checks duplicate candidates with the selected tenant and hospital context",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({evaluated:true,evaluationMessage:null,candidates:[],hasMoreCandidates:false}),{status:200}));
+  await checkPatientDuplicateCandidates("https://api.example.test","access-token","tenant-123","hospital-456",{
+   givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:"1990-01-02"
+  });
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/duplicate-candidates");
+  expect(options.method).toBe("POST");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(JSON.parse(String(options.body))).toEqual({givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:"1990-01-02"});
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("registers a patient only within the selected hospital",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"patient-1",givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:null,hospitalId:"hospital-456",registeredAtUtc:"2026-11-24T00:00:00Z"}),{status:201}));
+  await registerPatient("https://api.example.test","access-token","tenant-123","hospital-456",{
+   givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:null
+  });
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients");
+  expect(options.method).toBe("POST");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("assigns an MRN using the existing hospital-scoped identifier route",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"identifier-1",patientId:"patient-1",hospitalId:"hospital-456",typeCode:"MRN",value:"HOSP000001",assignedAtUtc:"2026-11-24T00:00:00Z"}),{status:200}));
+  await assignPatientMedicalRecordNumber("https://api.example.test","access-token","tenant-123","hospital-456","patient-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/patient-1/identifiers/mrn");
+  expect(options.method).toBe("POST");
+  expect(options.body).toBeUndefined();
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 });

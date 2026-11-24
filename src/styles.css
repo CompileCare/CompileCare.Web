@@ -29,3 +29,25 @@
 @media(max-width:600px){.search-row{grid-template-columns:1fr}.search-row button{min-height:42px}.patient-result{align-items:flex-start;flex-direction:column;gap:6px}}
 
 .pagination{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding-top:12px}.pagination span{font-size:10px;color:#718795}.pagination button{border:1px solid #d8e3e8;border-radius:7px;background:#fff;color:#24465b;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer}.pagination button:disabled{opacity:.4;cursor:not-allowed}
+
+.registration-section{margin-top:28px}
+.registration-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.registration-grid>div{display:grid;gap:7px}
+.registration-grid label{font-size:11px;font-weight:700;color:#476274}
+.registration-grid input{width:100%;min-height:42px;border:1px solid #d6e1e7;border-radius:8px;background:#fff;color:#193247;padding:10px 12px;font:inherit;font-size:12px}
+.registration-grid input:focus{outline:3px solid #b8e6df;border-color:#0e827c}
+.registration-grid input:disabled{background:#f2f5f7;color:#8295a2}
+.registration-actions{display:flex;justify-content:flex-end;gap:10px}
+.registration-actions button{border:0;border-radius:8px;padding:11px 17px;background:#0e827c;color:white;font-size:12px;font-weight:700;cursor:pointer}
+.registration-actions button:disabled{opacity:.45;cursor:not-allowed}
+.duplicate-review{display:grid;gap:9px;background:#f4f8fa;border:1px solid #e1eaee;border-radius:10px;padding:14px}
+.duplicate-review>strong{font-size:12px;color:#24465b}
+.duplicate-review>p{font-size:11px;color:#617b8a;line-height:1.55;margin:0}
+.duplicate-candidates{display:grid;gap:7px}
+.duplicate-candidates article{display:grid;gap:4px;padding:10px;background:white;border:1px solid #e2eaee;border-radius:8px}
+.duplicate-candidates article strong{font-size:12px}
+.duplicate-candidates article span,.duplicate-candidates article small{font-size:10px;color:#718795}
+.review-confirmation{display:flex;align-items:flex-start;gap:9px;font-size:11px!important;line-height:1.5;color:#3d596b!important;letter-spacing:0!important}
+.review-confirmation input{margin-top:2px;accent-color:#0e827c}
+.registration-success{background:#edf8f3;border:1px solid #cde8d9;color:#236447;padding:11px 13px;border-radius:8px;font-size:12px;line-height:1.5;margin:0}
+@media(max-width:600px){.registration-grid{grid-template-columns:1fr}.registration-actions button{width:100%;min-height:42px}}
