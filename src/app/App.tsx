@@ -31,6 +31,7 @@ import {
 } from "../api/compilecare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const localDateToday = () => { const d=new Date(); return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
 
 function Callback() {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ function Workspace() {
   const [departmentsError,setDepartmentsError] = useState("");
   const [selectedDepartmentId,setSelectedDepartmentId] = useState("");
   const [selectedPatient,setSelectedPatient] = useState<Patient|null>(null);
-  const [appointmentDate,setAppointmentDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [appointmentDate,setAppointmentDate] = useState(localDateToday());
   const [availabilitySessions,setAvailabilitySessions] = useState<AvailabilitySession[]>([]);
   const [availabilityLoading,setAvailabilityLoading] = useState(false);
   const [availabilityError,setAvailabilityError] = useState("");
@@ -209,7 +210,7 @@ function Workspace() {
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
-    setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setBookedAppointment(null);setQueueEntry(null);
+    setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setQueueEntry(null);
     try {
       const page=await listAvailabilitySessions(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,appointmentDate,selectedDepartmentId);
       setAvailabilitySessions(page.items);
@@ -253,7 +254,7 @@ function Workspace() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedPatient||!selectedDepartmentId)return;
     setWalkInLoading(true);setWalkInError("");
     try{
-      const entry=await createWalkIn(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,{departmentId:selectedDepartmentId,patientId:selectedPatient.id,timeZoneId:"Asia/Kolkata"});
+      const entry=await createWalkIn(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,{departmentId:selectedDepartmentId,patientId:selectedPatient.id,timeZoneId:hospitalTimeZone});
       setQueueEntry(entry);
       await loadQueue();
     }catch(error){setWalkInError(getErrorMessage(error));}
@@ -521,7 +522,7 @@ function Workspace() {
           <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
           <div className="search-panel walkin-panel">
             <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
-            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><small>Hospital local timezone · Asia/Kolkata</small></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading}>{walkInLoading?"Registering…":"Add to queue"}</button></div>
+            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><label htmlFor="walkin-timezone">Hospital time zone</label><input id="walkin-timezone" value={hospitalTimeZone} onChange={e=>setHospitalTimeZone(e.target.value)} maxLength={100} /></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading}>{walkInLoading?"Registering…":"Add to queue"}</button></div>
             {walkInError&&<p className="inline-error" role="alert">{walkInError}</p>}
           </div>
         </section>
