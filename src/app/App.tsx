@@ -213,7 +213,7 @@ function Workspace() {
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
-  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading;
+  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId;
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
