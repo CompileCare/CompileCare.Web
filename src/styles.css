@@ -27,3 +27,5 @@
 .patient-result small{white-space:nowrap}
 @media(max-width:900px){.context-panel{grid-template-columns:1fr}.context-scope{grid-column:auto}}
 @media(max-width:600px){.search-row{grid-template-columns:1fr}.search-row button{min-height:42px}.patient-result{align-items:flex-start;flex-direction:column;gap:6px}}
+
+.pagination{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding-top:12px}.pagination span{font-size:10px;color:#718795}.pagination button{border:1px solid #d8e3e8;border-radius:7px;background:#fff;color:#24465b;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer}.pagination button:disabled{opacity:.4;cursor:not-allowed}
