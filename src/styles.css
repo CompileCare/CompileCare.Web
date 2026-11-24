@@ -51,3 +51,57 @@
 .review-confirmation input{margin-top:2px;accent-color:#0e827c}
 .registration-success{background:#edf8f3;border:1px solid #cde8d9;color:#236447;padding:11px 13px;border-radius:8px;font-size:12px;line-height:1.5;margin:0}
 @media(max-width:600px){.registration-grid{grid-template-columns:1fr}.registration-actions button{width:100%;min-height:42px}}
+
+/* Appointment and arrival workspace */
+.patient-result-selectable{cursor:pointer;transition:background .15s,border-color .15s;padding-left:12px;padding-right:12px;border-left:3px solid transparent}
+.patient-result-selectable:hover{background:#f5faf9}
+.patient-result-active{background:#eef8f6;border-left-color:#0e827c}
+.appointment-section,.walkin-section,.queue-section{margin-top:30px}
+.section-heading p{margin:5px 0 0}
+.appointment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.appointment-grid>div,.slot-panel{display:grid;gap:7px}
+.appointment-grid label,.slot-panel>label,.booking-review>label,.walkin-action label{font-size:11px;font-weight:700;color:#476274}
+.appointment-grid select,.slot-panel select,.booking-review input,.walkin-action input{width:100%;min-height:43px;border:1px solid #d6e1e7;border-radius:9px;background:#fff;color:#193247;padding:10px 12px;font:inherit;font-size:12px}
+.appointment-grid select:focus,.slot-panel select:focus,.booking-review input:focus,.walkin-action input:focus{outline:3px solid #b8e6df;border-color:#0e827c}
+.workflow-step{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f4f8fa;border:1px solid #e6eef1;border-radius:10px}
+.workflow-step>span{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#dff2ef;color:#08766f;font-size:11px;font-weight:800}
+.workflow-step div{display:grid;gap:3px}
+.workflow-step strong{font-size:12px;color:#23465b}
+.workflow-step small{font-size:11px;color:#6c8290}
+.slot-panel{padding-top:5px}
+.slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
+.slot-grid button{display:grid;gap:5px;text-align:left;padding:11px;border:1px solid #dce7eb;border-radius:9px;background:white;color:#24465b;font-size:13px;font-weight:800;cursor:pointer}
+.slot-grid button small{font-size:10px;color:#6c8290;font-weight:500}
+.slot-grid button:disabled{opacity:.4;cursor:not-allowed;background:#f5f7f8}
+.slot-grid button.slot-selected{border-color:#0e827c;background:#eaf7f4;box-shadow:0 0 0 2px #bce6df}
+.booking-review{display:grid;gap:10px;border-top:1px solid #e8eef1;padding-top:15px}
+.review-summary{display:grid;gap:5px;padding:13px;background:#f2f8f7;border:1px solid #dcefeb;border-radius:9px}
+.review-summary strong{font-size:13px;color:#1d4a50}
+.review-summary span{font-size:11px;color:#5e7782}
+.arrival-success{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid #cce8da;background:#eff9f3;border-radius:10px}
+.arrival-success div{display:grid;gap:4px}
+.arrival-success strong{font-size:13px;color:#245c43}
+.arrival-success span{font-size:10px;color:#527c67}
+.arrival-success button,.walkin-action button{border:0;border-radius:8px;background:#0e827c;color:white;padding:11px 15px;font-size:11px;font-weight:800;cursor:pointer}
+.arrival-success button:disabled,.walkin-action button:disabled{opacity:.5;cursor:not-allowed}
+.token-card{display:grid;justify-items:center;gap:4px;padding:18px;background:#102f43;color:#fff;border-radius:12px}
+.token-card small{font-size:9px;letter-spacing:2px;color:#9cc5ce;font-weight:800}
+.token-card strong{font-size:40px;line-height:1.1;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.token-card span{font-size:10px;color:#c3d8df}
+.walkin-action{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,240px);align-items:end;gap:14px}
+.walkin-action>div{display:grid;gap:5px}
+.walkin-action strong{font-size:13px;color:#24465b}
+.walkin-action small{font-size:10px;color:#718795}
+.walkin-action label{display:block;margin-bottom:5px}
+.walkin-action input{margin-bottom:8px}
+.queue-list{display:grid;border-top:1px solid #e8eef1}
+.queue-row{display:grid;grid-template-columns:70px 1fr 100px;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid #edf1f3}
+.queue-row strong{font-size:15px;color:#17485b;font-variant-numeric:tabular-nums}
+.queue-row span{font-size:11px;color:#486477}
+.queue-row small{text-align:right;font-size:10px;color:#7a8f9d}
+@media(max-width:600px){.appointment-grid{grid-template-columns:1fr}.walkin-action{grid-template-columns:1fr}.walkin-action button{min-height:43px}.arrival-success{align-items:stretch;flex-direction:column}.arrival-success button{min-height:42px}}
+
+.sidebar nav a:not(.selected){border:1px solid transparent}
+.sidebar nav a:not(.selected):hover{background:#173c55;border-color:#2c536b}
+.sidebar nav a:focus-visible,.patient-result-selectable:focus-visible,.slot-grid button:focus-visible,.registration-actions button:focus-visible{outline:3px solid #7bd4c8;outline-offset:2px}
+.patient-result-selectable:focus-visible{border-radius:8px}

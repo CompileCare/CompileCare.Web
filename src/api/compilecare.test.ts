@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { assignPatientMedicalRecordNumber,checkPatientDuplicateCandidates,getCurrentUserTenantContexts,getHospitals,registerPatient,searchPatients } from "./compilecare";
+import { assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -77,3 +77,66 @@ describe("CompileCare API client",()=>{
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 });
+
+
+describe("appointment and arrival API client",()=>{
+ const fetchMock=vi.fn();
+ beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
+ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
+
+ it("lists hospital-scoped availability for a local date and optional department",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:50,totalCount:0,totalPages:0}),{status:200}));
+  await listAvailabilitySessions("https://api.example.test","access-token","tenant-123","hospital-456","2026-12-10","department-789");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/availability-sessions?date=2026-12-10&page=1&pageSize=50&departmentId=department-789");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("loads slots from the selected availability session",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{startsAtUtc:"2026-12-10T03:30:00Z",endsAtUtc:"2026-12-10T04:00:00Z",isAvailable:true}]),{status:200}));
+  await getAppointmentSlots("https://api.example.test","access-token","tenant-123","hospital-456","session-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/availability-sessions/session-1/slots");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("books an appointment with the selected registered patient and slot",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"appointment-1"}),{status:201}));
+  await bookAppointment("https://api.example.test","access-token","tenant-123","hospital-456",{
+   availabilitySessionId:"session-1",patientId:"patient-1",slotStartsAtUtc:"2026-12-10T03:30:00Z",reason:"Follow-up"
+  });
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/appointments");
+  expect(options.method).toBe("POST");
+  expect(JSON.parse(String(options.body))).toEqual({
+   availabilitySessionId:"session-1",patientId:"patient-1",slotStartsAtUtc:"2026-12-10T03:30:00Z",reason:"Follow-up"
+  });
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("checks in an appointment through the server-owned queue-token workflow",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"queue-1",tokenNumber:12,status:"Waiting"}),{status:200}));
+  await checkInAppointment("https://api.example.test","access-token","tenant-123","hospital-456","appointment-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/appointments/appointment-1/check-in");
+  expect(options.method).toBe("POST");
+  expect(options.body).toBeUndefined();
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("creates walk-ins without inventing an appointment or queue token in the client",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"queue-1",tokenNumber:13,status:"Waiting"}),{status:201}));
+  await createWalkIn("https://api.example.test","access-token","tenant-123","hospital-456",{
+   departmentId:"department-789",patientId:"patient-1",timeZoneId:"Asia/Kolkata"
+  });
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/queue/walk-ins");
+  expect(JSON.parse(String(options.body))).toEqual({departmentId:"department-789",patientId:"patient-1",timeZoneId:"Asia/Kolkata"});
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+});
+
+
+describe("department and queue read API client",()=>{ const fetchMock=vi.fn(); beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);}); afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();}); it("loads departments in the selected hospital",async()=>{ fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200})); await listDepartments("https://api.example.test","access-token","tenant-123","hospital-456"); const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit]; expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/departments?page=1&pageSize=100"); expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123"); }); it("loads the queue by department and local date",async()=>{ fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:50,totalCount:0,totalPages:0}),{status:200})); await listQueue("https://api.example.test","access-token","tenant-123","hospital-456","department-789","2026-12-10"); const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit]; expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/queue?departmentId=department-789&date=2026-12-10&page=1&pageSize=50"); expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123"); }); });
