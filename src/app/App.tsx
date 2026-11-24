@@ -18,6 +18,7 @@ import {
   checkInAppointment,
   createWalkIn,
   listQueue,
+  transitionQueueEntry,
   type PatientRegistrationInput,
   type PatientDuplicateCheck,
   type Hospital,
@@ -27,7 +28,8 @@ import {
   type AvailabilitySession,
   type AppointmentSlot,
   type Appointment,
-  type QueueEntry
+  type QueueEntry,
+  type QueueAction
 } from "../api/compilecare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -116,6 +118,9 @@ function Workspace() {
   const [queueEntries,setQueueEntries] = useState<QueueEntry[]>([]);
   const [queueLoading,setQueueLoading] = useState(false);
   const [queueError,setQueueError] = useState("");
+  const [queueActionError,setQueueActionError] = useState("");
+  const [queueActionLoadingId,setQueueActionLoadingId] = useState("");
+  const [queueActionReason,setQueueActionReason] = useState("");
   const [queueDate,setQueueDate] = useState(localDateToday());
   const [hospitalTimeZone,setHospitalTimeZone] = useState("Asia/Kolkata");
 
@@ -268,6 +273,23 @@ function Workspace() {
     try{const page=await listQueue(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,selectedDepartmentId,queueDate);setQueueEntries(page.items);}
     catch(error){setQueueEntries([]);setQueueError(getErrorMessage(error));}
     finally{setQueueLoading(false);}
+  }
+
+  async function handleQueueAction(entry:QueueEntry,action:QueueAction) {
+    if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId)return;
+    const needsReason=action==="cancel"||action==="noshow";
+    if(needsReason&&!queueActionReason.trim()){
+      setQueueActionError("Enter a reason before cancelling or marking a patient as no-show.");
+      return;
+    }
+    setQueueActionLoadingId(entry.id);setQueueActionError("");
+    try{
+      const updated=await transitionQueueEntry(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,entry.id,action,
+        needsReason?{reason:queueActionReason.trim()}:{ });
+      setQueueEntries(current=>current.map(item=>item.id===updated.id?updated:item));
+      setQueueActionReason("");
+    }catch(error){setQueueActionError(getErrorMessage(error));}
+    finally{setQueueActionLoadingId("");}
   }
 
 
@@ -534,7 +556,18 @@ function Workspace() {
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
             <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
             {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
-            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><div className="queue-row" key={entry.id}><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><span>{entry.status}</span><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
+            {queueEntries.some(entry=>entry.status==="Waiting"||entry.status==="Called")&&<div className="queue-reason-field"><label htmlFor="queue-action-reason">Reason for cancellation or no-show (required for those actions)</label><input id="queue-action-reason" value={queueActionReason} maxLength={250} onChange={event=>setQueueActionReason(event.target.value)} placeholder="e.g. Patient confirmed cancellation" /></div>}
+            {queueActionError&&<p className="inline-error" role="alert">{queueActionError}</p>}
+            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><article className="queue-row queue-row-managed" key={entry.id}>
+              <div className="queue-token"><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>
+              <div className="queue-state"><span className={`queue-status queue-status-${entry.status.toLowerCase()}`}>{entry.status}</span><small>{entry.status==="Waiting"?"Awaiting call":entry.status==="Called"?"Called to consultation":entry.status==="InProgress"?"Consultation in progress":"Queue entry closed"}</small></div>
+              <div className="queue-actions" aria-label={`Actions for queue token ${entry.tokenNumber}`}>
+                {entry.status==="Waiting"&&<button type="button" onClick={()=>handleQueueAction(entry,"call")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Call"}</button>}
+                {entry.status==="Called"&&<><button type="button" onClick={()=>handleQueueAction(entry,"recall")} disabled={!!queueActionLoadingId}>Recall</button><button type="button" onClick={()=>handleQueueAction(entry,"start")} disabled={!!queueActionLoadingId}>Start consultation</button></>}
+                {entry.status==="InProgress"&&<button type="button" onClick={()=>handleQueueAction(entry,"complete")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Complete"}</button>}
+                {(entry.status==="Waiting"||entry.status==="Called")&&<><button className="queue-action-secondary" type="button" onClick={()=>handleQueueAction(entry,"cancel")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>Cancel</button><button className="queue-action-danger" type="button" onClick={()=>handleQueueAction(entry,"noshow")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>No-show</button></>}
+              </div>
+            </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
         </section>
 
