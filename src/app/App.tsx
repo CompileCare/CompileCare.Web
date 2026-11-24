@@ -7,6 +7,11 @@ import {
   getCurrentUserTenantContexts,
   getHospitals,
   searchPatients,
+  checkPatientDuplicateCandidates,
+  registerPatient,
+  assignPatientMedicalRecordNumber,
+  type PatientRegistrationInput,
+  type PatientDuplicateCheck,
   type Hospital,
   type Patient,
   type UserTenantContext
@@ -60,6 +65,19 @@ function Workspace() {
   const [searchLoading,setSearchLoading] = useState(false);
   const [searchError,setSearchError] = useState("");
   const [hasSearched,setHasSearched] = useState(false);
+  const [registrationOpen,setRegistrationOpen] = useState(false);
+  const [registrationGivenName,setRegistrationGivenName] = useState("");
+  const [registrationMiddleName,setRegistrationMiddleName] = useState("");
+  const [registrationFamilyName,setRegistrationFamilyName] = useState("");
+  const [registrationDob,setRegistrationDob] = useState("");
+  const [duplicateCheck,setDuplicateCheck] = useState<PatientDuplicateCheck|null>(null);
+  const [duplicateLoading,setDuplicateLoading] = useState(false);
+  const [duplicateError,setDuplicateError] = useState("");
+  const [duplicateAcknowledged,setDuplicateAcknowledged] = useState(false);
+  const [registrationLoading,setRegistrationLoading] = useState(false);
+  const [registrationError,setRegistrationError] = useState("");
+  const [registrationSuccess,setRegistrationSuccess] = useState("");
+  const [assignedMrn,setAssignedMrn] = useState("");
 
   useEffect(() => {
     const manager = userManager;
@@ -165,6 +183,86 @@ function Workspace() {
     }
   }
 
+  function registrationInput(): PatientRegistrationInput {
+    return {
+      givenName: registrationGivenName.trim(),
+      middleName: registrationMiddleName.trim() || null,
+      familyName: registrationFamilyName.trim() || null,
+      dateOfBirth: registrationDob || null
+    };
+  }
+
+  function resetRegistrationReview() {
+    setDuplicateCheck(null);
+    setDuplicateError("");
+    setDuplicateAcknowledged(false);
+    setRegistrationError("");
+    setRegistrationSuccess("");
+    setAssignedMrn("");
+  }
+
+  async function handleDuplicateCheck() {
+    if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
+    if (!registrationGivenName.trim()) {
+      setDuplicateError("Given name is required before checking for possible duplicates.");
+      return;
+    }
+    setDuplicateLoading(true);
+    setDuplicateError("");
+    setRegistrationError("");
+    setRegistrationSuccess("");
+    setDuplicateAcknowledged(false);
+    try {
+      const result = await checkPatientDuplicateCandidates(
+        apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,registrationInput());
+      setDuplicateCheck(result);
+    } catch (error) {
+      setDuplicateCheck(null);
+      setDuplicateError(getErrorMessage(error));
+    } finally {
+      setDuplicateLoading(false);
+    }
+  }
+
+  async function handlePatientRegistration(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
+    if (!duplicateCheck || !duplicateAcknowledged) {
+      setRegistrationError("Complete the duplicate review and confirm that this is a new patient before registering.");
+      return;
+    }
+    setRegistrationLoading(true);
+    setRegistrationError("");
+    setRegistrationSuccess("");
+    setAssignedMrn("");
+    try {
+      const patient = await registerPatient(
+        apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,registrationInput());
+      try {
+        const identifier = await assignPatientMedicalRecordNumber(
+          apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patient.id);
+        setAssignedMrn(identifier.value);
+        setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully and MRN ${identifier.value} was assigned.`);
+      } catch {
+        setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully. MRN assignment is pending; ask an authorized administrator to verify the hospital MRN policy and your identifier permissions.`);
+      }
+      setPatients([]);
+      setHasSearched(false);
+      setPatientTotal(0);
+      setPatientTotalPages(0);
+      setRegistrationGivenName("");
+      setRegistrationMiddleName("");
+      setRegistrationFamilyName("");
+      setRegistrationDob("");
+      setDuplicateCheck(null);
+      setDuplicateAcknowledged(false);
+    } catch (error) {
+      setRegistrationError(getErrorMessage(error));
+    } finally {
+      setRegistrationLoading(false);
+    }
+  }
+
   function changeTenant(tenantId: string) {
     setSelectedTenantId(tenantId);
     setSelectedHospitalId("");
@@ -256,6 +354,54 @@ function Workspace() {
               </article>)}
             </div>}
             {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
+          </div>
+        </section>
+
+        <section className="section registration-section">
+          <div className="section-heading">
+            <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
+          </div>
+          <div className="search-panel">
+            <p className="helper-text">Patient master and hospital registration are created together by the API. Contact details are intentionally not collected in this initial workflow.</p>
+            <div className="registration-grid">
+              <div><label htmlFor="registration-given-name">Given name *</label><input id="registration-given-name" value={registrationGivenName} maxLength={100} onChange={event => { setRegistrationGivenName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} required /></div>
+              <div><label htmlFor="registration-middle-name">Middle name</label><input id="registration-middle-name" value={registrationMiddleName} maxLength={100} onChange={event => { setRegistrationMiddleName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
+              <div><label htmlFor="registration-family-name">Family name</label><input id="registration-family-name" value={registrationFamilyName} maxLength={100} onChange={event => { setRegistrationFamilyName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
+              <div><label htmlFor="registration-dob">Date of birth (if known)</label><input id="registration-dob" type="date" max={new Date().toISOString().slice(0,10)} value={registrationDob} onChange={event => { setRegistrationDob(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
+            </div>
+            <div className="registration-actions">
+              <button type="button" onClick={handleDuplicateCheck} disabled={!selectedHospitalId || !registrationGivenName.trim() || duplicateLoading || registrationLoading}>
+                {duplicateLoading ? "Checking…" : "Check for possible duplicates"}
+              </button>
+            </div>
+            {duplicateError && <p className="inline-error" role="alert">{duplicateError}</p>}
+            {duplicateCheck && <div className="duplicate-review" aria-live="polite">
+              <strong>{duplicateCheck.evaluated ? "Duplicate review completed" : "Manual identity review required"}</strong>
+              <p>{duplicateCheck.evaluationMessage || (duplicateCheck.candidates.length ? "Review the possible matches below. Do not create a second record if this is the same person." : "No candidates were returned by the hospital-local check. This does not prove that no duplicate exists.")}</p>
+              {duplicateCheck.candidates.length > 0 && <div className="duplicate-candidates">
+                {duplicateCheck.candidates.map(candidate => <article key={candidate.patientId}>
+                  <strong>{[candidate.givenName,candidate.middleName,candidate.familyName].filter(Boolean).join(" ")}</strong>
+                  <span>DOB: {candidate.dateOfBirth}</span>
+                  <small>Match signals: {candidate.matchSignals.join(", ")}</small>
+                </article>)}
+              </div>}
+              {duplicateCheck.hasMoreCandidates && <p className="inline-error">More possible candidates exist than are displayed. Stop and follow the hospital identity-review procedure before creating a record.</p>}
+              <label className="review-confirmation">
+                <input type="checkbox" checked={duplicateAcknowledged} onChange={event => setDuplicateAcknowledged(event.target.checked)} disabled={duplicateCheck.hasMoreCandidates || registrationLoading} />
+                I reviewed the result and followed the hospital identity-check procedure. This is a new patient, not an existing candidate.
+              </label>
+            </div>}
+            {registrationError && <p className="inline-error" role="alert">{registrationError}</p>}
+            {registrationSuccess && <p className="registration-success" role="status">{registrationSuccess}</p>}
+            <div className="registration-actions">
+              <button type="button" onClick={event => {
+                const form = event.currentTarget.closest(".search-panel")?.querySelector("form");
+                if (form instanceof HTMLFormElement) form.requestSubmit();
+              }} disabled={!duplicateCheck || !duplicateAcknowledged || duplicateCheck.hasMoreCandidates || registrationLoading}>
+                {registrationLoading ? "Registering…" : "Register patient"}
+              </button>
+            </div>
+            <form onSubmit={handlePatientRegistration} aria-label="Patient registration submission" />
           </div>
         </section>
       </>}
