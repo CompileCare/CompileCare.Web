@@ -1,4 +1,5 @@
 import { useEffect,useState } from "react";
+import type { FormEvent } from "react";
 import { Route,Routes,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
@@ -224,7 +225,7 @@ function Workspace() {
     }
   }
 
-  async function handlePatientRegistration(event: React.FormEvent<HTMLFormElement>) {
+  async function handlePatientRegistration(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
     if (!duplicateCheck || !duplicateAcknowledged) {
@@ -361,7 +362,7 @@ function Workspace() {
           <div className="section-heading">
             <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
           </div>
-          <div className="search-panel">
+          <form className="search-panel" onSubmit={handlePatientRegistration}>
             <p className="helper-text">Patient master and hospital registration are created together by the API. Contact details are intentionally not collected in this initial workflow.</p>
             <div className="registration-grid">
               <div><label htmlFor="registration-given-name">Given name *</label><input id="registration-given-name" value={registrationGivenName} maxLength={100} onChange={event => { setRegistrationGivenName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} required /></div>
@@ -394,15 +395,11 @@ function Workspace() {
             {registrationError && <p className="inline-error" role="alert">{registrationError}</p>}
             {registrationSuccess && <p className="registration-success" role="status">{registrationSuccess}</p>}
             <div className="registration-actions">
-              <button type="button" onClick={event => {
-                const form = event.currentTarget.closest(".search-panel")?.querySelector("form");
-                if (form instanceof HTMLFormElement) form.requestSubmit();
-              }} disabled={!duplicateCheck || !duplicateAcknowledged || duplicateCheck.hasMoreCandidates || registrationLoading}>
+              <button type="submit" disabled={!duplicateCheck || !duplicateAcknowledged || duplicateCheck.hasMoreCandidates || registrationLoading}>
                 {registrationLoading ? "Registering…" : "Register patient"}
               </button>
             </div>
-            <form onSubmit={handlePatientRegistration} aria-label="Patient registration submission" />
-          </div>
+          </form>
         </section>
       </>}
 
