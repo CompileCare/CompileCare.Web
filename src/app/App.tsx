@@ -210,7 +210,6 @@ function Workspace() {
     setDuplicateAcknowledged(false);
     setRegistrationError("");
     setRegistrationSuccess("");
-    setAssignedMrn("");
   }
 
   async function handleDuplicateCheck() {
@@ -246,14 +245,13 @@ function Workspace() {
     setRegistrationLoading(true);
     setRegistrationError("");
     setRegistrationSuccess("");
-    setAssignedMrn("");
     try {
       const patient = await registerPatient(
         apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,registrationInput());
       try {
         const identifier = await assignPatientMedicalRecordNumber(
           apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patient.id);
-            setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully and MRN ${identifier.value} was assigned.`);
+        setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully and MRN ${identifier.value} was assigned.`);
       } catch {
         setRegistrationSuccess(`Patient ${patientName(patient)} was registered successfully. MRN assignment is pending; ask an authorized administrator to verify the hospital MRN policy and your identifier permissions.`);
       }
