@@ -208,6 +208,7 @@ function Workspace() {
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
+  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading;
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
@@ -447,7 +448,7 @@ function Workspace() {
           <div><label>ACTIVE ORGANIZATION</label><h2>Select your hospital context</h2><p>Only active memberships assigned to your validated sign-in are listed.</p></div>
           <div className="context-controls">
             <label htmlFor="tenant-select">Tenant</label>
-            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || duplicateLoading || registrationLoading}>
+            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || isWorkflowBusy}>
               <option value="">Select a tenant</option>
               {contexts.map(context => <option key={context.tenantId} value={context.tenantId}>{context.tenantName} · {context.role}</option>)}
             </select>
@@ -471,15 +472,15 @@ function Workspace() {
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
             <div className="search-row">
-              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading}/>
-              <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
+              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}/>
+              <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
             </div>
             <p className="helper-text">Search is limited to the selected hospital. Results are not stored in browser storage.</p>
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
             {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
-              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} role="button" tabIndex={0} aria-pressed={selectedPatient?.id===patient.id} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();setSelectedPatient(patient);setBookedAppointment(null);setQueueEntry(null);setBookingError("");setWalkInError("");}}} onClick={() => { setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
+              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} role="button" tabIndex={0} aria-pressed={selectedPatient?.id===patient.id} aria-disabled={isWorkflowBusy} onKeyDown={event=>{if(!isWorkflowBusy&&(event.key==="Enter"||event.key===" ")){event.preventDefault();setSelectedPatient(patient);setBookedAppointment(null);setQueueEntry(null);setBookingError("");setWalkInError("");}}} onClick={() => { if(isWorkflowBusy)return; setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
                 <div><strong>{patientName(patient)}</strong><span>{patient.dateOfBirth ? `Date of birth: ${patient.dateOfBirth}` : "Date of birth not recorded"}</span></div>
                 <small>Registered patient</small>
               </article>)}
@@ -494,8 +495,8 @@ function Workspace() {
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
             <div className="appointment-grid">
-              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}} disabled={departmentsLoading||departments.length===0}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
-              <div><label htmlFor="appointment-date">Appointment date</label><input id="appointment-date" type="date" min={localDateToday()} value={appointmentDate} onChange={e=>{setAppointmentDate(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}} /></div>
+              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}} disabled={departmentsLoading||departments.length===0||isWorkflowBusy}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
+              <div><label htmlFor="appointment-date">Appointment date</label><input id="appointment-date" type="date" min={localDateToday()} value={appointmentDate} disabled={isWorkflowBusy} onChange={e=>{setAppointmentDate(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}} /></div>
             </div>
             {departmentsLoading&&<p className="inline-status" role="status">Loading departments available to your hospital context…</p>}{departmentsError&&<p className="inline-error" role="alert">{departmentsError}</p>}
             <div className="registration-actions"><button type="button" onClick={loadAvailability} disabled={!selectedPatient||!selectedDepartmentId||!appointmentDate||availabilityLoading}>{availabilityLoading?"Finding availability…":"Find available appointments"}</button></div>
@@ -510,7 +511,7 @@ function Workspace() {
               <div className="review-summary"><strong>Review appointment</strong><span>{selectedPatient?patientName(selectedPatient):""} · {selectedDepartment?.name}</span><span>{new Date(selectedSlotStart).toLocaleString([],{dateStyle:"medium",timeStyle:"short",timeZone:selectedSession?.timeZoneId})} ({selectedSession?.timeZoneId})</span></div>
               <label htmlFor="appointment-reason">Visit reason (optional)</label><input id="appointment-reason" maxLength={250} value={appointmentReason} onChange={e=>setAppointmentReason(e.target.value)} placeholder="e.g. Follow-up" />
               {bookingError&&<p className="inline-error" role="alert">{bookingError}</p>}
-              <div className="registration-actions"><button type="submit" disabled={bookingLoading}>{bookingLoading?"Confirming booking…":"Confirm appointment"}</button></div>
+              <div className="registration-actions"><button type="submit" disabled={bookingLoading||!!bookedAppointment}>{bookingLoading?"Confirming booking…":bookedAppointment?"Appointment confirmed":"Confirm appointment"}</button></div>
             </form>}
             {bookedAppointment&&<div className="arrival-success" role="status"><div><strong>Appointment confirmed</strong><span>Reference {bookedAppointment.id.slice(0,8)} · {bookedAppointment.status}</span></div><button type="button" onClick={handleAppointmentCheckIn} disabled={checkInLoading||!!queueEntry}>{checkInLoading?"Checking in…":queueEntry?"Checked in":"Check in patient"}</button></div>}
             {checkInError&&<p className="inline-error" role="alert">{checkInError}</p>}
@@ -522,7 +523,7 @@ function Workspace() {
           <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
           <div className="search-panel walkin-panel">
             <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
-            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><label htmlFor="walkin-timezone">Hospital time zone</label><input id="walkin-timezone" value={hospitalTimeZone} onChange={e=>setHospitalTimeZone(e.target.value)} maxLength={100} /></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading}>{walkInLoading?"Registering…":"Add to queue"}</button></div>
+            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><label htmlFor="walkin-timezone">Hospital time zone</label><input id="walkin-timezone" value={hospitalTimeZone} onChange={e=>setHospitalTimeZone(e.target.value)} maxLength={100} /></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading||!!queueEntry}>{walkInLoading?"Registering…":queueEntry?"Added to queue":"Add to queue"}</button></div>
             {walkInError&&<p className="inline-error" role="alert">{walkInError}</p>}
           </div>
         </section>
@@ -530,7 +531,7 @@ function Workspace() {
         <section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
-            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} onChange={e=>setSelectedDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
+            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
             <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
             {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
             {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><div className="queue-row" key={entry.id}><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><span>{entry.status}</span><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
