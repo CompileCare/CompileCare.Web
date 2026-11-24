@@ -74,6 +74,8 @@ export class ApiError extends Error {
     super(status === 401 ? "Your sign-in session is not authorized for the API." :
       status === 403 ? "Your account does not have permission for this operation." :
       status === 404 ? "The requested hospital or resource was not found." :
+      status === 409 ? "The record or availability changed. Refresh the data and try again." :
+      status === 400 ? "Some information was not accepted. Review the entered values and try again." :
       "The API request could not be completed.");
     this.name = "ApiError";
   }
