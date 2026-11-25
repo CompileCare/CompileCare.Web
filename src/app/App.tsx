@@ -138,7 +138,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       try{value=await getOpdEncounterForQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
       catch(error){
         if(!(error instanceof ApiError)||error.status!==404)throw error;
-        if(entry.status!=="InProgress")throw error;
+        if(entry.status!=="InProgress"||!canManageEncounter)throw error;
         try{value=await createOpdEncounterFromQueue(baseUrl,accessToken,tenantId,hospitalId,entry.id);}
         catch(createError){
           if(!(createError instanceof ApiError)||createError.status!==409)throw createError;
@@ -747,7 +747,7 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&<a href="#queue">Queue</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a href="#queue">Queue</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
@@ -853,22 +853,22 @@ function Workspace() {
           </div>
         </section>)}
 
-        {canReadQueue && (<section className="section queue-section" id="queue">
+        {canReadQueue && !isClinicalWorkspace && (<section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
             <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
             {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
-            {queueEntries.some(entry=>entry.status==="Waiting"||entry.status==="Called")&&<div className="queue-reason-field"><label htmlFor="queue-action-reason">Reason for cancellation or no-show (required for those actions)</label><input id="queue-action-reason" value={queueActionReason} maxLength={250} onChange={event=>setQueueActionReason(event.target.value)} placeholder="e.g. Patient confirmed cancellation" /></div>}
+            {canManageQueue&&queueEntries.some(entry=>entry.status==="Waiting"||entry.status==="Called")&&<div className="queue-reason-field"><label htmlFor="queue-action-reason">Reason for cancellation or no-show (required for those actions)</label><input id="queue-action-reason" value={queueActionReason} maxLength={250} onChange={event=>setQueueActionReason(event.target.value)} placeholder="e.g. Patient confirmed cancellation" /></div>}
             {queueActionError&&<p className="inline-error" role="alert">{queueActionError}</p>}
             {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><article className="queue-row queue-row-managed" key={entry.id}>
               <div className="queue-token"><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>
               <div className="queue-state"><span className={`queue-status queue-status-${entry.status.toLowerCase()}`}>{entry.status}</span><small>{entry.status==="Waiting"?"Awaiting call":entry.status==="Called"?"Called to consultation":entry.status==="InProgress"?"Consultation in progress":"Queue entry closed"}</small></div>
               <div className="queue-actions" aria-label={`Actions for queue token ${entry.tokenNumber}`}>
-                {entry.status==="Waiting"&&<button type="button" onClick={()=>handleQueueAction(entry,"call")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Call"}</button>}
-                {entry.status==="Called"&&<><button type="button" onClick={()=>handleQueueAction(entry,"recall")} disabled={!!queueActionLoadingId}>Recall</button><button type="button" onClick={()=>handleQueueAction(entry,"start")} disabled={!!queueActionLoadingId}>Start consultation</button></>}
-                {entry.status==="InProgress"&&<button type="button" onClick={()=>handleQueueAction(entry,"complete")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Complete"}</button>}
-                {(entry.status==="Waiting"||entry.status==="Called")&&<><button className="queue-action-secondary" type="button" onClick={()=>handleQueueAction(entry,"cancel")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>Cancel</button><button className="queue-action-danger" type="button" onClick={()=>handleQueueAction(entry,"noshow")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>No-show</button></>}
+                {canManageQueue&&entry.status==="Waiting"&&<button type="button" onClick={()=>handleQueueAction(entry,"call")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Call"}</button>}
+                {canManageQueue&&entry.status==="Called"&&<><button type="button" onClick={()=>handleQueueAction(entry,"recall")} disabled={!!queueActionLoadingId}>Recall</button><button type="button" onClick={()=>handleQueueAction(entry,"start")} disabled={!!queueActionLoadingId}>Start consultation</button></>}
+                {canManageQueue&&entry.status==="InProgress"&&<button type="button" onClick={()=>handleQueueAction(entry,"complete")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Complete"}</button>}
+                {canManageQueue&&(entry.status==="Waiting"||entry.status==="Called")&&<><button className="queue-action-secondary" type="button" onClick={()=>handleQueueAction(entry,"cancel")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>Cancel</button><button className="queue-action-danger" type="button" onClick={()=>handleQueueAction(entry,"noshow")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>No-show</button></>}
               </div>
             </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
