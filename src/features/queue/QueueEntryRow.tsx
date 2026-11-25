@@ -25,6 +25,8 @@ export function QueueEntryRow({
   onAction
 }: QueueEntryRowProps) {
   const token = entry.tokenNumber.toString().padStart(2, "0");
+  const hasActions = canManageQueue &&
+    (entry.status === "Waiting" || entry.status === "Called" || entry.status === "InProgress");
 
   return (
     <article
@@ -52,7 +54,7 @@ export function QueueEntryRow({
         <small>{queueStatusDescription(entry.status)}</small>
       </div>
 
-      {canManageQueue && (
+      {hasActions && (
         <div
           className="queue-actions"
           role="group"
