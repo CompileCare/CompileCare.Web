@@ -62,9 +62,13 @@ test("reception searches a patient, books an appointment and checks in to the se
   await installSession(page);
   let appointmentCreated = false;
   let checkedIn = false;
+  let bookingAttempts = 0;
+  let slotReads = 0;
   const now = new Date(Date.now() + 60 * 60 * 1000);
   const startsAtUtc = now.toISOString();
-  const endsAtUtc = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+  const firstSlotEndUtc = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+  const secondSlotStartUtc = firstSlotEndUtc;
+  const endsAtUtc = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
 
   await page.route("https://api.test/**", async route => {
     const request = route.request();
@@ -161,7 +165,14 @@ test("reception searches a patient, books an appointment and checks in to the se
     }
 
     if (method === "GET" && path === availabilityPath + "/" + sessionId + "/slots") {
-      return json(route, [{ startsAtUtc, endsAtUtc, isAvailable: true }]);
+      slotReads += 1;
+      if (slotReads === 1) {
+        return json(route, [{ startsAtUtc, endsAtUtc: firstSlotEndUtc, isAvailable: true }]);
+      }
+      return json(route, [
+        { startsAtUtc, endsAtUtc: firstSlotEndUtc, isAvailable: false },
+        { startsAtUtc: secondSlotStartUtc, endsAtUtc, isAvailable: true }
+      ]);
     }
 
     if (method === "POST" && path === appointmentPath) {
@@ -171,6 +182,15 @@ test("reception searches a patient, books an appointment and checks in to the se
         slotStartsAtUtc: string;
         reason: string | null;
       };
+      bookingAttempts += 1;
+      if (bookingAttempts === 1) {
+        return json(route, {
+          type: "https://compilecare.in/problems/slot-unavailable",
+          title: "Appointment slot unavailable",
+          detail: "The selected slot was just booked by another patient.",
+          status: 409
+        }, 409);
+      }
       appointmentCreated = true;
       return json(route, {
         id: appointmentId,
@@ -180,7 +200,7 @@ test("reception searches a patient, books an appointment and checks in to the se
         providerStaffId: "89000000-0000-4000-8000-000000000001",
         availabilitySessionId: body.availabilitySessionId,
         slotStartsAtUtc: body.slotStartsAtUtc,
-        slotEndsAtUtc: endsAtUtc,
+        slotEndsAtUtc: body.slotStartsAtUtc === startsAtUtc ? firstSlotEndUtc : endsAtUtc,
         status: "Booked",
         reason: body.reason,
         createdAtUtc: new Date().toISOString(),
@@ -228,7 +248,16 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(page.locator(".booking-review").getByText("Review appointment")).toBeVisible();
   await page.getByLabel("Visit reason (optional)").fill("Initial consultation");
   await page.getByRole("button", { name: "Confirm appointment" }).click();
+
+  await expect(page.getByText(/That time was just booked or is no longer available/)).toBeVisible();
+  await expect(slots.getByRole("button")).toHaveCount(2);
+  await expect(slots.getByRole("button").nth(0)).toBeDisabled();
+  await expect(slots.getByRole("button").nth(1)).toBeEnabled();
+  await slots.getByRole("button").nth(1).click();
+  await page.getByRole("button", { name: "Confirm appointment" }).click();
+
   await expect(page.locator(".arrival-success").getByText("Appointment confirmed")).toBeVisible();
+  expect(bookingAttempts).toBe(2);
   expect(appointmentCreated).toBe(true);
 
   await page.getByRole("button", { name: "Check in patient" }).click();
