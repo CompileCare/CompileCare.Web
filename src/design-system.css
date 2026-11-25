@@ -1113,3 +1113,50 @@ a {
     white-space: normal;
   }
 }
+
+
+/* Appointment slot selection: expose the chosen state in the control itself. */
+.content .slot-grid button {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  min-height: 66px;
+  padding: 10px 12px;
+}
+
+.content .slot-grid button > span {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.content .slot-grid button > small {
+  color: var(--cc-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.content .slot-grid button.slot-selected > small {
+  color: #075d58;
+}
+
+.content .slot-grid button:disabled:not(.slot-selected) {
+  border-color: #e7edf2;
+  background: #f5f7f9;
+  color: #8b9aa8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.content .slot-grid button:disabled:not(.slot-selected) > small {
+  color: #8998a6;
+}
+
+.content .slot-grid button.slot-selected {
+  border-color: var(--cc-primary);
+  background: var(--cc-primary-soft);
+  box-shadow: 0 0 0 2px rgb(8 127 120 / 12%);
+  color: #075d58;
+}
