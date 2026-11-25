@@ -116,6 +116,22 @@ describe("QueueEntryRow", () => {
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
+  it("does not render an empty action group for a completed queue entry", () => {
+    const completedEntry = { ...entry, status: "Completed" as const };
+
+    render(
+      <QueueEntryRow
+        entry={completedEntry}
+        canManageQueue
+        cancellationReasonProvided
+        onAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("status", { name: "Queue status: Completed" })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Actions for queue token 7" })).not.toBeInTheDocument();
+  });
+
   it("does not render transition controls without the existing queue permission", () => {
     render(
       <QueueEntryRow
