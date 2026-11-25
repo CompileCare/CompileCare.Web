@@ -11,7 +11,7 @@ Authenticated hospital workspace built with React, TypeScript and Vite. This app
 - Access token supplied from the OIDC session with automatic silent renewal; OIDC user and renewal state remain in sessionStorage.
 - Workspace navigation and feature visibility are driven by the effective permission identifiers returned by the API for the selected tenant context. The API remains the authorization boundary.
 - Every tenant-scoped request carries the selected tenant ID in X-Tenant-ID; the API revalidates membership, tenant lifecycle, role and organization scope on every request.
-- Responsive, permission-driven reception, appointment, queue, clinical and OPD billing workspaces; patient registration, MRN assignment, OPD notes, invoice issuance, payments and daily collection reporting are exposed only when the selected membership has the matching permissions.
+- Responsive, permission-driven reception, appointment, queue, clinical and OPD billing workspaces; patient registration, MRN assignment, OPD notes, invoice issuance, payment history and receipt reprint, and daily collection reporting are exposed only when the selected membership has the matching permissions.
 - Docker image, Compose health check and CI build/test/container smoke verification.
 
 ## Configure
@@ -46,6 +46,7 @@ Open http://localhost:8080.
 - GET /api/v1/hospitals/{hospitalId}/patients?query=...&page=1&pageSize=25 — reception patient lookup scoped to the selected tenant and hospital.
 - GET /api/v1/hospitals/{hospitalId}/patients/departments/{departmentId}/patients/{patientId} — clinical identity verification scoped to the assigned department and its queue history.
 - GET /api/v1/hospitals/{hospitalId}/billing/visits/{queueEntryId}/invoice — retrieve an existing invoice by OPD visit, including its settlement status and balance.
+- GET /api/v1/hospitals/{hospitalId}/billing/invoices/{invoiceId}/payments — retrieve the department-scoped payment history for reopening and reprinting receipts.
 
 The current-user tenant context and effective-permission contract is implemented in CompileCare.Api main. The web client uses these permissions only to control feature visibility; every protected API request remains independently authorized.
 
