@@ -1160,3 +1160,55 @@ a {
   box-shadow: 0 0 0 2px rgb(8 127 120 / 12%);
   color: #075d58;
 }
+
+
+/* Queue rows: distinct status semantics and keyboard-friendly action grouping. */
+.queue-row-managed {
+  align-items: center;
+  gap: 14px;
+}
+
+.queue-state {
+  min-width: 120px;
+  gap: 6px;
+}
+
+.queue-state .queue-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  border-radius: 999px;
+}
+
+.queue-state > small {
+  color: var(--cc-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+}
+
+.queue-actions button {
+  min-height: 36px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .queue-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .queue-actions button {
+    flex: 1 1 auto;
+  }
+}
