@@ -18,6 +18,7 @@ export interface UserTenantContext {
   tenantSlug: string;
   role: string;
   scopes: OrganizationScope[];
+  permissions: string[];
 }
 
 export interface Hospital {
@@ -458,6 +459,18 @@ export function closeOpdEncounter(baseUrl:string,accessToken:string,tenantId:str
 }
 export function cancelOpdEncounter(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,encounterId:string,input:OpdEncounterCancelInput):Promise<OpdEncounter>{
   return postJson(baseUrl,`${opdEncounterPath(hospitalId,encounterId)}/cancel`,accessToken,tenantId,input);
+}
+
+
+export function getDepartmentPatient(
+  baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string,patientId:string
+):Promise<Patient>{
+  return getJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients/departments/${encodeURIComponent(departmentId)}/patients/${encodeURIComponent(patientId)}`,
+    accessToken,
+    tenantId
+  );
 }
 
 

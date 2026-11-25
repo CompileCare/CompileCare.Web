@@ -1,6 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -9,8 +9,9 @@ describe("CompileCare API client",()=>{
  afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
 
  it("discovers current-user tenant contexts without trusting a tenant header",async()=>{
-  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200}));
-  await getCurrentUserTenantContexts("https://api.example.test/","access-token");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[{tenantId:"tenant-1",tenantName:"Hospital Group",tenantSlug:"hospital-group",role:"PatientRegistrar",scopes:[{scopeType:"Hospital",hospitalId:"hospital-1",departmentId:null}],permissions:["patient.read","patient.register"]}],page:1,pageSize:100,totalCount:1,totalPages:1}),{status:200}));
+  const contexts=await getCurrentUserTenantContexts("https://api.example.test/","access-token");
+  expect(contexts.items[0].permissions).toEqual(["patient.read","patient.register"]);
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/me/tenant-contexts?page=1&pageSize=100");
   const headers=new Headers(options.headers);
@@ -18,6 +19,14 @@ describe("CompileCare API client",()=>{
   expect(headers.has("X-Tenant-ID")).toBe(false);
   expect(options.cache).toBe("no-store");
   expect(options.credentials).toBe("omit");
+ });
+
+ it("loads patient identity through the assigned department scope",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"patient-1",givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:null,hospitalId:"hospital-456",registeredAtUtc:"2026-11-25T00:00:00Z"}),{status:200}));
+  await getDepartmentPatient("https://api.example.test","access-token","tenant-123","hospital-456","department-789","patient-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/departments/department-789/patients/patient-1");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
  it("selects a tenant only through the trusted X-Tenant-ID request header",async()=>{
