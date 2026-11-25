@@ -955,3 +955,63 @@ a {
     white-space: nowrap;
   }
 }
+
+
+/* Active hospital context and section identity. */
+.context-intro {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.context-intro > label {
+  color: var(--cc-primary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.35px;
+  text-transform: uppercase;
+}
+
+.context-intro h2 {
+  overflow-wrap: anywhere;
+  margin: 2px 0 0;
+  color: var(--cc-ink);
+  font-size: clamp(20px, 2vw, 24px);
+  font-weight: 760;
+  letter-spacing: -0.55px;
+  line-height: 1.25;
+}
+
+.context-intro p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--cc-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.context-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+}
+
+.context-tags span {
+  display: inline-flex;
+  min-height: 27px;
+  align-items: center;
+  border: 1px solid #dbe8ee;
+  border-radius: 999px;
+  background: #f4f8fb;
+  color: var(--cc-ink-soft);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.context-tags span:last-child {
+  border-color: #cce8e1;
+  background: var(--cc-primary-soft);
+  color: #08665f;
+}
