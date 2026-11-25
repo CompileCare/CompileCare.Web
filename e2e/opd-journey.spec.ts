@@ -393,6 +393,7 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
 }
 
 test("staff-assisted OPD journey connects patient registration, walk-in, clinical sign-off and billing", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
   await installSession(page);
   const api = await installApi(page);
 
