@@ -322,6 +322,7 @@ test("cashier can select a billable visit and issue an invoice using keyboard na
 
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
   const quantity = page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" });
   await expect(quantity).toBeEnabled();
   await expect(visitSelect).toBeEnabled();
