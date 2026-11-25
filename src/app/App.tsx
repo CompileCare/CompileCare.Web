@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Route,Routes,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
+import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -512,6 +513,7 @@ function Workspace() {
   const canManageAppointments = hasPermission("appointment.manage");
   const canReadQueue = hasPermission("queue.read");
   const canManageQueue = hasPermission("queue.manage");
+  const canReadBilling = hasPermission("billing.invoice.read") || hasPermission("billing.invoice.manage");
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
@@ -747,7 +749,7 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a href="#queue">Queue</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a href="#queue">Queue</a>}{canReadBilling&&<a href="#billing">Billing</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
@@ -873,6 +875,8 @@ function Workspace() {
             </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
         </section>)}
+
+        {canReadBilling && selectedTenantId && selectedHospitalId && user && <BillingWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]}/>}
 
         {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/>}
 
