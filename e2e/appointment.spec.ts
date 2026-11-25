@@ -228,7 +228,7 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(page.locator(".booking-review").getByText("Review appointment")).toBeVisible();
   await page.getByLabel("Visit reason (optional)").fill("Initial consultation");
   await page.getByRole("button", { name: "Confirm appointment" }).click();
-  await expect(page.getByText("Appointment confirmed")).toBeVisible();
+  await expect(page.locator(".arrival-success").getByText("Appointment confirmed")).toBeVisible();
   expect(appointmentCreated).toBe(true);
 
   await page.getByRole("button", { name: "Check in patient" }).click();
