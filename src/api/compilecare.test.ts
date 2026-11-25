@@ -9,8 +9,9 @@ describe("CompileCare API client",()=>{
  afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
 
  it("discovers current-user tenant contexts without trusting a tenant header",async()=>{
-  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200}));
-  await getCurrentUserTenantContexts("https://api.example.test/","access-token");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[{tenantId:"tenant-1",tenantName:"Hospital Group",tenantSlug:"hospital-group",role:"PatientRegistrar",scopes:[{scopeType:"Hospital",hospitalId:"hospital-1",departmentId:null}],permissions:["patient.read","patient.register"]}],page:1,pageSize:100,totalCount:1,totalPages:1}),{status:200}));
+  const contexts=await getCurrentUserTenantContexts("https://api.example.test/","access-token");
+  expect(contexts.items[0].permissions).toEqual(["patient.read","patient.register"]);
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/me/tenant-contexts?page=1&pageSize=100");
   const headers=new Headers(options.headers);
