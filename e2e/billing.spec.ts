@@ -294,3 +294,67 @@ test("a membership without billing permissions does not expose the billing works
   await expect(page.getByRole("link", { name: "Billing" })).toHaveCount(0);
   await expect(page.locator("#billing")).toHaveCount(0);
 });
+
+test("cashier can select a billable visit and issue an invoice using keyboard navigation", async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMocks(page);
+
+  await page.goto("/");
+  const billingLink = page.getByRole("link", { name: "Billing" });
+  await expect(billingLink).toBeVisible();
+  await billingLink.click();
+  await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+
+  const loadVisits = page.getByRole("button", { name: "Load billable visits" });
+  await loadVisits.click();
+  const visitSelect = page.getByLabel("In-progress or completed visit");
+  await expect(visitSelect.locator("option")).toHaveCount(2);
+  await loadVisits.focus();
+  await page.keyboard.press("Tab");
+  await expect(visitSelect).toBeFocused();
+
+  const selectFocus = await visitSelect.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(selectFocus.style).toBe("solid");
+  expect(selectFocus.width).toBe("3px");
+
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+  const quantity = page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" });
+  await expect(quantity).toBeEnabled();
+  await expect(visitSelect).toBeEnabled();
+  await visitSelect.focus();
+  await page.keyboard.press("Tab");
+  const billingFocusTarget = await page.evaluate(() => {
+    const active = document.activeElement as HTMLElement | null;
+    return active ? {
+      tagName: active.tagName,
+      id: active.id,
+      ariaLabel: active.getAttribute("aria-label"),
+      text: active.textContent?.trim().slice(0, 80)
+    } : null;
+  });
+  expect(
+    await quantity.evaluate(element => element === document.activeElement),
+    `Tab focus target after billing visit selection: ${JSON.stringify(billingFocusTarget)}`
+  ).toBe(true);
+
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type("1");
+  const issueInvoice = page.getByRole("button", { name: "Issue invoice" });
+  await page.keyboard.press("Tab");
+  await expect(issueInvoice).toBeFocused();
+
+  const buttonFocus = await issueInvoice.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(buttonFocus.style).toBe("solid");
+  expect(buttonFocus.width).toBe("3px");
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "INV-E2E-0001" })).toBeVisible();
+});
