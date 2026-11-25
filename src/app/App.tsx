@@ -753,7 +753,7 @@ function Workspace() {
     </aside>
     <main className="content" id="reception">
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>{isClinicalWorkspace ? "Clinical workspace" : canReadPatients ? "Reception workspace" : "Hospital workspace"}</h1></div>
+        <div><label>HOSPITAL OPERATIONS</label><h1>{isClinicalWorkspace ? "Clinical workspace" : canReadPatients || !user ? "Reception workspace" : "Hospital workspace"}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
