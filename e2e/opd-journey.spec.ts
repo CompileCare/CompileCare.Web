@@ -457,6 +457,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   api.setPermissions(billingPermissions);
   await page.reload();
   await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Load billable visits" }).click();
   await page.getByLabel("In-progress or completed visit").selectOption(queueEntryId);
   await page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" }).fill("1");
@@ -467,6 +468,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await page.getByLabel("Reference (optional)").fill("OPD-JOURNEY-UPI");
   await page.getByRole("button", { name: "Record payment" }).click();
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await expect(page.locator(".invoice-status")).toHaveText("Paid");
 });
 
