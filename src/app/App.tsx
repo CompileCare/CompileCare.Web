@@ -888,7 +888,7 @@ function Workspace() {
                 slots={slots}
                 selectedSlotStart={selectedSlotStart}
                 timeZoneId={selectedSession?.timeZoneId}
-                disabled={isWorkflowBusy}
+                disabled={isWorkflowBusy || !!bookedAppointment}
                 onSelect={setSelectedSlotStart}
               />}
             </div>}
