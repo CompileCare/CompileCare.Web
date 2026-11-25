@@ -1,4 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
+import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
@@ -242,5 +243,50 @@ describe("clinical patient identity API client",()=>{
   expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/patient-1");
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
   expect(options.cache).toBe("no-store");expect(options.credentials).toBe("omit");
+ });
+});
+
+
+describe("platform onboarding API client",()=>{
+ const fetchMock=vi.fn();
+ beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
+ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
+
+ it("bootstraps only through an authenticated no-store platform request",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({status:"Platform operator provisioned"}),{status:201}));
+  await bootstrapPlatformOperator("https://api.example.test","access-token","one-time-secret");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/platform/bootstrap/operator");
+  expect(options.method).toBe("POST");
+  expect(JSON.parse(String(options.body))).toEqual({bootstrapSecret:"one-time-secret"});
+  expect(new Headers(options.headers).get("Authorization")).toBe("Bearer access-token");
+  expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("creates tenant and provisions the signed-in identity as initial administrator",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"tenant-1",name:"Hospital Group",slug:"hospital-group",status:"Provisioning"}),{status:201}));
+  await createPlatformTenant("https://api.example.test","access-token","Hospital Group","hospital-group");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"membership-1"}),{status:201}));
+  await provisionInitialTenantAdministrator("https://api.example.test","access-token","tenant-1","http://keycloak.localhost:8082/realms/compilecare","subject-1");
+  const [url,options]=fetchMock.mock.calls[1] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/platform/tenants/tenant-1/initial-administrator");
+  expect(JSON.parse(String(options.body))).toEqual({issuer:"http://keycloak.localhost:8082/realms/compilecare",subject:"subject-1"});
+  expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
+ });
+
+ it("activates tenant and creates hospital and department within its tenant header",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"tenant-1",status:"Active"}),{status:200}));
+  await activatePlatformTenant("https://api.example.test","access-token","tenant-1");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"hospital-1",name:"City Hospital",code:"CITY"}),{status:201}));
+  await createHospital("https://api.example.test","access-token","tenant-1","City Hospital","CITY");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"department-1",hospitalId:"hospital-1",name:"General Medicine",code:"GEN"}),{status:201}));
+  await createDepartment("https://api.example.test","access-token","tenant-1","hospital-1","General Medicine","GEN");
+  const [url,options]=fetchMock.mock.calls[2] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-1/departments");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
  });
 });
