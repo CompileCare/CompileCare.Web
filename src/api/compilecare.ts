@@ -471,3 +471,53 @@ export function getHospitalPatient(
     tenantId
   );
 }
+
+
+export interface PlatformTenant {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+}
+
+async function postPlatformJson<T>(baseUrl: string, path: string, accessToken: string, body: unknown): Promise<T> {
+  if (!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if (!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
+  const response = await fetch(endpoint(baseUrl, path), {
+    method: "POST",
+    headers: new Headers({
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    }),
+    body: JSON.stringify(body),
+    cache: "no-store",
+    credentials: "omit"
+  });
+  if (!response.ok) throw new ApiError(response.status);
+  return response.json() as Promise<T>;
+}
+
+export function bootstrapPlatformOperator(baseUrl: string, accessToken: string, bootstrapSecret: string): Promise<{status:string}> {
+  return postPlatformJson(baseUrl, "/api/v1/platform/bootstrap/operator", accessToken, { bootstrapSecret });
+}
+
+export function createPlatformTenant(baseUrl: string, accessToken: string, name: string, slug: string): Promise<PlatformTenant> {
+  return postPlatformJson(baseUrl, "/api/v1/platform/tenants", accessToken, { name, slug });
+}
+
+export function provisionInitialTenantAdministrator(baseUrl: string, accessToken: string, tenantId: string, issuer: string, subject: string): Promise<unknown> {
+  return postPlatformJson(baseUrl, `/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/initial-administrator`, accessToken, { issuer, subject });
+}
+
+export function activatePlatformTenant(baseUrl: string, accessToken: string, tenantId: string): Promise<PlatformTenant> {
+  return postPlatformJson(baseUrl, `/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/activate`, accessToken, {});
+}
+
+export function createHospital(baseUrl: string, accessToken: string, tenantId: string, name: string, code: string | null): Promise<Hospital> {
+  return postJson(baseUrl, "/api/v1/hospitals", accessToken, tenantId, { name, code });
+}
+
+export function createDepartment(baseUrl: string, accessToken: string, tenantId: string, hospitalId: string, name: string, code: string | null): Promise<Department> {
+  return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments`, accessToken, tenantId, { name, code });
+}

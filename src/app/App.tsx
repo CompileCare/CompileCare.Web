@@ -27,6 +27,12 @@ import {
   addOpdEncounterAmendment,
   closeOpdEncounter,
   cancelOpdEncounter,
+  bootstrapPlatformOperator,
+  createPlatformTenant,
+  provisionInitialTenantAdministrator,
+  activatePlatformTenant,
+  createHospital,
+  createDepartment,
   type OpdEncounter,
   type OpdEncounterNoteInput,
   type PatientRegistrationInput,
@@ -43,6 +49,7 @@ import {
 } from "../api/compilecare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const localPlatformBootstrapEnabled = import.meta.env.VITE_ENABLE_PLATFORM_BOOTSTRAP === "true";
 const localDateToday = () => { const d=new Date(); return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
 
 function Callback() {
@@ -222,6 +229,96 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       {actionError&&<p className="inline-error" role="alert">{actionError}</p>}
       {actionSuccess&&<p className="registration-success" role="status">{actionSuccess}</p>}
     </div>}
+  </section>;
+}
+
+
+function PlatformOnboarding({user,onComplete}:{user:User;onComplete:()=>Promise<void>}) {
+  const [secret,setSecret]=useState("");
+  const [tenantName,setTenantName]=useState("");
+  const [tenantSlug,setTenantSlug]=useState("");
+  const [hospitalName,setHospitalName]=useState("");
+  const [hospitalCode,setHospitalCode]=useState("");
+  const [departmentName,setDepartmentName]=useState("General Medicine");
+  const [departmentCode,setDepartmentCode]=useState("GEN");
+  const [tenantId,setTenantId]=useState("");
+  const [hospitalId,setHospitalId]=useState("");
+  const [step,setStep]=useState(0);
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState("");
+  const [message,setMessage]=useState("");
+  const authority=import.meta.env.VITE_OIDC_AUTHORITY as string|undefined;
+
+  async function run(action:()=>Promise<void>) {
+    setBusy(true);setError("");setMessage("");
+    try{await action();}catch(e){setError(getErrorMessage(e));}
+    finally{setBusy(false);}
+  }
+  const accessToken=user.access_token;
+  const subject=String(user.profile.sub??"");
+
+  return <section className="section onboarding-section">
+    <div className="section-heading"><div><label>FIRST-TIME SETUP</label><h2>Set up your hospital organization</h2><p className="helper-text">This guided local setup uses the authenticated identity and protected CompileCare provisioning APIs. No database records are inserted directly.</p></div></div>
+    <div className="search-panel">
+      <h3>Step 1 · Register the first platform operator</h3>
+      <p className="helper-text">Enter the one-time secret configured as PLATFORM_BOOTSTRAP_SECRET in CompileCare.Local/local/.env. This endpoint is available only in Development and only once.</p>
+      <label htmlFor="platform-bootstrap-secret">One-time local bootstrap secret</label>
+      <input id="platform-bootstrap-secret" type="password" autoComplete="off" value={secret} onChange={e=>setSecret(e.target.value)} disabled={step>0||busy}/>
+      <button type="button" onClick={()=>run(async()=>{
+        if(!secret.trim())throw new Error("Enter the local bootstrap secret.");
+        try {
+          await bootstrapPlatformOperator(apiBaseUrl??"",accessToken,secret);
+          setMessage("Platform operator provisioned for the signed-in identity.");
+        } catch (e) {
+          if (e instanceof ApiError && e.status === 409) {
+            setMessage("Platform bootstrap was already completed. The next step will verify whether this identity is an authorized platform operator.");
+          } else {
+            throw e;
+          }
+        }
+        setStep(1);
+      })} disabled={step>0||busy||!secret.trim()}> {busy?"Working…":"Bootstrap platform operator"} </button>
+      <div className="divider"/>
+      <h3>Step 2 · Create the hospital tenant</h3>
+      <div className="registration-grid">
+        <div><label htmlFor="onboarding-tenant-name">Tenant / hospital group name</label><input id="onboarding-tenant-name" value={tenantName} onChange={e=>setTenantName(e.target.value)} disabled={step>1||busy}/></div>
+        <div><label htmlFor="onboarding-tenant-slug">Unique tenant slug</label><input id="onboarding-tenant-slug" value={tenantSlug} onChange={e=>setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="example-hospital-group" disabled={step>1||busy}/></div>
+      </div>
+      <button type="button" onClick={()=>run(async()=>{
+        if(step<1)throw new Error("Complete platform operator bootstrap first.");
+        const tenant=await createPlatformTenant(apiBaseUrl??"",accessToken,tenantName.trim(),tenantSlug.trim());
+        setTenantId(tenant.id);setStep(2);setMessage(`Tenant created in ${tenant.status} state: ${tenant.name}.`);
+      })} disabled={step!==1||busy||!tenantName.trim()||!tenantSlug.trim()}>Create tenant</button>
+      <div className="divider"/>
+      <h3>Step 3 · Assign yourself as the initial tenant administrator</h3>
+      <p className="helper-text">The membership is bound to the validated OIDC issuer and subject of this sign-in. The tenant is activated only after initial administrator provisioning succeeds.</p>
+      <button type="button" onClick={()=>run(async()=>{
+        if(!tenantId||!authority||!subject)throw new Error("Tenant or validated OIDC identity is missing.");
+        await provisionInitialTenantAdministrator(apiBaseUrl??"",accessToken,tenantId,authority,subject);
+        await activatePlatformTenant(apiBaseUrl??"",accessToken,tenantId);
+        setStep(3);setMessage("Initial HospitalAdmin membership created and tenant activated.");
+      })} disabled={step!==2||busy}>Provision initial administrator and activate tenant</button>
+      <div className="divider"/>
+      <h3>Step 4 · Register the first hospital and department</h3>
+      <div className="registration-grid">
+        <div><label htmlFor="onboarding-hospital-name">Hospital name</label><input id="onboarding-hospital-name" value={hospitalName} onChange={e=>setHospitalName(e.target.value)} disabled={step>3||busy}/></div>
+        <div><label htmlFor="onboarding-hospital-code">Hospital code (optional)</label><input id="onboarding-hospital-code" value={hospitalCode} onChange={e=>setHospitalCode(e.target.value)} disabled={step>3||busy}/></div>
+        <div><label htmlFor="onboarding-department-name">First department</label><input id="onboarding-department-name" value={departmentName} onChange={e=>setDepartmentName(e.target.value)} disabled={step>3||busy}/></div>
+        <div><label htmlFor="onboarding-department-code">Department code (optional)</label><input id="onboarding-department-code" value={departmentCode} onChange={e=>setDepartmentCode(e.target.value)} disabled={step>3||busy}/></div>
+      </div>
+      <button type="button" onClick={()=>run(async()=>{
+        if(!tenantId||step!==3)throw new Error("Complete tenant activation first.");
+        const hospital=await createHospital(apiBaseUrl??"",accessToken,tenantId,hospitalName.trim(),hospitalCode.trim()||null);
+        setHospitalId(hospital.id);
+        await createDepartment(apiBaseUrl??"",accessToken,tenantId,hospital.id,departmentName.trim(),departmentCode.trim()||null);
+        setStep(4);setMessage(`Hospital ${hospital.name} and its first department were created.`);
+        await onComplete();
+      })} disabled={step!==3||busy||!hospitalName.trim()||!departmentName.trim()}>Create hospital and department</button>
+      {error&&<p className="inline-error" role="alert">{error}</p>}
+      {message&&<p className="registration-success" role="status">{message}</p>}
+      {step===4&&<p className="inline-status">Setup complete. Your active hospital context is being loaded.</p>}
+      <small className="helper-text">Tenant ID: {tenantId||"Not created"} · Hospital ID: {hospitalId||"Not created"}</small>
+    </div>
   </section>;
 }
 
@@ -645,11 +742,14 @@ function Workspace() {
           {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
           {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
           {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
           {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
           {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
           {hospitalsError && <p className="inline-error" role="alert">{hospitalsError}</p>}
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
+
+        {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
         {selectedContext?.role !== "ClinicalUser" && (<section className="section reception-section">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
