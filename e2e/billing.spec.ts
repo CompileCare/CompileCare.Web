@@ -260,7 +260,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
   await page.getByRole("button", { name: "Record payment" }).click();
 
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
-  await expect(page.getByText("RCT-E2E-0001")).toBeVisible();
+  await expect(page.locator(".billing-receipt").getByText("RCT-E2E-0001")).toBeVisible();
   await expect(page.getByText("Paid", { exact: true })).toBeVisible();
 
   await page.reload();
