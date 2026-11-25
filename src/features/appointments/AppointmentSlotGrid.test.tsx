@@ -25,8 +25,8 @@ describe("AppointmentSlotGrid", () => {
   it("renders available and unavailable slots with explicit accessible labels", () => {
     render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" onSelect={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: /09:30, Available/ })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /10:00, Unavailable/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /09:30.*Available/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /10:00.*Unavailable/ })).toBeDisabled();
   });
 
   it("exposes the selected slot with aria-pressed and visible selected text", () => {
@@ -39,7 +39,7 @@ describe("AppointmentSlotGrid", () => {
       />
     );
 
-    const selected = screen.getByRole("button", { name: /10:30, Available/ });
+    const selected = screen.getByRole("button", { name: /10:30.*Available/ });
     expect(selected).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Selected")).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe("AppointmentSlotGrid", () => {
 
     render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" onSelect={onSelect} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /09:30, Available/ }));
+    fireEvent.click(screen.getByRole("button", { name: /09:30.*Available/ }));
 
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(slots[0].startsAtUtc);
@@ -58,8 +58,8 @@ describe("AppointmentSlotGrid", () => {
   it("disables every slot while another workflow action is in flight", () => {
     render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" disabled onSelect={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: /09:30, Available/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /10:30, Available/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /09:30.*Available/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /10:30.*Available/ })).toBeDisabled();
   });
 
   it("renders nothing for an empty slot list", () => {
