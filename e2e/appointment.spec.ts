@@ -258,7 +258,19 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(slots.getByRole("button")).toHaveCount(1);
   await providerAvailability.focus();
   await page.keyboard.press("Tab");
-  await expect(slots.getByRole("button").first()).toBeFocused();
+  const appointmentFocusTarget = await page.evaluate(() => {
+    const active = document.activeElement as HTMLElement | null;
+    return active ? {
+      tagName: active.tagName,
+      id: active.id,
+      ariaLabel: active.getAttribute("aria-label"),
+      text: active.textContent?.trim().slice(0, 80)
+    } : null;
+  });
+  expect(
+    await slots.getByRole("button").first().evaluate(element => element === document.activeElement),
+    `Tab focus target after provider selection: ${JSON.stringify(appointmentFocusTarget)}`
+  ).toBe(true);
   await page.keyboard.press("Enter");
 
   await expect(page.locator(".booking-review").getByText("Review appointment")).toBeVisible();
