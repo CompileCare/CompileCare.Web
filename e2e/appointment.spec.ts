@@ -234,33 +234,58 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
   await page.getByLabel("Patient name").fill("Asha");
   await page.getByRole("button", { name: "Search patients" }).click();
-  await expect(page.locator(".patient-result-selectable")).toHaveCount(1);
-  await expect(page.locator(".patient-result-selectable").getByText("Asha R. Patil")).toBeVisible();
-  await page.locator(".patient-result-selectable").click();
+  const patientResult = page.locator(".patient-result-selectable");
+  await expect(patientResult).toHaveCount(1);
+  await expect(patientResult.getByText("Asha R. Patil")).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(patientResult).toBeFocused();
+  const patientFocus = await patientResult.evaluate(element => getComputedStyle(element).outlineWidth);
+  expect(patientFocus).toBe("3px");
+  await page.keyboard.press("Enter");
+  await expect(patientResult).toHaveAttribute("aria-pressed", "true");
 
-  await page.getByRole("button", { name: "Find available appointments" }).click();
-  await expect(page.getByLabel("Provider availability")).toBeVisible();
-  await page.getByLabel("Provider availability").selectOption(sessionId);
+  const findAvailability = page.getByRole("button", { name: "Find available appointments" });
+  await findAvailability.focus();
+  await page.keyboard.press("Enter");
+  const providerAvailability = page.getByLabel("Provider availability");
+  await expect(providerAvailability).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(providerAvailability).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+
   const slots = page.getByRole("group", { name: "Available appointment slots" });
   await expect(slots.getByRole("button")).toHaveCount(1);
-  await slots.getByRole("button").click();
+  await page.keyboard.press("Tab");
+  await expect(slots.getByRole("button").first()).toBeFocused();
+  await page.keyboard.press("Enter");
 
   await expect(page.locator(".booking-review").getByText("Review appointment")).toBeVisible();
-  await page.getByLabel("Visit reason (optional)").fill("Initial consultation");
-  await page.getByRole("button", { name: "Confirm appointment" }).click();
+  const visitReason = page.getByLabel("Visit reason (optional)");
+  await page.keyboard.press("Tab");
+  await expect(visitReason).toBeFocused();
+  await page.keyboard.type("Initial consultation");
+  const confirmBooking = page.getByRole("button", { name: "Confirm appointment" });
+  await page.keyboard.press("Tab");
+  await expect(confirmBooking).toBeFocused();
+  await page.keyboard.press("Enter");
 
   await expect(page.getByText(/That time was just booked or is no longer available/)).toBeVisible();
   await expect(slots.getByRole("button")).toHaveCount(2);
   await expect(slots.getByRole("button").nth(0)).toBeDisabled();
   await expect(slots.getByRole("button").nth(1)).toBeEnabled();
-  await slots.getByRole("button").nth(1).click();
-  await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await slots.getByRole("button").nth(1).focus();
+  await page.keyboard.press("Enter");
+  await confirmBooking.focus();
+  await page.keyboard.press("Enter");
 
   await expect(page.locator(".arrival-success").getByText("Appointment confirmed")).toBeVisible();
   expect(bookingAttempts).toBe(2);
   expect(appointmentCreated).toBe(true);
 
-  await page.getByRole("button", { name: "Check in patient" }).click();
+  const checkInButton = page.getByRole("button", { name: "Check in patient" });
+  await checkInButton.focus();
+  await page.keyboard.press("Enter");
   await expect(page.locator(".token-card")).toContainText("21");
   await expect(page.locator(".token-card")).toContainText("Waiting");
   expect(checkedIn).toBe(true);
