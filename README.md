@@ -11,7 +11,7 @@ Authenticated hospital workspace built with React, TypeScript and Vite. This app
 - Access token supplied from the OIDC session with automatic silent renewal; OIDC user and renewal state remain in sessionStorage.
 - Workspace navigation and feature visibility are driven by the effective permission identifiers returned by the API for the selected tenant context. The API remains the authorization boundary.
 - Every tenant-scoped request carries the selected tenant ID in X-Tenant-ID; the API revalidates membership, tenant lifecycle, role and organization scope on every request.
-- Responsive reception workspace; queue and clinical modules remain explicitly deferred.
+- Responsive, permission-driven reception, appointment, queue and clinical workspaces; patient registration, MRN assignment, OPD notes and clinical encounter lifecycle are exposed only when the selected membership has the matching permissions.
 - Docker image, Compose health check and CI build/test/container smoke verification.
 
 ## Configure
@@ -43,7 +43,8 @@ Open http://localhost:8080.
 
 - GET /api/v1/me/tenant-contexts?page=1&pageSize=100 — authenticated user context discovery, no tenant header; each active context includes its effective permission identifiers.
 - GET /api/v1/hospitals?page=1&pageSize=100 — requires X-Tenant-ID and returns hospitals allowed by the persisted membership scope.
-- GET /api/v1/hospitals/{hospitalId}/patients?query=...&page=1&pageSize=25 — patient lookup scoped to the selected tenant and hospital.
+- GET /api/v1/hospitals/{hospitalId}/patients?query=...&page=1&pageSize=25 — reception patient lookup scoped to the selected tenant and hospital.
+- GET /api/v1/hospitals/{hospitalId}/patients/departments/{departmentId}/patients/{patientId} — clinical identity verification scoped to the assigned department and its queue history.
 
 The current-user tenant context and effective-permission contract is implemented in CompileCare.Api main. The web client uses these permissions only to control feature visibility; every protected API request remains independently authorized.
 
@@ -52,4 +53,4 @@ The current-user tenant context and effective-permission contract is implemented
 - Do not persist patient search results, names or dates of birth in browser storage.
 - Do not log access tokens, patient queries or patient result payloads.
 - Do not use UI role checks as authorization. The API enforces permissions on every request.
-- No patient registration write workflow is included in this increment.
+- Patient registration is available only to memberships with both `patient.register` and `patient.duplicate.review`; clinical identity reads use the separate department-scoped route.
