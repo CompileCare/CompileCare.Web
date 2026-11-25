@@ -411,7 +411,8 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
 
   await page.getByLabel("Patient name").fill("Asha");
   await page.getByRole("button", { name: "Search patients" }).click();
-  await expect(page.getByText("Asha R. Patil")).toBeVisible();
+  await expect(page.locator(".patient-result-selectable")).toHaveCount(1);
+  await expect(page.locator(".patient-result-selectable").getByText("Asha R. Patil")).toBeVisible();
   await page.locator(".patient-result-selectable").click();
 
   await page.getByRole("button", { name: "Add to queue" }).click();
