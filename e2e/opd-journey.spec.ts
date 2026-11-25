@@ -37,6 +37,8 @@ const clinicalPermissions = [
   "encounter.amend"
 ];
 const billingPermissions = [
+  "facility.read",
+  "queue.read",
   "billing.invoice.read",
   "billing.invoice.manage",
   "billing.payment.manage",
