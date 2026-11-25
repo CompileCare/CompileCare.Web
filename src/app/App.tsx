@@ -520,18 +520,27 @@ function Workspace() {
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
-  const defaultActiveSection = isClinicalWorkspace ? "clinical" : canReadPatients ? "reception" : canManageAppointments ? "appointments" : canReadQueue ? "queue" : canReadBilling ? "billing" : canRegisterPatients ? "patient-registration" : "";
+  const allowedSectionKey = [
+    isClinicalWorkspace ? "clinical" : "",
+    canReadPatients ? "reception" : "",
+    canRegisterPatients ? "patient-registration" : "",
+    canManageAppointments ? "appointments" : "",
+    canReadQueue && !isClinicalWorkspace ? "queue" : "",
+    canReadBilling ? "billing" : ""
+  ].filter(Boolean).join("|");
+  const defaultActiveSection = allowedSectionKey.split("|")[0] || "";
   const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
     const syncActiveSection = () => {
       const section = window.location.hash.slice(1);
-      setActiveSection(section || defaultActiveSection);
+      const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
+      setActiveSection(allowedSections.includes(section) ? section : defaultActiveSection);
     };
     syncActiveSection();
     window.addEventListener("hashchange", syncActiveSection);
     return () => window.removeEventListener("hashchange", syncActiveSection);
-  },[defaultActiveSection]);
+  },[allowedSectionKey,defaultActiveSection]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
