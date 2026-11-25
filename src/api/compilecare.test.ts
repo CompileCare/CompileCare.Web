@@ -1,6 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -22,7 +22,6 @@ describe("CompileCare API client",()=>{
 
  it("loads patient identity through the assigned department scope",async()=>{
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"patient-1",givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:null,hospitalId:"hospital-456",registeredAtUtc:"2026-11-25T00:00:00Z"}),{status:200}));
-  const { getDepartmentPatient } = await import("./compilecare");
   await getDepartmentPatient("https://api.example.test","access-token","tenant-123","hospital-456","department-789","patient-1");
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/departments/department-789/patients/patient-1");
