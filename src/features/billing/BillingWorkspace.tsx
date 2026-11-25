@@ -172,7 +172,7 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
         <div className="billing-card">
           <h3>Visit selection</h3>
           <label htmlFor="billing-visit">In-progress or completed visit</label>
-          <select id="billing-visit" value={selectedQueueEntryId} onChange={e=>setSelectedQueueEntryId(e.target.value)} disabled={queueEntries.length===0||loading}>
+          <select id="billing-visit" value={selectedQueueEntryId} onChange={e=>setSelectedQueueEntryId(e.target.value)} disabled={queueEntries.length===0}>
             <option value="">Select a visit</option>{queueEntries.map(x=><option key={x.id} value={x.id}>Token #{String(x.tokenNumber).padStart(2,"0")} · {x.status}</option>)}
           </select>
           <p className="helper-text">Patient identity is not exposed in the billing queue selector. The invoice is linked to the selected OPD visit.</p>
