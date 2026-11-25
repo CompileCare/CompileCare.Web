@@ -32,15 +32,5 @@ jobs:
           done
           docker compose logs
           exit 1
-      - name: Upload Playwright HTML report and screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: compilecare-web-playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 14
       - if: always()
         run: docker compose down --volumes --remove-orphans
