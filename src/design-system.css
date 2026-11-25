@@ -934,10 +934,6 @@ a {
   color: #ffffff;
 }
 
-.content:focus {
-  outline: none;
-}
-
 @media (max-width: 600px) {
   .sidebar nav {
     flex-wrap: nowrap;
