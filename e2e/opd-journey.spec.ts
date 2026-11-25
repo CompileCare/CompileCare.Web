@@ -513,3 +513,35 @@ test("ClinicalUser can open an OPD encounter from the clinical queue using keybo
   await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /I have verified the patient identity/ })).toBeVisible();
 });
+
+test("reception can call a waiting token and start consultation using the keyboard", async ({ page }) => {
+  await installSession(page);
+  await installApi(page, true, "Waiting");
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await page.getByRole("link", { name: "Queue" }).click();
+
+  const department = page.locator("#queue-department");
+  await expect(department).toBeVisible();
+  await department.selectOption(departmentId);
+  await page.getByRole("button", { name: "Refresh queue" }).click();
+
+  const call = page.getByRole("button", { name: "Call" });
+  await expect(call).toBeVisible();
+  await call.focus();
+  await expect(call).toBeFocused();
+  const callFocus = await call.evaluate(element => getComputedStyle(element).outlineWidth);
+  expect(callFocus).toBe("3px");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".queue-status-called")).toBeVisible();
+
+  const start = page.getByRole("button", { name: "Start consultation" });
+  await expect(start).toBeVisible();
+  await start.focus();
+  await expect(start).toBeFocused();
+  const startFocus = await start.evaluate(element => getComputedStyle(element).outlineWidth);
+  expect(startFocus).toBe("3px");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".queue-status-inprogress")).toBeVisible();
+});
