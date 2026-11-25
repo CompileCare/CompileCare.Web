@@ -901,3 +901,61 @@ a {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Keyboard-first shell navigation and main-content bypass. */
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 12px;
+  left: 12px;
+  transform: translateY(-160%);
+  padding: 11px 15px;
+  border: 2px solid var(--cc-primary);
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--cc-ink);
+  font-size: 13px;
+  font-weight: 750;
+  box-shadow: 0 8px 24px rgb(16 42 67 / 18%);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--cc-focus);
+  outline-offset: 3px;
+}
+
+.sidebar nav a[aria-current="location"] {
+  border-color: rgb(146 224 214 / 18%);
+  background: rgb(45 160 148 / 18%);
+  box-shadow: inset 3px 0 0 #67c6b9;
+  color: #ffffff;
+}
+
+.content:focus {
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .sidebar nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 2px 8px;
+    scrollbar-width: thin;
+  }
+
+  .sidebar nav p {
+    width: auto;
+    flex: 0 0 auto;
+    margin: 0 6px 0 0;
+  }
+
+  .sidebar nav a,
+  .sidebar nav span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
