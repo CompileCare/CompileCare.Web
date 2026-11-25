@@ -58,7 +58,7 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
   },[baseUrl,accessToken,tenantId,hospitalId,canReadInvoice]);
 
   useEffect(()=>{
-    setInvoice(null);setReceipt(null);setSelectedQueueEntryId("");setQueueEntries([]);
+    setInvoice(null);setReceipt(null);setQuantities({});setSelectedQueueEntryId("");setQueueEntries([]);
   },[departmentId,businessDate]);
 
   useEffect(()=>{
@@ -68,7 +68,7 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
     getInvoiceForVisit(baseUrl,accessToken,tenantId,hospitalId,selectedQueueEntryId)
       .then(value=>{if(active)setInvoice(value);})
       .catch(error=>{if(!active)return;if(error instanceof ApiError&&error.status===404){setInvoice(null);return;}setError(errorMessage(error));})
-      .finally(()=>{if(active)setLoading(false);});
+      .finally(()=>{});
     return ()=>{active=false;};
   },[baseUrl,accessToken,tenantId,hospitalId,selectedQueueEntryId,canReadInvoice]);
 
@@ -141,8 +141,8 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
     <div className="section-heading"><div><label>REVENUE OPERATIONS</label><h2>OPD billing and settlement</h2></div></div>
     <div className="billing-panel">
       <div className="billing-toolbar">
-        <div><label htmlFor="billing-department">Department</label><select id="billing-department" value={departmentId} onChange={e=>setDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>
-        <div><label htmlFor="billing-date">Business date</label><input id="billing-date" type="date" value={businessDate} onChange={e=>setBusinessDate(e.target.value)}/></div>
+        <div><label htmlFor="billing-department">Department</label><select id="billing-department" value={departmentId} disabled={loading||queueLoading} onChange={e=>setDepartmentId(e.target.value)}><option value="">Select department</option>{departments.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>
+        <div><label htmlFor="billing-date">Business date</label><input id="billing-date" type="date" value={businessDate} disabled={loading||queueLoading} onChange={e=>setBusinessDate(e.target.value)}/></div>
         <button type="button" onClick={refreshVisits} disabled={!departmentId||queueLoading||loading}>{queueLoading?"Loading visits…":"Load billable visits"}</button>
       </div>
       {error&&<p className="inline-error" role="alert">{error}</p>}
