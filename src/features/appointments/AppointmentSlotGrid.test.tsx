@@ -23,7 +23,7 @@ const slots: AppointmentSlot[] = [
 
 describe("AppointmentSlotGrid", () => {
   it("renders available and unavailable slots with explicit accessible labels", () => {
-    render(<AppointmentSlotGrid slots={slots} onSelect={vi.fn()} />);
+    render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" onSelect={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: /09:30, Available/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /10:00, Unavailable/ })).toBeDisabled();
@@ -34,6 +34,7 @@ describe("AppointmentSlotGrid", () => {
       <AppointmentSlotGrid
         slots={slots}
         selectedSlotStart={slots[2].startsAtUtc}
+        timeZoneId="UTC"
         onSelect={vi.fn()}
       />
     );
@@ -46,7 +47,7 @@ describe("AppointmentSlotGrid", () => {
   it("returns only the chosen slot start time", () => {
     const onSelect = vi.fn();
 
-    render(<AppointmentSlotGrid slots={slots} onSelect={onSelect} />);
+    render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" onSelect={onSelect} />);
 
     fireEvent.click(screen.getByRole("button", { name: /09:30, Available/ }));
 
@@ -55,7 +56,7 @@ describe("AppointmentSlotGrid", () => {
   });
 
   it("disables every slot while another workflow action is in flight", () => {
-    render(<AppointmentSlotGrid slots={slots} disabled onSelect={vi.fn()} />);
+    render(<AppointmentSlotGrid slots={slots} timeZoneId="UTC" disabled onSelect={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: /09:30, Available/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /10:30, Available/ })).toBeDisabled();
