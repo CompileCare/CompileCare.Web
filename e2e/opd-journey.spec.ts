@@ -392,6 +392,11 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
   };
 }
 
+async function assertNoHorizontalOverflow(page: Page) {
+  const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(375);
+}
+
 test("staff-assisted OPD journey connects patient registration, walk-in, clinical sign-off and billing", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await installSession(page);
