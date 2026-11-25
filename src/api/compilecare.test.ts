@@ -20,6 +20,15 @@ describe("CompileCare API client",()=>{
   expect(options.credentials).toBe("omit");
  });
 
+ it("loads patient identity through the assigned department scope",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"patient-1",givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:null,hospitalId:"hospital-456",registeredAtUtc:"2026-11-25T00:00:00Z"}),{status:200}));
+  const { getDepartmentPatient } = await import("./compilecare");
+  await getDepartmentPatient("https://api.example.test","access-token","tenant-123","hospital-456","department-789","patient-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/departments/department-789/patients/patient-1");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
  it("selects a tenant only through the trusted X-Tenant-ID request header",async()=>{
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200}));
   await getHospitals("https://api.example.test","access-token","tenant-123");
