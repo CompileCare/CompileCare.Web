@@ -1,0 +1,22 @@
+/* Keyboard focus must remain visible for every interactive control. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #0e827c;
+  outline-offset: 3px;
+}
+
+.patient-result-selectable:focus-visible {
+  outline: 3px solid #0e827c;
+  outline-offset: 3px;
+  background: #eef8f6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
