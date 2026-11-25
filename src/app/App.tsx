@@ -20,7 +20,7 @@ import {
   listQueue,
   transitionQueueEntry,
   getOpdEncounterForQueue,
-  getHospitalPatient,
+  getDepartmentPatient,
   createOpdEncounterFromQueue,
   updateOpdEncounterNote,
   signOpdEncounter,
@@ -69,6 +69,17 @@ function Callback() {
   return <main className="callback" role="status">{error || "Completing secure sign-in…"}</main>;
 }
 
+function SilentCallback() {
+  const [error,setError] = useState("");
+  useEffect(() => {
+    const manager = userManager;
+    if (!manager) { setError("Authentication is not configured."); return; }
+    manager.signinSilentCallback()
+      .catch(() => setError("Session renewal could not be completed. Sign in again."));
+  },[]);
+  return <main className="callback" role="status">{error || "Renewing secure session…"}</main>;
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
@@ -80,7 +91,7 @@ function patientName(patient: Patient): string {
 }
 
 
-function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,onBusyChange}:{baseUrl:string;accessToken:string;tenantId:string;hospitalId:string;departments:Department[];onBusyChange:(busy:boolean)=>void}) {
+function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,permissions,onBusyChange}:{baseUrl:string;accessToken:string;tenantId:string;hospitalId:string;departments:Department[];permissions:string[];onBusyChange:(busy:boolean)=>void}) {
   const [departmentId,setDepartmentId]=useState("");
   const [queueDate,setQueueDate]=useState(localDateToday());
   const [queue,setQueue]=useState<QueueEntry[]>([]);
@@ -104,7 +115,10 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
 
   useEffect(()=>{setDepartmentId(current=>departments.some(x=>x.id===current)?current:departments.length===1?departments[0].id:"");},[departments]);
   const clinicalQueue=queue.filter(x=>x.status==="InProgress"||x.status==="Completed");
-  const editable=encounter?.status==="InProgress"&&identityConfirmed;
+  const canManageEncounter=permissions.includes("encounter.manage");
+  const canSignEncounter=permissions.includes("encounter.sign");
+  const canAmendEncounter=permissions.includes("encounter.amend");
+  const editable=encounter?.status==="InProgress"&&identityConfirmed&&canManageEncounter;
   const setBusy=(busy:boolean)=>{setActionBusy(busy);onBusyChange(busy);};
   function applyEncounter(value:OpdEncounter,patientValue:Patient|null=clinicalPatient,resetIdentity=false){
     setEncounter(value);setClinicalPatient(patientValue);if(resetIdentity)setIdentityConfirmed(false);setChiefComplaint(value.chiefComplaint??"");setHistory(value.history??"");
@@ -132,7 +146,7 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
           catch(resumeError){if(resumeError instanceof ApiError&&resumeError.status===404)throw createError;throw resumeError;}
         }
       }
-      const verifiedPatient=await getHospitalPatient(baseUrl,accessToken,tenantId,hospitalId,value.patientId);
+      const verifiedPatient=await getDepartmentPatient(baseUrl,accessToken,tenantId,hospitalId,entry.departmentId,value.patientId);
       applyEncounter(value,verifiedPatient,true);
     }catch(error){setActionError(getErrorMessage(error));}
     finally{setOpeningId("");setBusy(false);}
@@ -215,15 +229,15 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
         <div><label htmlFor="clinical-assessment">Assessment *</label><textarea id="clinical-assessment" rows={3} maxLength={2000} value={assessment} onChange={e=>setAssessment(e.target.value)} disabled={!editable||actionBusy}/><small>{assessment.length}/2000</small></div>
         <div className="clinical-plan"><label htmlFor="clinical-plan">Plan</label><textarea id="clinical-plan" rows={4} maxLength={4000} value={plan} onChange={e=>setPlan(e.target.value)} disabled={!editable||actionBusy}/><small>{plan.length}/4000</small></div>
       </div>
-      {editable&&<div className="clinical-actions"><button type="button" className="clinical-secondary" onClick={saveDraft} disabled={actionBusy}>{actionBusy?"Saving…":"Save draft"}</button><button type="button" onClick={signEncounter} disabled={actionBusy||!chiefComplaint.trim()||!assessment.trim()}>Review and sign</button></div>}
+      {editable&&<div className="clinical-actions">{canManageEncounter&&<button type="button" className="clinical-secondary" onClick={saveDraft} disabled={actionBusy}>{actionBusy?"Saving…":"Save draft"}</button>}{canSignEncounter&&<button type="button" onClick={signEncounter} disabled={actionBusy||!chiefComplaint.trim()||!assessment.trim()}>Review and sign</button>}</div>}
       {editable&&<div className="clinical-cancel"><label htmlFor="clinical-cancel-reason">Cancellation reason (required to cancel an unsigned encounter)</label><input id="clinical-cancel-reason" value={cancelReason} maxLength={250} onChange={e=>setCancelReason(e.target.value)} disabled={actionBusy}/><button type="button" className="queue-action-danger" onClick={cancelEncounter} disabled={actionBusy||!cancelReason.trim()}>Cancel encounter</button></div>}
-      {encounter.status==="Signed"&&<div className="clinical-actions"><button type="button" onClick={closeEncounter} disabled={actionBusy}>{actionBusy?"Closing…":"Close encounter"}</button></div>}
+      {encounter.status==="Signed"&&canManageEncounter&&<div className="clinical-actions"><button type="button" onClick={closeEncounter} disabled={actionBusy}>{actionBusy?"Closing…":"Close encounter"}</button></div>}
       {(encounter.status==="Signed"||encounter.status==="Closed")&&<div className="amendment-panel">
         <h4>Amendment history</h4>
         {encounter.amendments.length>0?encounter.amendments.map(item=><article className="amendment-item" key={item.id}><strong>{item.reason}</strong><p>{item.content}</p><small>Added {new Date(item.createdAtUtc).toLocaleString()}</small></article>):<p className="inline-status">No amendments have been added.</p>}
-        <label htmlFor="amendment-reason">Amendment reason</label><input id="amendment-reason" value={amendmentReason} maxLength={250} onChange={e=>setAmendmentReason(e.target.value)} disabled={actionBusy}/>
+        {canAmendEncounter&&<><label htmlFor="amendment-reason">Amendment reason</label><input id="amendment-reason" value={amendmentReason} maxLength={250} onChange={e=>setAmendmentReason(e.target.value)} disabled={actionBusy}/>
         <label htmlFor="amendment-content">Addendum / correction</label><textarea id="amendment-content" rows={3} maxLength={4000} value={amendmentContent} onChange={e=>setAmendmentContent(e.target.value)} disabled={actionBusy}/>
-        <button type="button" onClick={addAmendment} disabled={actionBusy||!amendmentReason.trim()||!amendmentContent.trim()}>Add append-only amendment</button>
+        <button type="button" onClick={addAmendment} disabled={actionBusy||!amendmentReason.trim()||!amendmentContent.trim()}>Add append-only amendment</button></>}
       </div>}
       </>}
       {actionError&&<p className="inline-error" role="alert">{actionError}</p>}
@@ -325,6 +339,7 @@ function PlatformOnboarding({user,onComplete}:{user:User;onComplete:()=>Promise<
 function Workspace() {
   const [user,setUser] = useState<User|null>(null);
   const [sessionLoading,setSessionLoading] = useState(true);
+  const [authError,setAuthError] = useState("");
   const [contexts,setContexts] = useState<UserTenantContext[]>([]);
   const [contextsLoading,setContextsLoading] = useState(false);
   const [contextsError,setContextsError] = useState("");
@@ -390,17 +405,35 @@ function Workspace() {
     if (!manager) { setSessionLoading(false); return; }
     let active = true;
     manager.getUser()
-      .then(value => { if (active) setUser(value); })
+      .then(async value => {
+        if (!active) return;
+        if (value?.expired) {
+          setAuthError("Your sign-in session expired. Sign in again to continue.");
+          await manager.removeUser();
+          return;
+        }
+        setUser(value);
+      })
       .catch(() => { if (active) setUser(null); })
       .finally(() => { if (active) setSessionLoading(false); });
-    const loaded = (value: User) => setUser(value);
+    const loaded = (value: User) => { setAuthError(""); setUser(value); };
     const unloaded = () => setUser(null);
+    const expired = () => {
+      setAuthError("Your sign-in session expired. Sign in again to continue.");
+      setUser(null);
+      void manager.removeUser();
+    };
+    const renewError = () => setAuthError("Your session could not be renewed. Sign in again to continue.");
     manager.events.addUserLoaded(loaded);
     manager.events.addUserUnloaded(unloaded);
+    manager.events.addAccessTokenExpired(expired);
+    manager.events.addSilentRenewError(renewError);
     return () => {
       active = false;
       manager.events.removeUserLoaded(loaded);
       manager.events.removeUserUnloaded(unloaded);
+      manager.events.removeAccessTokenExpired(expired);
+      manager.events.removeSilentRenewError(renewError);
     };
   },[]);
 
@@ -472,6 +505,13 @@ function Workspace() {
   },[user,selectedTenantId,selectedHospitalId]);
 
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
+  const hasPermission = (permission:string) => selectedContext?.permissions?.includes(permission) ?? false;
+  const isClinicalWorkspace = hasPermission("encounter.read");
+  const canReadPatients = hasPermission("patient.read");
+  const canRegisterPatients = hasPermission("patient.register") && hasPermission("patient.duplicate.review");
+  const canManageAppointments = hasPermission("appointment.manage");
+  const canReadQueue = hasPermission("queue.read");
+  const canManageQueue = hasPermission("queue.manage");
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
@@ -707,13 +747,13 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {selectedContext?.role === "ClinicalUser" ? <a className="selected" href="#clinical">Clinical workspace</a> : <><a className="selected" href="#reception">Reception</a><a href="#appointments">Appointments</a><a href="#queue">Queue</a></>}
+        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&<a href="#queue">Queue</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
     <main className="content" id="reception">
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>{selectedContext?.role === "ClinicalUser" ? "Clinical workspace" : "Reception workspace"}</h1></div>
+        <div><label>HOSPITAL OPERATIONS</label><h1>{isClinicalWorkspace ? "Clinical workspace" : canReadPatients ? "Reception workspace" : "Hospital workspace"}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -722,6 +762,7 @@ function Workspace() {
         </div>
       </header>
 
+      {authError && <div className="notice" role="alert">{authError}</div>}
       {!isAuthenticationConfigured && <div className="notice" role="status"><b>Authentication setup required.</b> Configure the OIDC environment variables before enabling staff sign-in.</div>}
       {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
       {user && apiBaseUrl && <>
@@ -751,7 +792,7 @@ function Workspace() {
 
         {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
-        {selectedContext?.role !== "ClinicalUser" && (<section className="section reception-section">
+        {canReadPatients && (<section className="section reception-section">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
@@ -774,7 +815,7 @@ function Workspace() {
         </section>)}
 
 
-        {selectedContext?.role !== "ClinicalUser" && (<section className="section appointment-section" id="appointments">
+        {canManageAppointments && (<section className="section appointment-section" id="appointments">
           <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
@@ -803,7 +844,7 @@ function Workspace() {
           </div>
         </section>)}
 
-        {selectedContext?.role !== "ClinicalUser" && (<section className="section walkin-section">
+        {canManageQueue && (<section className="section walkin-section">
           <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
           <div className="search-panel walkin-panel">
             <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
@@ -812,7 +853,7 @@ function Workspace() {
           </div>
         </section>)}
 
-        {selectedContext?.role !== "ClinicalUser" && (<section className="section queue-section" id="queue">
+        {canReadQueue && (<section className="section queue-section" id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
@@ -833,9 +874,9 @@ function Workspace() {
           </div>
         </section>)}
 
-        {selectedContext?.role === "ClinicalUser" && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} onBusyChange={setClinicalBusy}/>}
+        {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/>}
 
-        {selectedContext?.role !== "ClinicalUser" && (<section className="section registration-section">
+        {canRegisterPatients && (<section className="section registration-section">
           <div className="section-heading">
             <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
           </div>
@@ -887,5 +928,5 @@ function Workspace() {
 }
 
 export function App() {
-  return <Routes><Route path="/auth/callback" element={<Callback/>}/><Route path="*" element={<Workspace/>}/></Routes>;
+  return <Routes><Route path="/auth/callback" element={<Callback/>}/><Route path="/auth/silent-callback" element={<SilentCallback/>}/><Route path="*" element={<Workspace/>}/></Routes>;
 }
