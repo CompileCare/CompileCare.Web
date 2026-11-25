@@ -23,8 +23,8 @@ const money=(value:number)=>new Intl.NumberFormat("en-IN",{style:"currency",curr
 const errorMessage=(error:unknown)=>error instanceof ApiError?error.message:error instanceof Error?error.message:"The billing request could not be completed.";
 
 export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,permissions}:{baseUrl:string;accessToken:string;tenantId:string;hospitalId:string;departments:Department[];permissions:string[]}) {
-  const canReadInvoice=permissions.includes("billing.invoice.read");
   const canManageInvoice=permissions.includes("billing.invoice.manage");
+  const canReadInvoice=permissions.includes("billing.invoice.read")||canManageInvoice;
   const canManagePayment=permissions.includes("billing.payment.manage");
   const canManageCatalogue=permissions.includes("billing.catalogue.manage");
   const canReadReport=permissions.includes("billing.report.read");
