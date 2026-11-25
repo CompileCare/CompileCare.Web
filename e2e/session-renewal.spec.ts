@@ -151,7 +151,8 @@ test("OIDC silently renews a short-lived session and uses the renewed token for 
 });
 
 
-test("shows a safe reauthentication warning when the OIDC refresh grant is rejected", async ({ page }) => {
+test("shows a safe reauthentication warning then returns to sign-in when the access token expires", async ({ page }) => {
+  await page.clock.install({ time: new Date() });
   await installShortLivedSession(page);
   let refreshGrantCount = 0;
 
@@ -247,4 +248,11 @@ test("shows a safe reauthentication warning when the OIDC refresh grant is rejec
   );
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.getByText("Your sign-in session expired. Sign in again to continue.")).toHaveCount(0);
+
+  await page.clock.fastForward(31_000);
+  await expect(page.getByRole("alert")).toContainText(
+    "Your sign-in session expired. Sign in again to continue."
+  );
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
 });
