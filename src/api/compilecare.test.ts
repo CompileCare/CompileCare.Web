@@ -1,6 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -19,6 +19,15 @@ describe("CompileCare API client",()=>{
   expect(headers.has("X-Tenant-ID")).toBe(false);
   expect(options.cache).toBe("no-store");
   expect(options.credentials).toBe("omit");
+ });
+
+ it("loads an existing invoice by OPD visit without exposing patient identity",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"invoice-1",hospitalId:"hospital-456",queueEntryId:"visit-1",patientId:"patient-1",invoiceNumber:"INV-0001",issuedAtUtc:"2026-11-25T00:00:00Z",status:"PartiallyPaid",subtotal:500,amountPaid:200,balanceDue:300,lines:[]}),{status:200}));
+  const invoice=await getInvoiceForVisit("https://api.example.test","access-token","tenant-123","hospital-456","visit-1");
+  expect(invoice.status).toBe("PartiallyPaid");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/billing/visits/visit-1/invoice");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
  it("loads patient identity through the assigned department scope",async()=>{
