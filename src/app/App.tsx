@@ -507,6 +507,7 @@ function Workspace() {
   },[user,selectedTenantId,selectedHospitalId]);
 
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
+  const selectedHospital = hospitals.find(value => value.id === selectedHospitalId);
   const hasPermission = (permission:string) => selectedContext?.permissions?.includes(permission) ?? false;
   const isClinicalWorkspace = hasPermission("encounter.read");
   const canReadPatients = hasPermission("patient.read");
@@ -519,6 +520,7 @@ function Workspace() {
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
   const defaultActiveSection = isClinicalWorkspace ? "clinical" : canReadPatients ? "reception" : canManageAppointments ? "appointments" : canReadQueue ? "queue" : canReadBilling ? "billing" : canRegisterPatients ? "patient-registration" : "";
+  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
     const syncActiveSection = () => {
@@ -783,7 +785,7 @@ function Workspace() {
     </aside>
     <main className="content" id="workspace-main" tabIndex={-1}>
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>{isClinicalWorkspace ? "Clinical workspace" : canReadPatients || !user ? "Reception workspace" : "Hospital workspace"}</h1></div>
+        <div><label>HOSPITAL OPERATIONS</label><h1>{activeWorkspaceTitle}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -797,7 +799,12 @@ function Workspace() {
       {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
       {user && apiBaseUrl && <>
         <section className="context-panel">
-          <div><label>ACTIVE ORGANIZATION</label><h2>Select your hospital context</h2><p>Only active memberships assigned to your validated sign-in are listed.</p></div>
+          <div className="context-intro">
+            <label>ACTIVE ORGANIZATION</label>
+            <h2>{selectedHospital?.name ?? selectedContext?.tenantName ?? "Select your hospital context"}</h2>
+            <p>{selectedHospital ? `Working in ${selectedHospital.name}. Data access is scoped to this selected hospital.` : selectedContext ? `Tenant ${selectedContext.tenantName} is selected. Choose a hospital to continue.` : "Only active memberships assigned to your validated sign-in are listed."}</p>
+            {selectedContext && <div className="context-tags"><span>{selectedContext.role}</span><span>{selectedHospital ? "Hospital selected" : "Hospital required"}</span></div>}
+          </div>
           <div className="context-controls">
             <label htmlFor="tenant-select">Tenant</label>
             <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || isWorkflowBusy}>
