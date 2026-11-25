@@ -261,7 +261,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
 
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
   await expect(page.locator(".billing-receipt").getByText("RCT-E2E-0001")).toBeVisible();
-  await expect(page.getByText("Paid", { exact: true })).toBeVisible();
+  await expect(page.locator(".invoice-status")).toHaveText("Paid");
 
   await page.reload();
   await expect(page.getByRole("link", { name: "Billing" })).toBeVisible();
@@ -270,7 +270,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
   await page.getByLabel("In-progress or completed visit").selectOption(queueEntryId);
 
   await expect(page.getByRole("heading", { name: "INV-E2E-0001" })).toBeVisible();
-  await expect(page.getByText("Paid", { exact: true })).toBeVisible();
+  await expect(page.locator(".invoice-status")).toHaveText("Paid");
   await expect(page.getByRole("heading", { name: "Payment history" })).toBeVisible();
   await expect(page.getByText("RCT-E2E-0001")).toBeVisible();
   await expect(page.getByRole("button", { name: "Issue invoice" })).toHaveCount(0);
