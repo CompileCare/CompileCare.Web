@@ -547,7 +547,22 @@ function Workspace() {
         availabilitySessionId:selectedSession.id,patientId:selectedPatient.id,slotStartsAtUtc:selectedSlotStart,reason:appointmentReason.trim()||null
       });
       setBookedAppointment(result);
-    }catch(error){setBookingError(getErrorMessage(error));}
+    }catch(error){
+      if(error instanceof ApiError&&error.status===409){
+        setSelectedSlotStart("");
+        try{
+          const refreshedSlots=await getAppointmentSlots(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,selectedSession.id);
+          setSlots(refreshedSlots);
+          setBookingError("That time was just booked or is no longer available. Availability has been refreshed; choose another available slot.");
+        }catch(refreshError){
+          setSlots([]);
+          setAvailabilityError(getErrorMessage(refreshError));
+          setBookingError("That time is no longer available. Refresh availability before choosing another slot.");
+        }
+      }else{
+        setBookingError(getErrorMessage(error));
+      }
+    }
     finally{setBookingLoading(false);}
   }
 
