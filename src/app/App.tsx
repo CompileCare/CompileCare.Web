@@ -4,6 +4,7 @@ import { Route,Routes,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
+import { PatientSearchResults } from "../features/reception/PatientSearchResults";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -841,12 +842,18 @@ function Workspace() {
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
-            {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
-              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} role="button" tabIndex={0} aria-pressed={selectedPatient?.id===patient.id} aria-disabled={isWorkflowBusy} onKeyDown={event=>{if(!isWorkflowBusy&&(event.key==="Enter"||event.key===" ")){event.preventDefault();setSelectedPatient(patient);setBookedAppointment(null);setQueueEntry(null);setBookingError("");setWalkInError("");}}} onClick={() => { if(isWorkflowBusy)return; setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
-                <div><strong>{patientName(patient)}</strong><span>{patient.dateOfBirth ? `Date of birth: ${patient.dateOfBirth}` : "Date of birth not recorded"}</span></div>
-                <small>Registered patient</small>
-              </article>)}
-            </div>}
+            {patients.length > 0 && <PatientSearchResults
+              patients={patients}
+              selectedPatientId={selectedPatient?.id}
+              disabled={isWorkflowBusy}
+              onSelect={patient => {
+                setSelectedPatient(patient);
+                setBookedAppointment(null);
+                setQueueEntry(null);
+                setBookingError("");
+                setWalkInError("");
+              }}
+            />}
             {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
           </div>
         </section>)}
