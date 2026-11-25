@@ -8,5 +8,7 @@ describe("reception workspace",()=>{
   render(<MemoryRouter><App/></MemoryRouter>);
   expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
   expect(screen.getByText(/Sign in with your hospital identity/)).toBeInTheDocument();
+  expect(screen.getByRole("link",{name:"Skip to main content"})).toHaveAttribute("href","#workspace-main");
+  expect(screen.getByRole("main")).toHaveAttribute("id","workspace-main");
  });
 });
