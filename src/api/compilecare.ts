@@ -307,6 +307,10 @@ export function createBillingInvoice(baseUrl:string,accessToken:string,tenantId:
   return postJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/invoices`,accessToken,tenantId,input);
 }
 
+export function listBillingPayments(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,invoiceId:string):Promise<BillingPayment[]> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/invoices/${encodeURIComponent(invoiceId)}/payments`,accessToken,tenantId);
+}
+
 export function recordBillingPayment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,invoiceId:string,input:{amount:number;method:string;reference:string|null}):Promise<BillingPayment> {
   return postJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/invoices/${encodeURIComponent(invoiceId)}/payments`,accessToken,tenantId,input);
 }

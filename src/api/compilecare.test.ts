@@ -1,6 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -27,6 +27,16 @@ describe("CompileCare API client",()=>{
   expect(invoice.status).toBe("PartiallyPaid");
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/billing/visits/visit-1/invoice");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("loads invoice payment history with tenant and hospital scope",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{id:"payment-1",invoiceId:"invoice-1",receiptNumber:"RCT-0001",amount:250,method:"Cash",reference:null,paidAtUtc:"2026-11-25T10:00:00Z"}]),{status:200}));
+  const payments=await listBillingPayments("https://api.example.test","access-token","tenant-123","hospital-456","invoice-1");
+  expect(payments).toHaveLength(1);
+  expect(payments[0].receiptNumber).toBe("RCT-0001");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/billing/invoices/invoice-1/payments");
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 

@@ -7,10 +7,12 @@ import {
   getBillingReceipt,
   getDailyCollectionReport,
   getInvoiceForVisit,
+  listBillingPayments,
   listBillingServiceItems,
   listQueue,
   recordBillingPayment,
   type BillingInvoice,
+  type BillingPayment,
   type BillingReceipt,
   type BillingServiceItem,
   type DailyCollectionReport,
@@ -40,6 +42,8 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
   const [paymentMethod,setPaymentMethod]=useState("Cash");
   const [paymentReference,setPaymentReference]=useState("");
   const [receipt,setReceipt]=useState<BillingReceipt|null>(null);
+  const [payments,setPayments]=useState<BillingPayment[]>([]);
+  const [receiptLoadingId,setReceiptLoadingId]=useState("");
   const [dailyReport,setDailyReport]=useState<DailyCollectionReport|null>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
@@ -58,17 +62,26 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
   },[baseUrl,accessToken,tenantId,hospitalId,canReadInvoice]);
 
   useEffect(()=>{
-    setInvoice(null);setReceipt(null);setQuantities({});setSelectedQueueEntryId("");setQueueEntries([]);
+    setInvoice(null);setReceipt(null);setPayments([]);setQuantities({});setSelectedQueueEntryId("");setQueueEntries([]);
   },[departmentId,businessDate]);
 
   useEffect(()=>{
-    if(!selectedQueueEntryId||!canReadInvoice){setInvoice(null);return;}
+    if(!selectedQueueEntryId||!canReadInvoice){setInvoice(null);setPayments([]);return;}
     let active=true;
-    setInvoice(null);setReceipt(null);setError("");
+    setInvoice(null);setReceipt(null);setPayments([]);setError("");setLoading(true);
     getInvoiceForVisit(baseUrl,accessToken,tenantId,hospitalId,selectedQueueEntryId)
-      .then(value=>{if(active)setInvoice(value);})
-      .catch(error=>{if(!active)return;if(error instanceof ApiError&&error.status===404){setInvoice(null);return;}setError(errorMessage(error));})
-      .finally(()=>{});
+      .then(async value=>{
+        if(!active)return;
+        setInvoice(value);
+        const history=await listBillingPayments(baseUrl,accessToken,tenantId,hospitalId,value.id);
+        if(active)setPayments(history);
+      })
+      .catch(error=>{
+        if(!active)return;
+        if(error instanceof ApiError&&error.status===404){setInvoice(null);setPayments([]);return;}
+        setError(errorMessage(error));
+      })
+      .finally(()=>{if(active)setLoading(false);});
     return ()=>{active=false;};
   },[baseUrl,accessToken,tenantId,hospitalId,selectedQueueEntryId,canReadInvoice]);
 
@@ -109,14 +122,22 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
     setLoading(true);setError("");setSuccess("");setReceipt(null);
     try{
       const payment=await recordBillingPayment(baseUrl,accessToken,tenantId,hospitalId,invoice.id,{amount,method:paymentMethod,reference:paymentReference.trim()||null});
-      const [updated,receiptValue]=await Promise.all([
+      const [updated,receiptValue,history]=await Promise.all([
         getInvoiceForVisit(baseUrl,accessToken,tenantId,hospitalId,selectedQueueEntryId),
-        getBillingReceipt(baseUrl,accessToken,tenantId,hospitalId,payment.id)
+        getBillingReceipt(baseUrl,accessToken,tenantId,hospitalId,payment.id),
+        listBillingPayments(baseUrl,accessToken,tenantId,hospitalId,invoice.id)
       ]);
-      setInvoice(updated);setReceipt(receiptValue);setPaymentAmount("");setPaymentReference("");
+      setInvoice(updated);setReceipt(receiptValue);setPayments(history);setPaymentAmount("");setPaymentReference("");
       setSuccess(updated.status==="Paid"?"Invoice fully settled.":"Payment recorded; balance remains outstanding.");
     }catch(error){setError(errorMessage(error));}
     finally{setLoading(false);}
+  }
+
+  async function openReceipt(paymentId:string){
+    setReceiptLoadingId(paymentId);setError("");
+    try{setReceipt(await getBillingReceipt(baseUrl,accessToken,tenantId,hospitalId,paymentId));}
+    catch(error){setError(errorMessage(error));}
+    finally{setReceiptLoadingId("");}
   }
 
   async function createService(event:FormEvent<HTMLFormElement>){
@@ -176,7 +197,20 @@ export function BillingWorkspace({baseUrl,accessToken,tenantId,hospitalId,depart
           <div><label htmlFor="billing-payment-reference">Reference (optional)</label><input id="billing-payment-reference" value={paymentReference} onChange={e=>setPaymentReference(e.target.value)} maxLength={80}/></div>
           <button type="submit" disabled={loading}>{loading?"Recording…":"Record payment"}</button>
         </form>}
-        {receipt&&<div className="billing-receipt"><label>PAYMENT RECEIPT</label><strong>{receipt.receiptNumber}</strong><span>{money(receipt.amount)} · {receipt.method} · {new Date(receipt.paidAtUtc).toLocaleString()}</span></div>}
+        {payments.length>0&&<div className="billing-payment-history">
+          <h3>Payment history</h3>
+          {payments.map(payment=><div className="billing-payment-history-row" key={payment.id}>
+            <div><strong>{payment.receiptNumber}</strong><small>{money(payment.amount)} · {payment.method} · {new Date(payment.paidAtUtc).toLocaleString()}</small></div>
+            <button type="button" onClick={()=>openReceipt(payment.id)} disabled={loading||receiptLoadingId===payment.id}>{receiptLoadingId===payment.id?"Loading…":"View receipt"}</button>
+          </div>)}
+        </div>}
+        {receipt&&<div className="billing-receipt">
+          <label>PAYMENT RECEIPT</label><strong>{receipt.receiptNumber}</strong>
+          <span>Invoice {receipt.invoiceNumber}</span>
+          <span>{money(receipt.amount)} · {receipt.method} · {new Date(receipt.paidAtUtc).toLocaleString()}</span>
+          {receipt.reference&&<span>Reference: {receipt.reference}</span>}
+          <button type="button" onClick={()=>window.print()}>Print receipt</button>
+        </div>}
       </div>}
     </div>
     {canReadReport&&<div className="billing-report">
