@@ -545,3 +545,47 @@ test("reception can call a waiting token and start consultation using the keyboa
   await page.keyboard.press("Enter");
   await expect(page.locator(".queue-status-inprogress")).toBeVisible();
 });
+
+test("reception can complete duplicate review and patient MRN registration using the keyboard", async ({ page }) => {
+  await installSession(page);
+  await installApi(page);
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+
+  const givenName = page.getByLabel("Given name *");
+  await givenName.focus();
+  await page.keyboard.type("Asha");
+  const middleName = page.getByLabel("Middle name");
+  await middleName.focus();
+  await page.keyboard.type("R.");
+  const familyName = page.getByLabel("Family name");
+  await familyName.focus();
+  await page.keyboard.type("Patil");
+  const dateOfBirth = page.getByLabel("Date of birth (if known)");
+  await dateOfBirth.focus();
+  await page.keyboard.type("1990-04-12");
+
+  const duplicateCheck = page.getByRole("button", { name: "Check for possible duplicates" });
+  await duplicateCheck.focus();
+  const focus = await duplicateCheck.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(focus.style).toBe("solid");
+  expect(focus.width).toBe("3px");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Duplicate review completed")).toBeVisible();
+
+  const acknowledgment = page.getByRole("checkbox", { name: /I reviewed the result/ });
+  await acknowledgment.focus();
+  await page.keyboard.press("Space");
+  await expect(acknowledgment).toBeChecked();
+
+  const register = page.getByRole("button", { name: "Register patient" });
+  await register.focus();
+  await expect(register).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByText(/MRN CC000001 was assigned/)).toBeVisible();
+});
