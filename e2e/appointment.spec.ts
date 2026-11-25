@@ -253,6 +253,8 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(providerAvailability).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+  await expect(providerAvailability).toBeFocused();
 
   const slots = page.getByRole("group", { name: "Available appointment slots" });
   await expect(slots.getByRole("button")).toHaveCount(1);
