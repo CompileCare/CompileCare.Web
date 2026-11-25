@@ -358,3 +358,77 @@ test("cashier can select a billable visit and issue an invoice using keyboard na
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "INV-E2E-0001" })).toBeVisible();
 });
+
+test("cashier can record a payment and print its receipt using keyboard controls", async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMocks(page);
+
+  await page.goto("/");
+  const billingLink = page.getByRole("link", { name: "Billing" });
+  await expect(billingLink).toBeVisible();
+  await billingLink.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+
+  const loadVisits = page.getByRole("button", { name: "Load billable visits" });
+  await loadVisits.focus();
+  await page.keyboard.press("Enter");
+  const visitSelect = page.getByLabel("In-progress or completed visit");
+  await expect(visitSelect.locator("option")).toHaveCount(2);
+  await visitSelect.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+
+  const quantity = page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" });
+  await expect(quantity).toBeEnabled();
+  await visitSelect.focus();
+  await page.keyboard.press("Tab");
+  await expect(quantity).toBeFocused();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type("1");
+
+  const issueInvoice = page.getByRole("button", { name: "Issue invoice" });
+  await issueInvoice.focus();
+  await expect(issueInvoice).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "INV-E2E-0001" })).toBeVisible();
+
+  const amount = page.getByLabel("Amount (INR)");
+  await amount.focus();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type("500");
+
+  const method = page.getByLabel("Method");
+  await method.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+
+  const reference = page.getByLabel("Reference (optional)");
+  await reference.focus();
+  await page.keyboard.type("KEYBOARD-UPI-001");
+
+  const recordPayment = page.getByRole("button", { name: "Record payment" });
+  await recordPayment.focus();
+  const paymentFocus = await recordPayment.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(paymentFocus.style).toBe("solid");
+  expect(paymentFocus.width).toBe("3px");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByText("Invoice fully settled.")).toBeVisible();
+  const receiptPanel = page.locator(".billing-receipt");
+  await expect(receiptPanel.getByText("RCT-E2E-0001")).toBeVisible();
+  await expect(receiptPanel.getByText("Reference: KEYBOARD-UPI-001")).toBeVisible();
+
+  const printReceipt = page.getByRole("button", { name: "Print receipt" });
+  await printReceipt.focus();
+  await page.keyboard.press("Enter");
+  const printCount = await page.evaluate(() =>
+    (window as Window & { __compileCarePrintCount?: number }).__compileCarePrintCount ?? 0
+  );
+  expect(printCount).toBe(1);
+});
