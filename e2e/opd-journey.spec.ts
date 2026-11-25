@@ -404,6 +404,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
 
   await page.getByLabel("Given name *").fill("Asha");
   await page.getByLabel("Middle name").fill("R.");
