@@ -22,7 +22,7 @@ Open the report:
 npm run test:e2e:report
 ```
 
-CI uploads the same folders as the `compilecare-web-playwright-report` artifact.
+This report and its screenshots are generated for local QA runs and are not uploaded as GitHub Actions artifacts. CI uses the lightweight console reporter and captures screenshots only when a test fails.
 
 ## Real local-stack acceptance is separate
 
