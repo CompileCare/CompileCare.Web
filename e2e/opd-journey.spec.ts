@@ -80,11 +80,11 @@ async function installSession(page: Page) {
   });
 }
 
-async function installApi(page: Page, seedRegisteredPatient = false) {
+async function installApi(page: Page, seedRegisteredPatient = false, initialQueueStatus = "Waiting") {
   const state: State = {
     permissions: receptionPermissions,
     patientRegistered: seedRegisteredPatient,
-    queueStatus: "Waiting",
+    queueStatus: initialQueueStatus,
     encounter: null,
     invoice: null,
     payments: []
@@ -485,4 +485,31 @@ test("reception patient search supports keyboard selection with a visible focus 
   await page.keyboard.press("Enter");
   await expect(patientResult).toHaveAttribute("aria-pressed", "true");
   await expect(patientResult).toHaveClass(/patient-result-active/);
+});
+
+test("ClinicalUser can open an OPD encounter from the clinical queue using keyboard navigation", async ({ page }) => {
+  await installSession(page);
+  const api = await installApi(page, true, "InProgress");
+  api.setPermissions(clinicalPermissions);
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Clinical workspace" })).toBeVisible();
+
+  const refreshButton = page.getByRole("button", { name: "Refresh clinical queue" });
+  await refreshButton.click();
+  const openEncounterButton = page.getByRole("button", { name: "Open / start encounter" });
+  await expect(openEncounterButton).toBeVisible();
+  await page.keyboard.press("Tab");
+
+  await expect(openEncounterButton).toBeFocused();
+  const focus = await openEncounterButton.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(focus.style).toBe("solid");
+  expect(focus.width).toBe("3px");
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /I have verified the patient identity/ })).toBeVisible();
 });
