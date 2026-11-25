@@ -276,7 +276,49 @@ export interface QueueEntry {
 
 export interface QueuePage extends Page<QueueEntry> {}
 
+export interface BillingServiceItem {
+  id:string; hospitalId:string; code:string; name:string; category:string; unitPrice:number; isActive:boolean;
+}
+export interface InvoiceLine { id:string; serviceCode:string; description:string; quantity:number; unitPrice:number; lineTotal:number; }
+export interface BillingInvoice {
+  id:string; hospitalId:string; queueEntryId:string; patientId:string; invoiceNumber:string;
+  issuedAtUtc:string; status:"Issued"|"PartiallyPaid"|"Paid"|string; subtotal:number; amountPaid:number; balanceDue:number; lines:InvoiceLine[];
+}
+export interface BillingPayment { id:string; invoiceId:string; receiptNumber:string; amount:number; method:string; reference:string|null; paidAtUtc:string; }
+export interface BillingReceipt { receiptNumber:string; invoiceNumber:string; hospitalId:string; patientId:string; amount:number; method:string; reference:string|null; paidAtUtc:string; }
+export interface DailyCollectionReport { businessDate:string; timeZoneId:string; totalCollected:number; byMethod:Record<string,number>; paymentCount:number; }
+export interface InvoiceLineInput { serviceItemId:string; quantity:number; }
+
 export interface Department { id: string; hospitalId: string; name: string; code: string | null; }
+
+export function listBillingServiceItems(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<BillingServiceItem[]> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/service-items`,accessToken,tenantId);
+}
+
+export function createBillingServiceItem(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,input:{code:string;name:string;category:string;unitPrice:number;isActive:boolean}):Promise<BillingServiceItem> {
+  return postJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/service-items`,accessToken,tenantId,input);
+}
+
+export function getInvoiceForVisit(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,queueEntryId:string):Promise<BillingInvoice> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/visits/${encodeURIComponent(queueEntryId)}/invoice`,accessToken,tenantId);
+}
+
+export function createBillingInvoice(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,input:{queueEntryId:string;lines:InvoiceLineInput[]}):Promise<BillingInvoice> {
+  return postJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/invoices`,accessToken,tenantId,input);
+}
+
+export function recordBillingPayment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,invoiceId:string,input:{amount:number;method:string;reference:string|null}):Promise<BillingPayment> {
+  return postJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/invoices/${encodeURIComponent(invoiceId)}/payments`,accessToken,tenantId,input);
+}
+
+export function getBillingReceipt(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,paymentId:string):Promise<BillingReceipt> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/payments/${encodeURIComponent(paymentId)}/receipt`,accessToken,tenantId);
+}
+
+export function getDailyCollectionReport(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,businessDate:string,timeZoneId:string):Promise<DailyCollectionReport> {
+  const parameters=new URLSearchParams({businessDate,timeZoneId});
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/reports/daily-collection?${parameters.toString()}`,accessToken,tenantId);
+}
 
 export function listDepartments(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<Page<Department>> {
   return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments?page=1&pageSize=100`,accessToken,tenantId);
