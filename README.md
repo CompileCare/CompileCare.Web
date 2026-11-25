@@ -4,6 +4,8 @@ Authenticated hospital workspace built with React, TypeScript and Vite. This app
 
 ## Current implementation
 
+The shared enterprise visual foundation is being introduced incrementally in `src/design-system.css`. It centralizes visual tokens and cross-module shell, form, panel, status and responsive styles without changing API contracts or authorization behavior.
+
 - OIDC Authorization Code + PKCE sign-in.
 - Current-user tenant discovery from the validated API identity; no user-entered or inferred tenant IDs.
 - Tenant selection followed by API-filtered hospital selection.
