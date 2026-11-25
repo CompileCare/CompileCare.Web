@@ -265,8 +265,17 @@ function PlatformOnboarding({user,onComplete}:{user:User;onComplete:()=>Promise<
       <input id="platform-bootstrap-secret" type="password" autoComplete="off" value={secret} onChange={e=>setSecret(e.target.value)} disabled={step>0||busy}/>
       <button type="button" onClick={()=>run(async()=>{
         if(!secret.trim())throw new Error("Enter the local bootstrap secret.");
-        await bootstrapPlatformOperator(apiBaseUrl??"",accessToken,secret);
-        setStep(1);setMessage("Platform operator provisioned for the signed-in identity.");
+        try {
+          await bootstrapPlatformOperator(apiBaseUrl??"",accessToken,secret);
+          setMessage("Platform operator provisioned for the signed-in identity.");
+        } catch (e) {
+          if (e instanceof ApiError && e.status === 409) {
+            setMessage("Platform bootstrap was already completed. The next step will verify whether this identity is an authorized platform operator.");
+          } else {
+            throw e;
+          }
+        }
+        setStep(1);
       })} disabled={step>0||busy||!secret.trim()}> {busy?"Working…":"Bootstrap platform operator"} </button>
       <div className="divider"/>
       <h3>Step 2 · Create the hospital tenant</h3>
