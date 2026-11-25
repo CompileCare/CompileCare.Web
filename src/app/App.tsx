@@ -49,6 +49,7 @@ import {
 } from "../api/compilecare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const localPlatformBootstrapEnabled = import.meta.env.VITE_ENABLE_PLATFORM_BOOTSTRAP === "true";
 const localDateToday = () => { const d=new Date(); return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
 
 function Callback() {
@@ -748,7 +749,7 @@ function Workspace() {
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
 
-        {!contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+        {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
         {selectedContext?.role !== "ClinicalUser" && (<section className="section reception-section">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
