@@ -420,8 +420,9 @@ test("cashier can record a payment and print its receipt using keyboard controls
   await page.keyboard.press("Enter");
 
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
-  await expect(page.getByText("RCT-E2E-0001")).toBeVisible();
-  await expect(page.getByText("Reference: KEYBOARD-UPI-001")).toBeVisible();
+  const receiptPanel = page.locator(".billing-receipt");
+  await expect(receiptPanel.getByText("RCT-E2E-0001")).toBeVisible();
+  await expect(receiptPanel.getByText("Reference: KEYBOARD-UPI-001")).toBeVisible();
 
   const printReceipt = page.getByRole("button", { name: "Print receipt" });
   await printReceipt.focus();
