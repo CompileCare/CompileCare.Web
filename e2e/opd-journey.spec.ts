@@ -80,10 +80,10 @@ async function installSession(page: Page) {
   });
 }
 
-async function installApi(page: Page) {
+async function installApi(page: Page, seedRegisteredPatient = false) {
   const state: State = {
     permissions: receptionPermissions,
-    patientRegistered: false,
+    patientRegistered: seedRegisteredPatient,
     queueStatus: "Waiting",
     encounter: null,
     invoice: null,
@@ -458,4 +458,31 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await page.getByRole("button", { name: "Record payment" }).click();
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
   await expect(page.locator(".invoice-status")).toHaveText("Paid");
+});
+
+test("reception patient search supports keyboard selection with a visible focus indicator", async ({ page }) => {
+  await installSession(page);
+  await installApi(page, true);
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await page.getByLabel("Patient name").fill("Asha");
+  const searchButton = page.getByRole("button", { name: "Search patients" });
+  await searchButton.click();
+
+  const patientResult = page.locator(".patient-result-selectable");
+  await expect(patientResult).toHaveCount(1);
+  await page.keyboard.press("Tab");
+
+  await expect(patientResult).toBeFocused();
+  const focus = await patientResult.evaluate(element => ({
+    style: getComputedStyle(element).outlineStyle,
+    width: getComputedStyle(element).outlineWidth
+  }));
+  expect(focus.style).toBe("solid");
+  expect(focus.width).toBe("3px");
+
+  await page.keyboard.press("Enter");
+  await expect(patientResult).toHaveAttribute("aria-pressed", "true");
+  await expect(patientResult).toHaveClass(/patient-result-active/);
 });
