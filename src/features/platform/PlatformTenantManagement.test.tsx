@@ -121,8 +121,6 @@ describe("PlatformTenantManagement", () => {
       "https://api.example.test", "platform-token", "tenant-1"
     ));
 
-    vi.mocked(listPlatformTenants).mockResolvedValue(page([closed]));
-    rerender(<PlatformTenantManagement {...props} />);
     expect(await screen.findByText("Closed tenants are terminal and cannot be reactivated.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reactivate tenant" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Close tenant" })).not.toBeInTheDocument();
