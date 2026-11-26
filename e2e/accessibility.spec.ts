@@ -28,3 +28,16 @@ test("workspace does not overflow at narrow tablet and mobile widths", async ({ 
     expect(dimensions.content, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(dimensions.viewport);
   }
 });
+
+test("skip link moves keyboard focus to the main workspace landmark", async ({ page }) => {
+  await page.goto("/");
+
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeFocused();
+
+  await page.keyboard.press("Enter");
+  const main = page.getByRole("main");
+  await expect(main).toBeFocused();
+  await expect(main).toHaveAttribute("id", "workspace-main");
+});
