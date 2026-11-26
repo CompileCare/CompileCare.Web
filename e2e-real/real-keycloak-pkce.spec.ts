@@ -26,19 +26,33 @@ function loadBrowserUser(): BrowserUserCredentials {
 test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant workspaces", async ({ page }) => {
   const credentials = loadBrowserUser();
   const hospitalRequests: Array<{ tenantId: string; hasBearerToken: boolean }> = [];
+  const patientRequests: Array<{ method: string; path: string; tenantId: string; hasBearerToken: boolean }> = [];
 
   // Capture only non-sensitive request evidence. Never retain or print the
   // bearer token, authorization code, username, password or OIDC callback URL.
   page.on("request", request => {
     const url = new URL(request.url());
-    if (url.origin !== "http://localhost:8081" || url.pathname !== "/api/v1/hospitals") {
+    if (url.origin !== "http://localhost:8081") {
       return;
     }
 
     const headers = request.headers();
-    hospitalRequests.push({
+    const evidence = {
       tenantId: headers["x-tenant-id"] ?? "",
       hasBearerToken: /^Bearer\s+\S+$/i.test(headers.authorization ?? "")
+    };
+
+    if (url.pathname === "/api/v1/hospitals") {
+      hospitalRequests.push(evidence);
+    }
+
+    if (url.pathname.includes("/patients")) {
+      patientRequests.push({
+        method: request.method(),
+        path: url.pathname,
+        ...evidence
+      });
+    }
     });
   });
 
@@ -80,6 +94,40 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
   await expect.poll(
     () => hospitalRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
   ).toBe(true);
+
+  // Exercise reception registration against PostgreSQL. The tenant and hospital
+  // were freshly provisioned for this CI run; these are synthetic test values.
+  await page.getByRole("link", { name: "Patient registration" }).click();
+  const uniqueGivenName = "CI" + Date.now().toString();
+  await page.locator("#registration-given-name").fill(uniqueGivenName);
+  await page.locator("#registration-middle-name").fill("Browser");
+  await page.locator("#registration-family-name").fill("Acceptance");
+  await page.locator("#registration-dob").fill("1990-02-03");
+  await page.getByRole("button", { name: "Check for possible duplicates" }).click();
+  await expect(page.getByText("Duplicate review completed")).toBeVisible();
+  await page.getByRole("checkbox", { name: /I reviewed the result and followed the hospital identity-check procedure/ }).check();
+  await page.getByRole("button", { name: "Register patient" }).click();
+  await expect(page.locator(".registration-success")).toContainText(
+    new RegExp("Patient " + uniqueGivenName + " Browser Acceptance was registered successfully")
+  );
+
+  await page.getByRole("link", { name: "Reception" }).click();
+  await page.getByLabel("Patient name").fill(uniqueGivenName);
+  await page.getByRole("button", { name: "Search patients" }).click();
+  await expect(page.locator(".patient-result-selectable")).toHaveCount(1);
+  await expect(page.locator(".patient-result-selectable")).toContainText(
+    uniqueGivenName + " Browser Acceptance"
+  );
+
+  expect(patientRequests.some(item => item.method === "POST" &&
+    item.path.endsWith("/patients/duplicate-candidates") &&
+    item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
+  expect(patientRequests.some(item => item.method === "POST" &&
+    /\/patients$/.test(item.path) &&
+    item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
+  expect(patientRequests.some(item => item.method === "GET" &&
+    item.path.endsWith("/patients") &&
+    item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
 
   // The same Keycloak subject has only FacilityViewer in tenant B. The selected
   // tenant changes the hospital dataset and removes patient-registration access.
