@@ -911,9 +911,9 @@ function Workspace() {
           </div>
           {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
           {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
           {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
           {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
           {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
           {hospitalsError && <p className="inline-error" role="alert">{hospitalsError}</p>}
