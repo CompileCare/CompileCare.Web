@@ -794,14 +794,19 @@ function Workspace() {
 
   async function refreshHospitals(preferredHospitalId?: string) {
     if (!user || !apiBaseUrl || !selectedTenantId) return;
-    const page = await getHospitals(apiBaseUrl,user.access_token,selectedTenantId);
-    setHospitals(page.items);
-    setSelectedHospitalId(current =>
-      preferredHospitalId && page.items.some(item => item.id === preferredHospitalId)
-        ? preferredHospitalId
-        : page.items.some(item => item.id === current)
-          ? current
-          : page.items.length === 1 ? page.items[0].id : "");
+    setHospitalsLoading(true);
+    try {
+      const page = await getHospitals(apiBaseUrl,user.access_token,selectedTenantId);
+      setHospitals(page.items);
+      setSelectedHospitalId(current =>
+        preferredHospitalId && page.items.some(item => item.id === preferredHospitalId)
+          ? preferredHospitalId
+          : page.items.some(item => item.id === current)
+            ? current
+            : page.items.length === 1 ? page.items[0].id : "");
+    } finally {
+      setHospitalsLoading(false);
+    }
   }
 
   async function refreshDepartments() {
@@ -810,12 +815,17 @@ function Workspace() {
       setSelectedDepartmentId("");
       return;
     }
-    const page = await listDepartments(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId);
-    setDepartments(page.items);
-    setSelectedDepartmentId(current =>
-      page.items.some(item => item.id === current)
-        ? current
-        : page.items.length === 1 ? page.items[0].id : "");
+    setDepartmentsLoading(true);
+    try {
+      const page = await listDepartments(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId);
+      setDepartments(page.items);
+      setSelectedDepartmentId(current =>
+        page.items.some(item => item.id === current)
+          ? current
+          : page.items.length === 1 ? page.items[0].id : "");
+    } finally {
+      setDepartmentsLoading(false);
+    }
   }
 
   return <div className="shell">
