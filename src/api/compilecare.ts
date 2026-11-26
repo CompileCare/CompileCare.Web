@@ -290,6 +290,9 @@ export interface DailyCollectionReport { businessDate:string; timeZoneId:string;
 export interface InvoiceLineInput { serviceItemId:string; quantity:number; }
 
 export interface Department { id: string; hospitalId: string; name: string; code: string | null; }
+export interface Ward { id: string; departmentId: string; name: string; }
+export interface Room { id: string; wardId: string; name: string; }
+export interface Bed { id: string; roomId: string; number: string; isActive: boolean; }
 
 export function listBillingServiceItems(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<BillingServiceItem[]> {
   return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/service-items`,accessToken,tenantId);
@@ -326,6 +329,65 @@ export function getDailyCollectionReport(baseUrl:string,accessToken:string,tenan
 
 export function listDepartments(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<Page<Department>> {
   return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments?page=1&pageSize=100`,accessToken,tenantId);
+}
+
+export function getHospital(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<Hospital> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}`,accessToken,tenantId);
+}
+export function updateHospital(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,input:{name:string;code:string|null}):Promise<Hospital> {
+  return putJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}`,accessToken,tenantId,input);
+}
+export function deleteHospital(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<void> {
+  return deleteJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}`,accessToken,tenantId);
+}
+
+export function getDepartment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string):Promise<Department> {
+  return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments/${encodeURIComponent(departmentId)}`,accessToken,tenantId);
+}
+export function updateDepartment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string,input:{name:string;code:string|null}):Promise<Department> {
+  return putJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments/${encodeURIComponent(departmentId)}`,accessToken,tenantId,input);
+}
+export function deleteDepartment(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string):Promise<void> {
+  return deleteJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/departments/${encodeURIComponent(departmentId)}`,accessToken,tenantId);
+}
+
+export function listWards(baseUrl:string,accessToken:string,tenantId:string,departmentId:string):Promise<Page<Ward>> {
+  return getJson(baseUrl,`/api/v1/departments/${encodeURIComponent(departmentId)}/wards?page=1&pageSize=100`,accessToken,tenantId);
+}
+export function createWard(baseUrl:string,accessToken:string,tenantId:string,departmentId:string,name:string):Promise<Ward> {
+  return postJson(baseUrl,`/api/v1/departments/${encodeURIComponent(departmentId)}/wards`,accessToken,tenantId,{name});
+}
+export function updateWard(baseUrl:string,accessToken:string,tenantId:string,departmentId:string,wardId:string,name:string):Promise<Ward> {
+  return putJson(baseUrl,`/api/v1/departments/${encodeURIComponent(departmentId)}/wards/${encodeURIComponent(wardId)}`,accessToken,tenantId,{name});
+}
+export function deleteWard(baseUrl:string,accessToken:string,tenantId:string,departmentId:string,wardId:string):Promise<void> {
+  return deleteJson(baseUrl,`/api/v1/departments/${encodeURIComponent(departmentId)}/wards/${encodeURIComponent(wardId)}`,accessToken,tenantId);
+}
+
+export function listRooms(baseUrl:string,accessToken:string,tenantId:string,wardId:string):Promise<Page<Room>> {
+  return getJson(baseUrl,`/api/v1/wards/${encodeURIComponent(wardId)}/rooms?page=1&pageSize=100`,accessToken,tenantId);
+}
+export function createRoom(baseUrl:string,accessToken:string,tenantId:string,wardId:string,name:string):Promise<Room> {
+  return postJson(baseUrl,`/api/v1/wards/${encodeURIComponent(wardId)}/rooms`,accessToken,tenantId,{name});
+}
+export function updateRoom(baseUrl:string,accessToken:string,tenantId:string,wardId:string,roomId:string,name:string):Promise<Room> {
+  return putJson(baseUrl,`/api/v1/wards/${encodeURIComponent(wardId)}/rooms/${encodeURIComponent(roomId)}`,accessToken,tenantId,{name});
+}
+export function deleteRoom(baseUrl:string,accessToken:string,tenantId:string,wardId:string,roomId:string):Promise<void> {
+  return deleteJson(baseUrl,`/api/v1/wards/${encodeURIComponent(wardId)}/rooms/${encodeURIComponent(roomId)}`,accessToken,tenantId);
+}
+
+export function listBeds(baseUrl:string,accessToken:string,tenantId:string,roomId:string):Promise<Page<Bed>> {
+  return getJson(baseUrl,`/api/v1/rooms/${encodeURIComponent(roomId)}/beds?page=1&pageSize=100`,accessToken,tenantId);
+}
+export function createBed(baseUrl:string,accessToken:string,tenantId:string,roomId:string,input:{number:string;isActive:boolean}):Promise<Bed> {
+  return postJson(baseUrl,`/api/v1/rooms/${encodeURIComponent(roomId)}/beds`,accessToken,tenantId,input);
+}
+export function updateBed(baseUrl:string,accessToken:string,tenantId:string,roomId:string,bedId:string,input:{number:string;isActive:boolean}):Promise<Bed> {
+  return putJson(baseUrl,`/api/v1/rooms/${encodeURIComponent(roomId)}/beds/${encodeURIComponent(bedId)}`,accessToken,tenantId,input);
+}
+export function deleteBed(baseUrl:string,accessToken:string,tenantId:string,roomId:string,bedId:string):Promise<void> {
+  return deleteJson(baseUrl,`/api/v1/rooms/${encodeURIComponent(roomId)}/beds/${encodeURIComponent(bedId)}`,accessToken,tenantId);
 }
 
 export function listQueue(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,departmentId:string,date:string,page=1):Promise<QueuePage> {
@@ -470,6 +532,15 @@ export interface OpdEncounter {
 export interface OpdEncounterNoteInput { chiefComplaint:string|null; history:string|null; examination:string|null; assessment:string|null; plan:string|null; }
 export interface OpdEncounterAmendmentInput { reason:string; content:string; }
 export interface OpdEncounterCancelInput { reason:string; }
+
+async function deleteJson(baseUrl:string,path:string,accessToken:string,tenantId:string):Promise<void> {
+  if(!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if(!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
+  if(!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
+  const headers=new Headers({Accept:"application/json",Authorization:`Bearer ${accessToken}`,"X-Tenant-ID":tenantId});
+  const response=await fetch(endpoint(baseUrl,path),{method:"DELETE",headers,cache:"no-store",credentials:"omit"});
+  if(!response.ok) throw new ApiError(response.status);
+}
 
 async function putJson<T>(baseUrl:string,path:string,accessToken:string,tenantId:string,body:unknown):Promise<T> {
   if(!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
