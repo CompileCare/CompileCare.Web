@@ -26,14 +26,14 @@ jobs:
         run: npx playwright test --config=playwright.real-oidc.config.ts --list
       - name: Docker build and smoke test
         run: |
-          docker compose build
-          docker compose up -d
+          docker compose -f docker-compose.yml -f docker-compose.csp-test.yml build
+          docker compose -f docker-compose.yml -f docker-compose.csp-test.yml up -d
           for i in $(seq 1 20); do
             if curl --fail http://localhost:8080/ >/dev/null; then break; fi
             sleep 2
           done
           if ! curl --fail http://localhost:8080/ >/dev/null; then
-            docker compose logs
+            docker compose -f docker-compose.yml -f docker-compose.csp-test.yml logs
             exit 1
           fi
           headers="$(curl --fail --silent --show-error --head http://localhost:8080/)"
@@ -51,7 +51,7 @@ jobs:
             if ! grep -Fqi "$expected" <<<"$headers"; then
               echo "Missing or incorrect security response header: $expected"
               echo "$headers"
-              docker compose logs
+              docker compose -f docker-compose.yml -f docker-compose.csp-test.yml logs
               exit 1
             fi
           done
@@ -62,6 +62,8 @@ jobs:
             exit 1
           fi
           echo "Verified the Web CSP blocks inline styles and scripts."
+          echo "Running the complete browser workflow suite against the production Nginx container with the enforced CSP."
+          CSP_TEST_BASE_URL=http://127.0.0.1:8080 npx playwright test --config=playwright.docker.config.ts e2e
           invalid_csp_output="$(docker compose run --rm --no-deps -e CSP_CONNECT_SRC='*' web 2>&1)" && {
             echo "The Web container accepted a wildcard CSP origin unexpectedly."
             exit 1
@@ -93,4 +95,4 @@ jobs:
           fi
           echo "Verified missing CSP origins are rejected at container startup."
       - if: always()
-        run: docker compose down --volumes --remove-orphans
+        run: docker compose -f docker-compose.yml -f docker-compose.csp-test.yml down --volumes --remove-orphans
