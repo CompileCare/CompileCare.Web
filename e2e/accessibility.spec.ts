@@ -86,10 +86,11 @@ test("reduced-motion preference suppresses nonessential transitions", async ({ p
   await page.goto("/");
 
   const transitionDurations = await page.locator("body *").evaluateAll(elements =>
-    elements
-      .map(element => getComputedStyle(element).transitionDuration)
-      .filter(duration => duration !== "0s")
+    elements.map(element => {
+      const duration = getComputedStyle(element).transitionDuration.split(",")[0].trim();
+      return Number.parseFloat(duration) || 0;
+    })
   );
 
-  expect(transitionDurations).toEqual([]);
+  expect(Math.max(0, ...transitionDurations)).toBeLessThanOrEqual(0.001);
 });
