@@ -5,6 +5,7 @@ import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import { PatientSearchResults } from "../features/reception/PatientSearchResults";
+import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -883,7 +884,13 @@ function Workspace() {
               <label htmlFor="availability-session">Provider availability</label>
               <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Session · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
               {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}{selectedSessionId&&!slotsLoading&&slots.length===0&&<p className="inline-status">No slots are available in this session.</p>}
-              {slots.length>0&&<div className="slot-grid" role="group" aria-label="Available appointment slots">{slots.map(slot=><button type="button" key={slot.startsAtUtc} className={selectedSlotStart===slot.startsAtUtc?"slot-selected":""} disabled={!slot.isAvailable} onClick={()=>setSelectedSlotStart(slot.startsAtUtc)}>{new Date(slot.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:selectedSession?.timeZoneId})}<small>{slot.isAvailable?"Available":"Unavailable"}</small></button>)}</div>}
+              {slots.length>0&&<AppointmentSlotGrid
+                slots={slots}
+                selectedSlotStart={selectedSlotStart}
+                timeZoneId={selectedSession?.timeZoneId}
+                disabled={isWorkflowBusy || !!bookedAppointment}
+                onSelect={setSelectedSlotStart}
+              />}
             </div>}
             {selectedSlotStart&&<form onSubmit={handleBookAppointment} className="booking-review">
               <div className="review-summary"><strong>Review appointment</strong><span>{selectedPatient?patientName(selectedPatient):""} · {selectedDepartment?.name}</span><span>{new Date(selectedSlotStart).toLocaleString([],{dateStyle:"medium",timeStyle:"short",timeZone:selectedSession?.timeZoneId})} ({selectedSession?.timeZoneId})</span></div>
