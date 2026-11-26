@@ -4,6 +4,7 @@ import { Route,Routes,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
+import { PatientSearchResults } from "../features/reception/PatientSearchResults";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -519,18 +520,27 @@ function Workspace() {
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
-  const defaultActiveSection = isClinicalWorkspace ? "clinical" : canReadPatients ? "reception" : canManageAppointments ? "appointments" : canReadQueue ? "queue" : canReadBilling ? "billing" : canRegisterPatients ? "patient-registration" : "";
+  const allowedSectionKey = [
+    isClinicalWorkspace ? "clinical" : "",
+    canReadPatients ? "reception" : "",
+    canRegisterPatients ? "patient-registration" : "",
+    canManageAppointments ? "appointments" : "",
+    canReadQueue && !isClinicalWorkspace ? "queue" : "",
+    canReadBilling ? "billing" : ""
+  ].filter(Boolean).join("|");
+  const defaultActiveSection = allowedSectionKey.split("|")[0] || "";
   const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
     const syncActiveSection = () => {
       const section = window.location.hash.slice(1);
-      setActiveSection(section || defaultActiveSection);
+      const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
+      setActiveSection(allowedSections.includes(section) ? section : defaultActiveSection);
     };
     syncActiveSection();
     window.addEventListener("hashchange", syncActiveSection);
     return () => window.removeEventListener("hashchange", syncActiveSection);
-  },[defaultActiveSection]);
+  },[allowedSectionKey,defaultActiveSection]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
@@ -841,12 +851,18 @@ function Workspace() {
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
-            {patients.length > 0 && <div className="patient-results" aria-label="Patient search results">
-              {patients.map(patient => <article className={"patient-result patient-result-selectable "+(selectedPatient?.id===patient.id?"patient-result-active":"")} key={patient.id} role="button" tabIndex={0} aria-pressed={selectedPatient?.id===patient.id} aria-disabled={isWorkflowBusy} onKeyDown={event=>{if(!isWorkflowBusy&&(event.key==="Enter"||event.key===" ")){event.preventDefault();setSelectedPatient(patient);setBookedAppointment(null);setQueueEntry(null);setBookingError("");setWalkInError("");}}} onClick={() => { if(isWorkflowBusy)return; setSelectedPatient(patient); setBookedAppointment(null); setQueueEntry(null); setBookingError(""); setWalkInError(""); }}>
-                <div><strong>{patientName(patient)}</strong><span>{patient.dateOfBirth ? `Date of birth: ${patient.dateOfBirth}` : "Date of birth not recorded"}</span></div>
-                <small>Registered patient</small>
-              </article>)}
-            </div>}
+            {patients.length > 0 && <PatientSearchResults
+              patients={patients}
+              selectedPatientId={selectedPatient?.id}
+              disabled={isWorkflowBusy}
+              onSelect={patient => {
+                setSelectedPatient(patient);
+                setBookedAppointment(null);
+                setQueueEntry(null);
+                setBookingError("");
+                setWalkInError("");
+              }}
+            />}
             {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
           </div>
         </section>)}

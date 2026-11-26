@@ -11,4 +11,16 @@ describe("reception workspace",()=>{
   expect(screen.getByRole("link",{name:"Skip to main content"})).toHaveAttribute("href","#workspace-main");
   expect(screen.getByRole("main")).toHaveAttribute("id","workspace-main");
  });
+
+ it("ignores a stale module hash when the current identity has no module permission",()=>{
+  const previousHash=window.location.hash;
+  window.location.hash="#billing";
+  try {
+   render(<MemoryRouter><App/></MemoryRouter>);
+   expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
+   expect(screen.queryByRole("link",{name:"Billing"})).not.toBeInTheDocument();
+  } finally {
+   window.location.hash=previousHash;
+  }
+ });
 });
