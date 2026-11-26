@@ -625,7 +625,12 @@ function Workspace() {
   useEffect(() => {
     if (sessionLoading || (user && !contextsResolved)) return;
     const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
-    const legacyHashSection = location.hash.slice(1);
+    const moduleSections = [
+      "clinical","reception","patient-registration","overview","appointment-management",
+      "staff-management","queue","billing","facilities","mrn-policy","memberships","platform-tenants"
+    ];
+    const hashValue = location.hash.slice(1);
+    const legacyHashSection = moduleSections.includes(hashValue) ? hashValue : "";
     const pathSection = location.pathname === "/" ? "" : location.pathname.slice(1);
     const requestedSection = legacyHashSection || pathSection;
     // With multiple memberships, keep a deep link intact until the user chooses
@@ -636,9 +641,13 @@ function Workspace() {
       : defaultActiveSection;
     setActiveSection(nextSection);
 
-    // Keep legacy hash URLs working while making every workspace independently addressable.
-    // The fragment retains native in-page scrolling to the corresponding module landmark.
-    const canonicalLocation = nextSection ? `/${nextSection}#${nextSection}` : "/";
+    // Keep legacy module hashes working while preserving accessibility/other in-page anchors.
+    const fragment = legacyHashSection
+      ? (nextSection ? `#${nextSection}` : "")
+      : location.hash;
+    const canonicalLocation = nextSection
+      ? `/${nextSection}${fragment}`
+      : `/${fragment}`;
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
