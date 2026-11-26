@@ -7,6 +7,7 @@ import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import { PatientSearchResults } from "../features/reception/PatientSearchResults";
 import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
 import { QueueEntryRow } from "../features/queue/QueueEntryRow";
+import { ClinicalQueueRow } from "../features/clinical/ClinicalQueueRow";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -212,11 +213,13 @@ function ClinicalWorkspace({baseUrl,accessToken,tenantId,hospitalId,departments,
       <p className="helper-text">The queue view contains operational tokens only. Patient identity and clinical details are not exposed in queue rows.</p>
       {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
       {queue.length>0?<div className="clinical-queue" aria-label="Clinical queue and recent completed visits">
-        {clinicalQueue.map(entry=><article className="clinical-queue-row" key={entry.id}>
-          <div><strong>Token #{String(entry.tokenNumber).padStart(2,"0")}</strong><small>{entry.status==="InProgress"?"Consultation in progress":"Queue completed"} · {entry.startedAtUtc?new Date(entry.startedAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Start time unavailable"}</small></div>
-          <span className={"queue-status queue-status-"+entry.status.toLowerCase()}>{entry.status}</span>
-          <button type="button" onClick={()=>openEncounter(entry)} disabled={actionBusy||loadingQueue}>{openingId===entry.id?"Opening…":entry.status==="InProgress"?"Open / start encounter":"Resume encounter"}</button>
-        </article>)}
+        {clinicalQueue.map(entry=><ClinicalQueueRow
+          key={entry.id}
+          entry={entry}
+          opening={openingId===entry.id}
+          disabled={actionBusy||loadingQueue}
+          onOpen={openEncounter}
+        />)}
         {clinicalQueue.length===0&&<p className="inline-status">No in-progress consultations or completed visits are available for this department and date.</p>}
       </div>:!loadingQueue&&!queueError&&<p className="inline-status">Refresh the clinical queue to see in-progress consultations and completed visits.</p>}
     </div>
