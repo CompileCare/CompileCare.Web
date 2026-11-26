@@ -113,11 +113,9 @@ describe("PlatformTenantManagement", () => {
   });
 
   it("reactivates a suspended tenant and keeps closed tenants terminal", async () => {
-    let listCalls = 0;
-    vi.mocked(listPlatformTenants).mockImplementation(async () => {
-      listCalls += 1;
-      return page(listCalls <= 2 ? [suspended] : [closed]);
-    });
+    vi.mocked(listPlatformTenants).mockImplementation(async () =>
+      page(vi.mocked(activatePlatformTenant).mock.calls.length > 0 ? [closed] : [suspended])
+    );
     render(<PlatformTenantManagement {...props} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Reactivate tenant" }));
