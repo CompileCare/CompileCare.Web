@@ -15,6 +15,7 @@ interface Props {
   canReadAppointments: boolean;
   canReadQueue: boolean;
   canReadCollection: boolean;
+  canReadBilling: boolean;
   canReadPatients: boolean;
   canReadStaff: boolean;
 }
@@ -31,7 +32,7 @@ function failure(error: unknown): string {
 
 export function HospitalOverview({
   baseUrl, accessToken, tenantId, hospitalId, hospitalName, departments, timeZoneId,
-  canReadAppointments, canReadQueue, canReadCollection, canReadPatients, canReadStaff
+  canReadAppointments, canReadQueue, canReadCollection, canReadBilling, canReadPatients, canReadStaff
 }: Props) {
   const [departmentId, setDepartmentId] = useState("");
   const [date, setDate] = useState(today());
@@ -110,7 +111,7 @@ export function HospitalOverview({
       <span>QUICK ACCESS</span>
       {canReadAppointments && <a href="#appointment-management" aria-label="Open schedule overview">Appointments <span>Manage bookings</span></a>}
       {canReadQueue && <a href="#queue" aria-label="Open patient flow">Queue <span>Arrival and patient flow</span></a>}
-      {canReadCollection && <a href="#billing" aria-label="Open financial summary">Billing <span>Invoices and collection</span></a>}
+      {canReadBilling && <a href="#billing" aria-label="Open financial summary">Billing <span>Invoices and collection</span></a>}
       {canReadPatients && <a href="#reception" aria-label="Open patient search">Reception <span>Patient search and registration</span></a>}
       {canReadStaff && <a href="#staff-management" aria-label="Open workforce directory">Workforce <span>Staff and provider assignments</span></a>}
     </div>
