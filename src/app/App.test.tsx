@@ -26,7 +26,7 @@ describe("reception workspace",()=>{
 
  it("rejects legacy hash-only module URLs when signed out",async()=>{
   render(<MemoryRouter initialEntries={["/#reception"]}><App/><LocationProbe/></MemoryRouter>);
-  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent(/^\/$/));
  });
 
  it("preserves non-module accessibility anchors while rejecting an inaccessible route",async()=>{
