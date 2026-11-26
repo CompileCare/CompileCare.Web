@@ -1,7 +1,12 @@
-import { render,screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { render,screen,waitFor } from "@testing-library/react";
+import { MemoryRouter,useLocation } from "react-router-dom";
 import { describe,it,expect } from "vitest";
 import { App } from "./App";
+
+function LocationProbe() {
+ const location=useLocation();
+ return <output data-testid="current-location">{location.pathname}{location.hash}</output>;
+}
 
 describe("reception workspace",()=>{
  it("renders a sign-in entry point without inventing a hospital or patient context",()=>{
@@ -12,15 +17,15 @@ describe("reception workspace",()=>{
   expect(screen.getByRole("main")).toHaveAttribute("id","workspace-main");
  });
 
- it("ignores a stale module hash when the current identity has no module permission",()=>{
-  const previousHash=window.location.hash;
-  window.location.hash="#billing";
-  try {
-   render(<MemoryRouter><App/></MemoryRouter>);
-   expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
-   expect(screen.queryByRole("link",{name:"Billing"})).not.toBeInTheDocument();
-  } finally {
-   window.location.hash=previousHash;
-  }
+ it("normalizes a deep link to a module the signed-out identity cannot access",async()=>{
+  render(<MemoryRouter initialEntries={["/billing#billing"]}><App/><LocationProbe/></MemoryRouter>);
+  expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
+  expect(screen.queryByRole("link",{name:"Billing"})).not.toBeInTheDocument();
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
+ });
+
+ it("upgrades legacy hash-only module URLs to stable route URLs",async()=>{
+  render(<MemoryRouter initialEntries={["/#reception"]}><App/><LocationProbe/></MemoryRouter>);
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
  });
 });
