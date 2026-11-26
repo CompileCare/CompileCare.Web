@@ -30,6 +30,9 @@ describe("hospital MRN policy workspace", () => {
     render(<PatientIdentifierPolicyManagement {...props} />);
     expect(await screen.findByLabelText("MRN prefix")).toBeInTheDocument();
     expect(screen.getByLabelText("Sequence digits")).toHaveValue(6);
+    const pattern = screen.getByLabelText("MRN prefix").getAttribute("pattern");
+    expect(pattern).toBe("[A-Za-z0-9][A-Za-z0-9\\-]{0,19}");
+    expect(() => new RegExp(pattern ?? "", "v")).not.toThrow();
   });
 
   it("keeps the policy read-only when only policy-read permission is present", async () => {
