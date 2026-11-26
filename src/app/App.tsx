@@ -579,8 +579,8 @@ function Workspace() {
   const canReadStaff = hasPermission("staff.read");
   const canManageStaff = hasPermission("staff.manage");
   const canReadDailyCollection = hasPermission("billing.report.read");
-  const canViewOverview = canReadAppointments || canReadQueue || canReadDailyCollection;
   const canReadQueue = hasPermission("queue.read");
+  const canViewOverview = canReadAppointments || canReadQueue || canReadDailyCollection;
   const canManageQueue = hasPermission("queue.manage");
   const canReadBilling = hasPermission("billing.invoice.read") || hasPermission("billing.invoice.manage");
   const canReadFacilities = hasPermission("facility.read");
