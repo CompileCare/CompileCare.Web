@@ -984,6 +984,7 @@ function Workspace() {
           canReadAppointments={canReadAppointments}
           canReadQueue={canReadQueue}
           canReadCollection={canReadDailyCollection}
+          canReadBilling={canReadBilling}
           canReadPatients={canReadPatients}
           canReadStaff={canReadStaff}
         />}
