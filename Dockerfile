@@ -14,6 +14,9 @@ ENV VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIE
 RUN npm run build
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY docker/05-validate-csp.sh /docker-entrypoint.d/05-validate-csp.sh
+RUN chmod +x /docker-entrypoint.d/05-validate-csp.sh
+ENV NGINX_ENVSUBST_FILTER="^CSP_"
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
