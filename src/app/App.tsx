@@ -593,8 +593,10 @@ function Workspace() {
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy||facilityBusy||appointmentManagementBusy||staffManagementBusy||identifierPolicyBusy||membershipBusy||platformBusy;
   const allowedSectionKey = [
     isClinicalWorkspace ? "clinical" : "",
-    canViewOverview ? "overview" : "",
+    // Reception is the primary landing workspace for staff who can register/search
+    // patients; overview remains available as a secondary navigation destination.
     canReadPatients ? "reception" : "",
+    canViewOverview ? "overview" : "",
     canRegisterPatients ? "patient-registration" : "",
     canReadAppointments || canManageAppointments || canPublishAvailability ? "appointment-management" : "",
     canReadStaff || canManageStaff ? "staff-management" : "",
