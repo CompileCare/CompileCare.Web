@@ -49,7 +49,7 @@ describe("hospital MRN policy workspace", () => {
       props.baseUrl, props.accessToken, props.tenantId, props.hospitalId,
       { prefix: "CC-AKH", numberLength: 6 }
     ));
-    expect(await screen.findByText("CC-AKH000000")).toBeInTheDocument();
+    expect(await screen.findByText("CC-AKH000001")).toBeInTheDocument();
     expect(screen.getByText(/Replacement is not supported/)).toBeInTheDocument();
   });
 });
