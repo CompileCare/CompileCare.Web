@@ -44,7 +44,7 @@ jobs:
             "Permissions-Policy: camera=(), microphone=(), geolocation=()"; do
             if ! grep -Fqi "$expected" <<<"$headers"; then
               echo "Missing or incorrect security response header: $expected"
-              printf '%s\\n' "$headers"
+              echo "$headers"
               docker compose logs
               exit 1
             fi
