@@ -53,7 +53,6 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
         ...evidence
       });
     }
-    });
   });
 
   await page.goto("/");
