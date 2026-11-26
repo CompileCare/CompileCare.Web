@@ -108,11 +108,11 @@ export function HospitalOverview({
 
     <div className="overview-shortcuts">
       <span>QUICK ACCESS</span>
-      {canReadAppointments && <a href="#appointment-management">Appointments <span>Manage bookings</span></a>}
-      {canReadQueue && <a href="#queue">Queue <span>Arrival and patient flow</span></a>}
-      {canReadCollection && <a href="#billing">Billing <span>Invoices and collection</span></a>}
-      {canReadPatients && <a href="#reception">Reception <span>Patient search and registration</span></a>}
-      {canReadStaff && <a href="#staff-management">Workforce <span>Staff and provider assignments</span></a>}
+      {canReadAppointments && <a href="#appointment-management" aria-label="Open schedule overview">Appointments <span>Manage bookings</span></a>}
+      {canReadQueue && <a href="#queue" aria-label="Open patient flow">Queue <span>Arrival and patient flow</span></a>}
+      {canReadCollection && <a href="#billing" aria-label="Open financial summary">Billing <span>Invoices and collection</span></a>}
+      {canReadPatients && <a href="#reception" aria-label="Open patient search">Reception <span>Patient search and registration</span></a>}
+      {canReadStaff && <a href="#staff-management" aria-label="Open workforce directory">Workforce <span>Staff and provider assignments</span></a>}
     </div>
   </section>;
 }
