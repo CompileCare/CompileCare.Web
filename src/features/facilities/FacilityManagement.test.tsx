@@ -81,6 +81,22 @@ describe("FacilityManagement", () => {
     await screen.findByText("No wards are configured for this department.");
   });
 
+  it("allows facility managers to write without exposing delete controls", async () => {
+    render(
+      <FacilityManagement
+        {...baseProps}
+        permissions={["facility.read", "facility.write"]}
+        scopes={[{ scopeType: "Hospital", hospitalId: hospital.id, departmentId: null }]}
+      />
+    );
+
+    await screen.findByText("No wards are configured for this department.");
+    expect(screen.getByRole("button", { name: "Edit hospital" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create department" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete hospital" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete department" })).not.toBeInTheDocument();
+  });
+
   it("allows a tenant-wide facility administrator to create a hospital", async () => {
     const onRefreshHospitals = vi.fn().mockResolvedValue(undefined);
     render(
