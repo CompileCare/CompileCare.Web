@@ -667,11 +667,17 @@ export function getHospitalPatient(
 }
 
 
+export interface PlatformOperatorStatus {
+  isPlatformOperator: boolean;
+}
+
 export interface PlatformTenant {
   id: string;
   name: string;
   slug: string;
-  status: string;
+  status: "Provisioning" | "Active" | "Suspended" | "Closed" | string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
 }
 
 async function postPlatformJson<T>(baseUrl: string, path: string, accessToken: string, body: unknown): Promise<T> {
@@ -692,6 +698,15 @@ async function postPlatformJson<T>(baseUrl: string, path: string, accessToken: s
   return response.json() as Promise<T>;
 }
 
+export function getPlatformOperatorStatus(baseUrl: string, accessToken: string): Promise<PlatformOperatorStatus> {
+  return getJson(baseUrl, "/api/v1/platform/operator/status", accessToken);
+}
+
+export function listPlatformTenants(baseUrl: string, accessToken: string, page = 1): Promise<Page<PlatformTenant>> {
+  const parameters = new URLSearchParams({ page: String(page), pageSize: "50" });
+  return getJson(baseUrl, `/api/v1/platform/tenants?${parameters.toString()}`, accessToken);
+}
+
 export function bootstrapPlatformOperator(baseUrl: string, accessToken: string, bootstrapSecret: string): Promise<{status:string}> {
   return postPlatformJson(baseUrl, "/api/v1/platform/bootstrap/operator", accessToken, { bootstrapSecret });
 }
@@ -706,6 +721,14 @@ export function provisionInitialTenantAdministrator(baseUrl: string, accessToken
 
 export function activatePlatformTenant(baseUrl: string, accessToken: string, tenantId: string): Promise<PlatformTenant> {
   return postPlatformJson(baseUrl, `/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/activate`, accessToken, {});
+}
+
+export function suspendPlatformTenant(baseUrl: string, accessToken: string, tenantId: string): Promise<PlatformTenant> {
+  return postPlatformJson(baseUrl, `/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/suspend`, accessToken, {});
+}
+
+export function closePlatformTenant(baseUrl: string, accessToken: string, tenantId: string): Promise<PlatformTenant> {
+  return postPlatformJson(baseUrl, `/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/close`, accessToken, {});
 }
 
 export function createHospital(baseUrl: string, accessToken: string, tenantId: string, name: string, code: string | null): Promise<Hospital> {

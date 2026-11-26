@@ -10,9 +10,11 @@ import { QueueEntryRow } from "../features/queue/QueueEntryRow";
 import { ClinicalQueueRow } from "../features/clinical/ClinicalQueueRow";
 import { FacilityManagement } from "../features/facilities/FacilityManagement";
 import { TenantMembershipManagement } from "../features/memberships/TenantMembershipManagement";
+import { PlatformTenantManagement } from "../features/platform/PlatformTenantManagement";
 import {
   ApiError,
   getCurrentUserTenantContexts,
+  getPlatformOperatorStatus,
   getHospitals,
   searchPatients,
   checkPatientDuplicateCandidates,
@@ -352,6 +354,9 @@ function Workspace() {
   const [contexts,setContexts] = useState<UserTenantContext[]>([]);
   const [contextsLoading,setContextsLoading] = useState(false);
   const [contextsError,setContextsError] = useState("");
+  const [isPlatformOperator,setIsPlatformOperator] = useState(false);
+  const [platformOperatorLoading,setPlatformOperatorLoading] = useState(false);
+  const [platformOperatorError,setPlatformOperatorError] = useState("");
   const [selectedTenantId,setSelectedTenantId] = useState("");
   const [hospitals,setHospitals] = useState<Hospital[]>([]);
   const [hospitalsLoading,setHospitalsLoading] = useState(false);
@@ -410,6 +415,7 @@ function Workspace() {
   const [clinicalBusy,setClinicalBusy] = useState(false);
   const [facilityBusy,setFacilityBusy] = useState(false);
   const [membershipBusy,setMembershipBusy] = useState(false);
+  const [platformBusy,setPlatformBusy] = useState(false);
   const [activeSection,setActiveSection] = useState("");
 
   useEffect(() => {
@@ -448,6 +454,29 @@ function Workspace() {
       manager.events.removeSilentRenewError(renewError);
     };
   },[]);
+
+  useEffect(() => {
+    if (!user || !apiBaseUrl) {
+      setIsPlatformOperator(false);
+      setPlatformOperatorLoading(false);
+      setPlatformOperatorError("");
+      return;
+    }
+    let active = true;
+    setPlatformOperatorLoading(true);
+    setPlatformOperatorError("");
+    getPlatformOperatorStatus(apiBaseUrl, user.access_token)
+      .then(result => { if (active) setIsPlatformOperator(result.isPlatformOperator); })
+      .catch(error => {
+        if (!active) return;
+        setIsPlatformOperator(false);
+        setPlatformOperatorError(error instanceof ApiError && error.status === 401
+          ? "Your session could not be verified for platform administration. Sign in again if this continues."
+          : "Platform operator status could not be verified. Tenant workspaces remain available according to your membership.");
+      })
+      .finally(() => { if (active) setPlatformOperatorLoading(false); });
+    return () => { active = false; };
+  }, [user?.access_token]);
 
   useEffect(() => {
     if (!user) {
@@ -530,7 +559,7 @@ function Workspace() {
   const canManageMemberships = hasPermission("membership.manage");
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
-  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy||facilityBusy||membershipBusy;
+  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy||facilityBusy||membershipBusy||platformBusy;
   const allowedSectionKey = [
     isClinicalWorkspace ? "clinical" : "",
     canReadPatients ? "reception" : "",
@@ -539,10 +568,11 @@ function Workspace() {
     canReadQueue && !isClinicalWorkspace ? "queue" : "",
     canReadBilling ? "billing" : "",
     canReadFacilities ? "facilities" : "",
-    canManageMemberships ? "memberships" : ""
+    canManageMemberships ? "memberships" : "",
+    isPlatformOperator ? "platform-tenants" : ""
   ].filter(Boolean).join("|");
   const defaultActiveSection = allowedSectionKey.split("|")[0] || "";
-  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "memberships" ? "Membership administration" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
+  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "memberships" ? "Membership administration" : activeSection === "platform-tenants" ? "Platform tenant administration" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
     const syncActiveSection = () => {
@@ -840,13 +870,13 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canManageAppointments&&<a className={activeSection==="appointments"?"selected":undefined} aria-current={activeSection==="appointments"?"location":undefined} href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{canReadFacilities&&<a className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} href="#facilities">Facilities</a>}{canManageMemberships&&<a className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} href="#memberships">Memberships</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canManageMemberships&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canManageAppointments&&<a className={activeSection==="appointments"?"selected":undefined} aria-current={activeSection==="appointments"?"location":undefined} href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{canReadFacilities&&<a className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} href="#facilities">Facilities</a>}{canManageMemberships&&<a className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} href="#memberships">Memberships</a>}{isPlatformOperator&&<><p>PLATFORM</p><a className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} href="#platform-tenants">Tenant lifecycle</a></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
-      <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
+      <footer>Secure by design<br/><small>{isPlatformOperator && activeSection==="platform-tenants" ? "Platform control plane" : "Tenant-scoped access"}</small></footer>
     </aside>
     <main className="content" id="workspace-main" tabIndex={-1}>
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>{activeWorkspaceTitle}</h1></div>
+        <div><label>{activeSection==="platform-tenants" ? "COMPILECARE PLATFORM" : "HOSPITAL OPERATIONS"}</label><h1>{activeWorkspaceTitle}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -856,6 +886,7 @@ function Workspace() {
       </header>
 
       {authError && <div className="notice" role="alert">{authError}</div>}
+      {platformOperatorError && <div className="notice" role="status">{platformOperatorError}</div>}
       {!isAuthenticationConfigured && <div className="notice" role="status"><b>Authentication setup required.</b> Configure the OIDC environment variables before enabling staff sign-in.</div>}
       {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
       {user && apiBaseUrl && <>
@@ -880,15 +911,23 @@ function Workspace() {
           </div>
           {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
           {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
           {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
           {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
           {hospitalsError && <p className="inline-error" role="alert">{hospitalsError}</p>}
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
 
-        {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+        {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+
+        {isPlatformOperator && user && apiBaseUrl && <PlatformTenantManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          currentIssuer={String(user.profile.iss ?? "")}
+          onBusyChange={setPlatformBusy}
+        />}
 
         {canReadFacilities && selectedContext && selectedTenantId && <FacilityManagement
           baseUrl={apiBaseUrl}
