@@ -49,6 +49,7 @@ const baseProps = {
   tenantId: "tenant-1",
   hospital,
   departments: [department],
+  departmentsLoading: false,
   onRefreshHospitals: vi.fn().mockResolvedValue(undefined),
   onRefreshDepartments: vi.fn().mockResolvedValue(undefined),
   onBusyChange: vi.fn()
