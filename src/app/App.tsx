@@ -360,6 +360,7 @@ function Workspace() {
   const [authError,setAuthError] = useState("");
   const [contexts,setContexts] = useState<UserTenantContext[]>([]);
   const [contextsLoading,setContextsLoading] = useState(false);
+  const [contextsResolved,setContextsResolved] = useState(false);
   const [contextsError,setContextsError] = useState("");
   const [isPlatformOperator,setIsPlatformOperator] = useState(false);
   const [platformOperatorLoading,setPlatformOperatorLoading] = useState(false);
@@ -492,6 +493,7 @@ function Workspace() {
   useEffect(() => {
     if (!user) {
       setContexts([]);
+      setContextsResolved(false);
       setSelectedTenantId("");
       setHospitals([]);
       setSelectedHospitalId("");
@@ -500,10 +502,12 @@ function Workspace() {
     }
     if (!apiBaseUrl) {
       setContextsError("Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.");
+      setContextsResolved(true);
       return;
     }
     let active = true;
     setContextsLoading(true);
+    setContextsResolved(false);
     setContextsError("");
     getCurrentUserTenantContexts(apiBaseUrl,user.access_token)
       .then(page => {
@@ -513,8 +517,14 @@ function Workspace() {
           current && page.items.some(item => item.tenantId === current)
             ? current
             : page.items.length === 1 ? page.items[0].tenantId : "");
+        setContextsResolved(true);
       })
-      .catch(error => { if (active) setContextsError(getErrorMessage(error)); })
+      .catch(error => {
+        if (active) {
+          setContextsError(getErrorMessage(error));
+          setContextsResolved(true);
+        }
+      })
       .finally(() => { if (active) setContextsLoading(false); });
     return () => { active = false; };
   },[user]);
@@ -613,6 +623,7 @@ function Workspace() {
   const activeWorkspaceTitle = activeSection === "overview" ? "Hospital workspace" : activeSection === "staff-management" ? "Staff and providers" : activeSection === "appointment-management" ? "Appointments" : activeSection === "appointments" ? "Appointment booking" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "mrn-policy" ? "MRN policy administration" : activeSection === "memberships" ? "Membership administration" : activeSection === "platform-tenants" ? "Platform tenant administration" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
+    if (sessionLoading || (user && !contextsResolved)) return;
     const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
     const legacyHashSection = location.hash.slice(1);
     const pathSection = location.pathname === "/" ? "" : location.pathname.slice(1);
@@ -628,7 +639,7 @@ function Workspace() {
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
-  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate]);
+  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
