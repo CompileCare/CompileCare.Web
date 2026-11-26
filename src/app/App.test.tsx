@@ -24,7 +24,7 @@ describe("reception workspace",()=>{
   await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
  });
 
- it("upgrades legacy hash-only module URLs to stable route URLs",async()=>{
+ it("rejects legacy hash-only module URLs when signed out",async()=>{
   render(<MemoryRouter initialEntries={["/#reception"]}><App/><LocationProbe/></MemoryRouter>);
   await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
  });
