@@ -123,6 +123,7 @@ export function FacilityManagement({
   useEffect(() => {
     if (!departmentId) {
       setWards([]); setWardId(""); setRooms([]); setRoomId(""); setBeds([]);
+      setWardsLoading(false);
       return;
     }
     let active = true;
@@ -144,6 +145,7 @@ export function FacilityManagement({
   useEffect(() => {
     if (!wardId) {
       setRooms([]); setRoomId(""); setBeds([]);
+      setRoomsLoading(false);
       return;
     }
     let active = true;
@@ -163,7 +165,7 @@ export function FacilityManagement({
   }, [baseUrl, accessToken, tenantId, wardId]);
 
   useEffect(() => {
-    if (!roomId) { setBeds([]); return; }
+    if (!roomId) { setBeds([]); setBedsLoading(false); return; }
     let active = true;
     setBedsLoading(true);
     listBeds(baseUrl, accessToken, tenantId, roomId)
@@ -399,7 +401,7 @@ export function FacilityManagement({
       </section>
     </div>}
 
-    {deleteTarget&&<div className="facility-delete-confirm" role="alertdialog" aria-labelledby="facility-delete-title" aria-describedby="facility-delete-description">
+    {deleteTarget&&<div className="facility-delete-confirm" role="group" aria-labelledby="facility-delete-title" aria-describedby="facility-delete-description">
       <div><strong id="facility-delete-title">Delete {deleteTarget.label}?</strong><p id="facility-delete-description">This action cannot be undone. The API rejects deletion when child facilities depend on this record.</p></div>
       <div className="facility-form-actions"><button type="button" className="queue-action-danger" onClick={confirmDelete} disabled={busy}>{busy?"Deleting…":"Confirm delete"}</button><button type="button" className="clinical-secondary" onClick={()=>setDeleteTarget(null)} disabled={busy}>Cancel</button></div>
     </div>}
