@@ -426,6 +426,7 @@ function Workspace() {
   const [facilityBusy,setFacilityBusy] = useState(false);
   const [appointmentManagementBusy,setAppointmentManagementBusy] = useState(false);
   const [staffManagementBusy,setStaffManagementBusy] = useState(false);
+  const [staffDirectoryRevision,setStaffDirectoryRevision] = useState(0);
   const [identifierPolicyBusy,setIdentifierPolicyBusy] = useState(false);
   const [membershipBusy,setMembershipBusy] = useState(false);
   const [platformBusy,setPlatformBusy] = useState(false);
@@ -899,6 +900,7 @@ function Workspace() {
   }
 
   function changeTenant(tenantId: string) {
+    if (tenantId === selectedTenantId) return;
     setSelectedTenantId(tenantId);
     setSelectedPatient(null); setAvailabilitySessions([]); setSlots([]); setBookedAppointment(null); setQueueEntry(null); setQueueEntries([]);
     setSelectedHospitalId("");
@@ -1071,6 +1073,7 @@ function Workspace() {
           canRead={canReadStaff}
           canManage={canManageStaff}
           onBusyChange={setStaffManagementBusy}
+          onDirectoryChanged={() => setStaffDirectoryRevision(current => current + 1)}
         />}
 
         {canAccessIdentifierPolicy && selectedHospital && selectedTenantId && user && apiBaseUrl && <PatientIdentifierPolicyManagement
@@ -1189,6 +1192,7 @@ function Workspace() {
           canRead={canReadAppointments}
           canManage={canManageAppointments}
           canPublishAvailability={canPublishAvailability}
+          staffRevision={staffDirectoryRevision}
           onBusyChange={setAppointmentManagementBusy}
         />}
 
