@@ -258,7 +258,7 @@ export function AppointmentManagement({
           {appointment.reason && <p>{appointment.reason}</p>}
           {canManage && appointment.status === "Booked" && <div className="appointment-record-actions">
             <button type="button" onClick={() => void beginReschedule(appointment)} disabled={loading || !!rescheduling}>Reschedule</button>
-            <button type="button" onClick={() => void cancelSelected(appointment)} disabled={loading}>{confirmCancelId === appointment.id ? "Confirm cancellation" : "Cancel appointment"}</button>
+            <button type="button" className="danger-action" onClick={() => void cancelSelected(appointment)} disabled={loading}>{confirmCancelId === appointment.id ? "Confirm cancellation" : "Cancel appointment"}</button>
             {confirmCancelId === appointment.id && <button type="button" className="secondary-action" onClick={() => setConfirmCancelId("")}>Keep appointment</button>}
           </div>}
           {rescheduling?.id === appointment.id && <div className="reschedule-panel">
