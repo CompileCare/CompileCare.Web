@@ -628,6 +628,9 @@ function Workspace() {
     const legacyHashSection = location.hash.slice(1);
     const pathSection = location.pathname === "/" ? "" : location.pathname.slice(1);
     const requestedSection = legacyHashSection || pathSection;
+    // With multiple memberships, keep a deep link intact until the user chooses
+    // the tenant whose persisted permissions determine whether that module is available.
+    if (user && contexts.length > 1 && !selectedTenantId && requestedSection !== "platform-tenants") return;
     const nextSection = allowedSections.includes(requestedSection)
       ? requestedSection
       : defaultActiveSection;
@@ -639,7 +642,7 @@ function Workspace() {
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
-  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved]);
+  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
