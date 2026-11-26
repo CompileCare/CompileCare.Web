@@ -854,6 +854,7 @@ function Workspace() {
     setPatientTotalPages(0);
     setPatientPage(1);
     setPatientQuery("");
+    setPatientSearchMode("name");
     setHasSearched(false);
     setSearchError("");
     clearRegistrationDraft();
