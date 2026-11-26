@@ -400,6 +400,7 @@ function Workspace() {
   const [queueDate,setQueueDate] = useState(localDateToday());
   const [hospitalTimeZone,setHospitalTimeZone] = useState("Asia/Kolkata");
   const [clinicalBusy,setClinicalBusy] = useState(false);
+  const [activeSection,setActiveSection] = useState("");
 
   useEffect(() => {
     const manager = userManager;
@@ -506,6 +507,7 @@ function Workspace() {
   },[user,selectedTenantId,selectedHospitalId]);
 
   const selectedContext = contexts.find(value => value.tenantId === selectedTenantId);
+  const selectedHospital = hospitals.find(value => value.id === selectedHospitalId);
   const hasPermission = (permission:string) => selectedContext?.permissions?.includes(permission) ?? false;
   const isClinicalWorkspace = hasPermission("encounter.read");
   const canReadPatients = hasPermission("patient.read");
@@ -517,6 +519,18 @@ function Workspace() {
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
+  const defaultActiveSection = isClinicalWorkspace ? "clinical" : canReadPatients ? "reception" : canManageAppointments ? "appointments" : canReadQueue ? "queue" : canReadBilling ? "billing" : canRegisterPatients ? "patient-registration" : "";
+  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
+
+  useEffect(() => {
+    const syncActiveSection = () => {
+      const section = window.location.hash.slice(1);
+      setActiveSection(section || defaultActiveSection);
+    };
+    syncActiveSection();
+    window.addEventListener("hashchange", syncActiveSection);
+    return () => window.removeEventListener("hashchange", syncActiveSection);
+  },[defaultActiveSection]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
@@ -760,17 +774,18 @@ function Workspace() {
   }
 
   return <div className="shell">
+    <a className="skip-link" href="#workspace-main">Skip to main content</a>
     <aside className="sidebar">
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className="selected" href="#clinical">Clinical workspace</a>}{canReadPatients&&<a href="#reception">Reception</a>}{canManageAppointments&&<a href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a href="#queue">Queue</a>}{canReadBilling&&<a href="#billing">Billing</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canManageAppointments&&<a className={activeSection==="appointments"?"selected":undefined} aria-current={activeSection==="appointments"?"location":undefined} href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
-    <main className="content" id="reception">
+    <main className="content" id="workspace-main" tabIndex={-1}>
       <header>
-        <div><label>HOSPITAL OPERATIONS</label><h1>{isClinicalWorkspace ? "Clinical workspace" : canReadPatients || !user ? "Reception workspace" : "Hospital workspace"}</h1></div>
+        <div><label>HOSPITAL OPERATIONS</label><h1>{activeWorkspaceTitle}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -784,7 +799,12 @@ function Workspace() {
       {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
       {user && apiBaseUrl && <>
         <section className="context-panel">
-          <div><label>ACTIVE ORGANIZATION</label><h2>Select your hospital context</h2><p>Only active memberships assigned to your validated sign-in are listed.</p></div>
+          <div className="context-intro">
+            <label>ACTIVE ORGANIZATION</label>
+            <h2>{selectedHospital?.name ?? selectedContext?.tenantName ?? "Select your hospital context"}</h2>
+            <p>{selectedHospital ? `Working in ${selectedHospital.name}. Data access is scoped to this selected hospital.` : selectedContext ? `Tenant ${selectedContext.tenantName} is selected. Choose a hospital to continue.` : "Only active memberships assigned to your validated sign-in are listed."}</p>
+            {selectedContext && <div className="context-tags"><span>{selectedContext.role}</span><span>{selectedHospital ? "Hospital selected" : "Hospital required"}</span></div>}
+          </div>
           <div className="context-controls">
             <label htmlFor="tenant-select">Tenant</label>
             <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || isWorkflowBusy}>
@@ -809,7 +829,7 @@ function Workspace() {
 
         {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
-        {canReadPatients && (<section className="section reception-section">
+        {canReadPatients && (<section className="section reception-section" id="reception">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
           <div className="search-panel">
             <label htmlFor="patient-search">Patient name</label>
@@ -896,7 +916,7 @@ function Workspace() {
 
         {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/>}
 
-        {canRegisterPatients && (<section className="section registration-section">
+        {canRegisterPatients && (<section className="section registration-section" id="patient-registration">
           <div className="section-heading">
             <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
           </div>
