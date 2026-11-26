@@ -23,6 +23,7 @@ const props = {
   canReadAppointments: true,
   canReadQueue: true,
   canReadCollection: true,
+  canReadBilling: true,
   canReadPatients: true,
   canReadStaff: true
 };
@@ -57,7 +58,7 @@ describe("hospital operations overview", () => {
   });
 
   it("does not show shortcuts for modules the membership cannot read", async () => {
-    render(<HospitalOverview {...props} canReadPatients={false} canReadStaff={false} canReadAppointments={false} canReadQueue={false} canReadCollection />);
+    render(<HospitalOverview {...props} canReadPatients={false} canReadStaff={false} canReadBilling={false} canReadAppointments={false} canReadQueue={false} canReadCollection />);
     expect(await screen.findByText("₹2,500")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Appointments/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Queue/ })).not.toBeInTheDocument();
