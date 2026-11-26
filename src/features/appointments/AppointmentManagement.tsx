@@ -159,7 +159,7 @@ export function AppointmentManagement({
     setRescheduleSlotStart("");
     try {
       const result = await listAvailabilitySessions(baseUrl, accessToken, tenantId, hospitalId, date, appointment.departmentId);
-      setRescheduleSessions(result.items.filter(session => session.id !== appointment.availabilitySessionId || session.localDate !== date));
+      setRescheduleSessions(result.items);
     } catch (cause) { setRescheduleError(errorMessage(cause)); }
   }
 
@@ -189,9 +189,9 @@ export function AppointmentManagement({
         availabilitySessionId: rescheduleSessionId, patientId: rescheduling.patientId,
         slotStartsAtUtc: rescheduleSlotStart, reason: rescheduling.reason
       });
-      setNotice("Appointment rescheduled. Its previous booking remains in the appointment lineage.");
       setRescheduling(null);
       await refreshAppointments(page);
+      setNotice("Appointment rescheduled. Its previous booking remains in the appointment lineage.");
     } catch (cause) { setRescheduleError(errorMessage(cause)); }
     finally { setRescheduleLoading(false); onBusyChange(false); }
   }
@@ -204,9 +204,9 @@ export function AppointmentManagement({
     setLoading(true); onBusyChange(true); setError(""); setNotice("");
     try {
       await cancelAppointment(baseUrl, accessToken, tenantId, hospitalId, appointment.id);
-      setNotice("Appointment cancelled.");
       setConfirmCancelId("");
       await refreshAppointments(page);
+      setNotice("Appointment cancelled.");
     } catch (cause) { setError(errorMessage(cause)); }
     finally { setLoading(false); onBusyChange(false); }
   }
