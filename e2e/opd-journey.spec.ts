@@ -427,7 +427,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await page.reload();
   await expect(page.getByRole("heading", { name: "Clinical workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Refresh clinical queue" }).click();
-  await page.getByRole("button", { name: "Open / start encounter" }).click();
+  await page.getByRole("button", { name: /Open encounter for queue token \\d+/ }).click();
   await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
   await page.getByRole("checkbox", { name: /I have verified the patient identity/ }).check();
   await page.getByLabel("Chief complaint *").fill("Intermittent headache");
@@ -497,7 +497,7 @@ test("ClinicalUser can open an OPD encounter from the clinical queue using keybo
 
   const refreshButton = page.getByRole("button", { name: "Refresh clinical queue" });
   await refreshButton.click();
-  const openEncounterButton = page.getByRole("button", { name: "Open / start encounter" });
+  const openEncounterButton = page.getByRole("button", { name: /Open encounter for queue token \\d+/ });
   await expect(openEncounterButton).toBeVisible();
   await page.keyboard.press("Tab");
 
