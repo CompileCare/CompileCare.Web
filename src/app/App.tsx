@@ -355,6 +355,7 @@ function Workspace() {
   const [contextsLoading,setContextsLoading] = useState(false);
   const [contextsError,setContextsError] = useState("");
   const [isPlatformOperator,setIsPlatformOperator] = useState(false);
+  const [platformOperatorLoading,setPlatformOperatorLoading] = useState(false);
   const [platformOperatorError,setPlatformOperatorError] = useState("");
   const [selectedTenantId,setSelectedTenantId] = useState("");
   const [hospitals,setHospitals] = useState<Hospital[]>([]);
@@ -457,10 +458,12 @@ function Workspace() {
   useEffect(() => {
     if (!user || !apiBaseUrl) {
       setIsPlatformOperator(false);
+      setPlatformOperatorLoading(false);
       setPlatformOperatorError("");
       return;
     }
     let active = true;
+    setPlatformOperatorLoading(true);
     setPlatformOperatorError("");
     getPlatformOperatorStatus(apiBaseUrl, user.access_token)
       .then(result => { if (active) setIsPlatformOperator(result.isPlatformOperator); })
@@ -470,7 +473,8 @@ function Workspace() {
         setPlatformOperatorError(error instanceof ApiError && error.status === 401
           ? "Your session could not be verified for platform administration. Sign in again if this continues."
           : "Platform operator status could not be verified. Tenant workspaces remain available according to your membership.");
-      });
+      })
+      .finally(() => { if (active) setPlatformOperatorLoading(false); });
     return () => { active = false; };
   }, [user?.access_token]);
 
@@ -907,8 +911,8 @@ function Workspace() {
           </div>
           {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
           {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && !isPlatformOperator && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
           {!contextsLoading && !contextsError && contexts.length === 0 && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
           {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
           {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
@@ -916,7 +920,7 @@ function Workspace() {
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
 
-        {localPlatformBootstrapEnabled && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+        {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
         {isPlatformOperator && user && apiBaseUrl && <PlatformTenantManagement
           baseUrl={apiBaseUrl}
