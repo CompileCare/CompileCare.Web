@@ -3,6 +3,7 @@ import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,cr
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addStaffAssignment,createStaffProfile,endStaffAssignment,listStaffProfiles,setStaffProfileActive,updateStaffProfile } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -489,6 +490,56 @@ describe("platform onboarding API client",()=>{
   expect(JSON.parse(String(calls[1][1].body))).toEqual({role:"FacilityManager",scopes:membership.scopes});
   expect(calls[2][1].body).toBeUndefined();
   expect(calls[3][1].body).toBeUndefined();
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("lists staff profiles with tenant-scoped no-store search and pagination",async()=>{
+  const page={items:[],page:2,pageSize:25,totalCount:0,totalPages:0};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  await listStaffProfiles("https://api.example.test","access-token","tenant-123","Asha Patil",2,25);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/staff?page=2&pageSize=25&query=Asha+Patil");
+  expect(options.method).toBe("GET");
+  expect(options.cache).toBe("no-store");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("creates, updates and changes the active state of staff profiles",async()=>{
+  const profile={id:"staff-1",staffCode:"EMP-001",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",isActive:true,createdAtUtc:"2026-11-26T00:00:00Z",updatedAtUtc:"2026-11-26T00:00:00Z",assignments:[]};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(profile),{status:201}));
+  await createStaffProfile("https://api.example.test","access-token","tenant-123",{staffCode:"EMP-001",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-01"});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(profile),{status:200}));
+  await updateStaffProfile("https://api.example.test","access-token","tenant-123","staff-1",{givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Senior Consultant"});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({...profile,isActive:false}),{status:200}));
+  await setStaffProfileActive("https://api.example.test","access-token","tenant-123","staff-1",false);
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(profile),{status:200}));
+  await setStaffProfileActive("https://api.example.test","access-token","tenant-123","staff-1",true);
+
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/staff","POST"],
+   ["https://api.example.test/api/v1/staff/staff-1","PUT"],
+   ["https://api.example.test/api/v1/staff/staff-1/deactivate","POST"],
+   ["https://api.example.test/api/v1/staff/staff-1/reactivate","POST"]
+  ]);
+  expect(JSON.parse(String(calls[0][1].body))).toEqual({staffCode:"EMP-001",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-01"});
+  expect(JSON.parse(String(calls[1][1].body))).toEqual({givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Senior Consultant"});
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("adds and ends effective-dated staff assignments through tenant-scoped routes",async()=>{
+  const assignment={id:"assignment-1",hospitalId:"hospital-1",departmentId:null,effectiveFrom:"2026-11-01",effectiveTo:null,isActive:true};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(assignment),{status:201}));
+  await addStaffAssignment("https://api.example.test","access-token","tenant-123","staff-1",{hospitalId:"hospital-1",departmentId:null,effectiveFrom:"2026-11-01"});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({...assignment,effectiveTo:"2026-12-01",isActive:false}),{status:200}));
+  await endStaffAssignment("https://api.example.test","access-token","tenant-123","staff-1","assignment-1","2026-12-01");
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/staff/staff-1/assignments","POST"],
+   ["https://api.example.test/api/v1/staff/staff-1/assignments/assignment-1/end","POST"]
+  ]);
+  expect(JSON.parse(String(calls[0][1].body))).toEqual({hospitalId:"hospital-1",departmentId:null,effectiveFrom:"2026-11-01"});
+  expect(JSON.parse(String(calls[1][1].body))).toEqual({effectiveTo:"2026-12-01"});
   for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
