@@ -18,6 +18,7 @@ interface Props {
   canReadBilling: boolean;
   canReadPatients: boolean;
   canReadStaff: boolean;
+  isActive?: boolean;
 }
 
 const today = () => {
@@ -32,7 +33,7 @@ function failure(error: unknown): string {
 
 export function HospitalOverview({
   baseUrl, accessToken, tenantId, hospitalId, hospitalName, departments, timeZoneId,
-  canReadAppointments, canReadQueue, canReadCollection, canReadBilling, canReadPatients, canReadStaff
+  canReadAppointments, canReadQueue, canReadCollection, canReadBilling, canReadPatients, canReadStaff, isActive = false
 }: Props) {
   const [departmentId, setDepartmentId] = useState("");
   const [date, setDate] = useState(today());
@@ -44,6 +45,7 @@ export function HospitalOverview({
   const [collectionError, setCollectionError] = useState("");
   const [loading, setLoading] = useState(false);
   const requestSequence = useRef(0);
+  const wasActive = useRef(isActive);
 
   useEffect(() => {
     setDepartmentId(current => departments.some(item => item.id === current)
@@ -78,6 +80,11 @@ export function HospitalOverview({
     void refresh();
     return () => { requestSequence.current++; };
   }, [baseUrl, accessToken, tenantId, hospitalId, departmentId, date, timeZoneId, canReadAppointments, canReadQueue, canReadCollection]);
+
+  useEffect(() => {
+    if (isActive && !wasActive.current) void refresh();
+    wasActive.current = isActive;
+  }, [isActive]);
 
   return <section className="section hospital-overview-section" id="overview">
     <div className="section-heading overview-heading">

@@ -57,6 +57,13 @@ describe("hospital operations overview", () => {
     });
   });
 
+  it("refreshes metrics when the user returns to the Overview workspace", async () => {
+    const { rerender } = render(<HospitalOverview {...props} isActive={false} />);
+    await waitFor(() => expect(appointments).toHaveBeenCalledTimes(1));
+    rerender(<HospitalOverview {...props} isActive />);
+    await waitFor(() => expect(appointments).toHaveBeenCalledTimes(2));
+  });
+
   it("does not show shortcuts for modules the membership cannot read", async () => {
     render(<HospitalOverview {...props} canReadPatients={false} canReadStaff={false} canReadBilling={false} canReadAppointments={false} canReadQueue={false} canReadCollection />);
     expect(await screen.findByText("₹2,500")).toBeInTheDocument();
