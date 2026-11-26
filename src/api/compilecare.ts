@@ -87,6 +87,11 @@ export interface PatientIdentifier {
   assignedAtUtc: string;
 }
 
+export interface PatientIdentifierLookup {
+  patient: Patient;
+  identifier: PatientIdentifier;
+}
+
 export class ApiError extends Error {
   constructor(readonly status: number) {
     super(status === 401 ? "Your sign-in session is not authorized for the API." :
@@ -248,6 +253,23 @@ export function assignPatientMedicalRecordNumber(
   return postJson(
     baseUrl,
     `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients/${encodeURIComponent(patientId)}/identifiers/mrn`,
+    accessToken,
+    tenantId
+  );
+}
+
+export function findPatientByMrn(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  medicalRecordNumber: string
+): Promise<PatientIdentifierLookup> {
+  const value = medicalRecordNumber.trim();
+  if (!value) throw new Error("Enter a medical record number to search.");
+  return getJson(
+    baseUrl,
+    `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patients/by-mrn/${encodeURIComponent(value)}`,
     accessToken,
     tenantId
   );
