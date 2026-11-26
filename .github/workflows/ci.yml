@@ -13,17 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - name: Verify npm generated a lockfile
-        run: test -s package-lock.json
-      - name: Upload npm lockfile for reviewed reproducible dependency resolution
-        uses: actions/upload-artifact@v4
-        with:
-          name: compilecare-web-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-      - name: Report dependency advisories
-        run: npm audit --json || true
+      - run: npm ci
+      - name: Audit locked dependencies
+        run: npm audit
       - run: npm test
       - run: npm run build
       - name: Install Chromium for browser tests
@@ -60,28 +52,3 @@ jobs:
           echo "Verified all required static-workspace security response headers."
       - if: always()
         run: docker compose down --volumes --remove-orphans
-
-  commit-generated-lockfile:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/build/reproducible-npm-lockfile'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Generate npm lockfile from the committed manifest
-        run: npm install
-      - name: Commit generated lockfile to this maintenance branch
-        run: |
-          test -s package-lock.json
-          git add -f package-lock.json
-          if git diff --cached --quiet -- package-lock.json; then
-            echo "package-lock.json is already tracked and current."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "build: add npm lockfile for reproducible installs"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
