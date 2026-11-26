@@ -9,7 +9,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:e2e": "playwright test --config=playwright.config.ts e2e",
-    "test:e2e:report": "playwright show-report playwright-report"
+    "test:e2e:report": "playwright show-report playwright-report",
+    "test:e2e:real-oidc": "playwright test --config=playwright.real-oidc.config.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.3.0",
