@@ -122,9 +122,9 @@ describe("CompileCare API client",()=>{
   expect(options.credentials).toBe("omit");
  });
 
- it("rejects an empty MRN before sending a request",()=>{
-  expect(()=>findPatientByMrn("https://api.example.test","access-token","tenant-123","hospital-456","  "))
-   .toThrow("Enter a medical record number to search.");
+ it("rejects an empty MRN before sending a request",async()=>{
+  await expect(findPatientByMrn("https://api.example.test","access-token","tenant-123","hospital-456","  "))
+   .rejects.toThrow("Enter a medical record number to search.");
   expect(fetchMock).not.toHaveBeenCalled();
  });
 });
