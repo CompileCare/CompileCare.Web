@@ -1,6 +1,6 @@
 import { useEffect,useState } from "react";
 import type { FormEvent } from "react";
-import { Route,Routes,useNavigate } from "react-router-dom";
+import { Link,Route,Routes,useLocation,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
@@ -353,6 +353,8 @@ function PlatformOnboarding({user,onComplete}:{user:User;onComplete:()=>Promise<
 }
 
 function Workspace() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [user,setUser] = useState<User|null>(null);
   const [sessionLoading,setSessionLoading] = useState(true);
   const [authError,setAuthError] = useState("");
@@ -611,15 +613,22 @@ function Workspace() {
   const activeWorkspaceTitle = activeSection === "overview" ? "Hospital workspace" : activeSection === "staff-management" ? "Staff and providers" : activeSection === "appointment-management" ? "Appointments" : activeSection === "appointments" ? "Appointment booking" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "mrn-policy" ? "MRN policy administration" : activeSection === "memberships" ? "Membership administration" : activeSection === "platform-tenants" ? "Platform tenant administration" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
-    const syncActiveSection = () => {
-      const section = window.location.hash.slice(1);
-      const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
-      setActiveSection(allowedSections.includes(section) ? section : defaultActiveSection);
-    };
-    syncActiveSection();
-    window.addEventListener("hashchange", syncActiveSection);
-    return () => window.removeEventListener("hashchange", syncActiveSection);
-  },[allowedSectionKey,defaultActiveSection]);
+    const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
+    const legacyHashSection = location.hash.slice(1);
+    const pathSection = location.pathname === "/" ? "" : location.pathname.slice(1);
+    const requestedSection = legacyHashSection || pathSection;
+    const nextSection = allowedSections.includes(requestedSection)
+      ? requestedSection
+      : defaultActiveSection;
+    setActiveSection(nextSection);
+
+    // Keep legacy hash URLs working while making every workspace independently addressable.
+    // The fragment retains native in-page scrolling to the corresponding module landmark.
+    const canonicalLocation = nextSection ? `/${nextSection}#${nextSection}` : "/";
+    if (`${location.pathname}${location.hash}` !== canonicalLocation) {
+      navigate(canonicalLocation, { replace: true });
+    }
+  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
@@ -925,7 +934,7 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canViewOverview&&<a className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} href="#overview">Overview</a>}{(canReadAppointments||canManageAppointments||canPublishAvailability)&&<a className={activeSection==="appointment-management"?"selected":undefined} aria-current={activeSection==="appointment-management"?"location":undefined} href="#appointment-management">Appointments</a>}{(canReadStaff||canManageStaff)&&<a className={activeSection==="staff-management"?"selected":undefined} aria-current={activeSection==="staff-management"?"location":undefined} href="#staff-management">Staff</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{canReadFacilities&&<a className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} href="#facilities">Facilities</a>}{canAccessIdentifierPolicy&&selectedHospitalId&&<a className={activeSection==="mrn-policy"?"selected":undefined} aria-current={activeSection==="mrn-policy"?"location":undefined} href="#mrn-policy">MRN policy</a>}{canManageMemberships&&<a className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} href="#memberships">Memberships</a>}{isPlatformOperator&&<><p>PLATFORM</p><a className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} href="#platform-tenants">Tenant lifecycle</a></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canAccessIdentifierPolicy&&!canReadAppointments&&!canManageAppointments&&!canPublishAvailability&&!canReadStaff&&!canManageStaff&&!canViewOverview&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments||canManageAppointments||canPublishAvailability)&&<Link className={activeSection==="appointment-management"?"selected":undefined} aria-current={activeSection==="appointment-management"?"location":undefined} to="/appointment-management#appointment-management">Appointments</Link>}{(canReadStaff||canManageStaff)&&<Link className={activeSection==="staff-management"?"selected":undefined} aria-current={activeSection==="staff-management"?"location":undefined} to="/staff-management#staff-management">Staff</Link>}{canReadQueue&&!isClinicalWorkspace&&<Link className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} to="/queue#queue">Queue</Link>}{canReadBilling&&<Link className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} to="/billing#billing">Billing</Link>}{canReadFacilities&&<Link className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} to="/facilities#facilities">Facilities</Link>}{canAccessIdentifierPolicy&&selectedHospitalId&&<Link className={activeSection==="mrn-policy"?"selected":undefined} aria-current={activeSection==="mrn-policy"?"location":undefined} to="/mrn-policy#mrn-policy">MRN policy</Link>}{canManageMemberships&&<Link className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} to="/memberships#memberships">Memberships</Link>}{isPlatformOperator&&<><p>PLATFORM</p><Link className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} to="/platform-tenants#platform-tenants">Tenant lifecycle</Link></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canAccessIdentifierPolicy&&!canReadAppointments&&!canManageAppointments&&!canPublishAvailability&&!canReadStaff&&!canManageStaff&&!canViewOverview&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>{isPlatformOperator && activeSection==="platform-tenants" ? "Platform control plane" : "Tenant-scoped access"}</small></footer>
     </aside>
