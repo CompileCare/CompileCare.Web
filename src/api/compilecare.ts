@@ -258,7 +258,7 @@ export function assignPatientMedicalRecordNumber(
   );
 }
 
-export function findPatientByMrn(
+export async function findPatientByMrn(
   baseUrl: string,
   accessToken: string,
   tenantId: string,
