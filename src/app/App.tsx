@@ -644,6 +644,7 @@ function Workspace() {
     // With multiple memberships, keep a deep link intact until the user chooses
     // the tenant whose persisted permissions determine whether that module is available.
     if (user && contexts.length > 1 && !selectedTenantId && requestedSection !== "platform-tenants") return;
+    if (user && requestedSection === "mrn-policy" && selectedTenantId && !selectedHospitalId) return;
     const nextSection = allowedSections.includes(requestedSection)
       ? requestedSection
       : defaultActiveSection;
@@ -659,13 +660,13 @@ function Workspace() {
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
-  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId,platformOperatorResolved]);
+  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId,selectedHospitalId,platformOperatorResolved]);
 
   useEffect(() => {
     const sectionId = location.hash.slice(1);
     if (!sectionId) return;
     document.getElementById(sectionId)?.scrollIntoView?.({ block: "start" });
-  },[location.hash,location.pathname,activeSection]);
+  },[location.hash,location.pathname,activeSection,selectedHospitalId]);
 
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
