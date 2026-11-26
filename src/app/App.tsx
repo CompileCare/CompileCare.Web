@@ -814,6 +814,7 @@ function Workspace() {
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) {
       setDepartments([]);
       setSelectedDepartmentId("");
+      setDepartmentsLoading(false);
       return;
     }
     setDepartmentsLoading(true);
