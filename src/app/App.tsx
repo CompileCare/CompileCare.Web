@@ -6,6 +6,7 @@ import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import { PatientSearchResults } from "../features/reception/PatientSearchResults";
 import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
+import { QueueEntryRow } from "../features/queue/QueueEntryRow";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -922,16 +923,15 @@ function Workspace() {
             {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
             {canManageQueue&&queueEntries.some(entry=>entry.status==="Waiting"||entry.status==="Called")&&<div className="queue-reason-field"><label htmlFor="queue-action-reason">Reason for cancellation or no-show (required for those actions)</label><input id="queue-action-reason" value={queueActionReason} maxLength={250} onChange={event=>setQueueActionReason(event.target.value)} placeholder="e.g. Patient confirmed cancellation" /></div>}
             {queueActionError&&<p className="inline-error" role="alert">{queueActionError}</p>}
-            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><article className="queue-row queue-row-managed" key={entry.id}>
-              <div className="queue-token"><strong>#{entry.tokenNumber.toString().padStart(2,"0")}</strong><small>{new Date(entry.checkedInAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>
-              <div className="queue-state"><span className={`queue-status queue-status-${entry.status.toLowerCase()}`}>{entry.status}</span><small>{entry.status==="Waiting"?"Awaiting call":entry.status==="Called"?"Called to consultation":entry.status==="InProgress"?"Consultation in progress":"Queue entry closed"}</small></div>
-              <div className="queue-actions" aria-label={`Actions for queue token ${entry.tokenNumber}`}>
-                {canManageQueue&&entry.status==="Waiting"&&<button type="button" onClick={()=>handleQueueAction(entry,"call")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Call"}</button>}
-                {canManageQueue&&entry.status==="Called"&&<><button type="button" onClick={()=>handleQueueAction(entry,"recall")} disabled={!!queueActionLoadingId}>Recall</button><button type="button" onClick={()=>handleQueueAction(entry,"start")} disabled={!!queueActionLoadingId}>Start consultation</button></>}
-                {canManageQueue&&entry.status==="InProgress"&&<button type="button" onClick={()=>handleQueueAction(entry,"complete")} disabled={!!queueActionLoadingId}>{queueActionLoadingId===entry.id?"Saving…":"Complete"}</button>}
-                {canManageQueue&&(entry.status==="Waiting"||entry.status==="Called")&&<><button className="queue-action-secondary" type="button" onClick={()=>handleQueueAction(entry,"cancel")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>Cancel</button><button className="queue-action-danger" type="button" onClick={()=>handleQueueAction(entry,"noshow")} disabled={!!queueActionLoadingId||!queueActionReason.trim()}>No-show</button></>}
-              </div>
-            </article>)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
+            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><QueueEntryRow
+              key={entry.id}
+              entry={entry}
+              canManageQueue={canManageQueue}
+              actionBusy={!!queueActionLoadingId}
+              saving={queueActionLoadingId===entry.id}
+              cancellationReasonProvided={!!queueActionReason.trim()}
+              onAction={handleQueueAction}
+            />)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
           </div>
         </section>)}
 
