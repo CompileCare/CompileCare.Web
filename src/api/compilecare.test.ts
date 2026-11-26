@@ -1,6 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
-import { createDepartment, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom } from "./compilecare";
+import { createBed, createDepartment, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
@@ -363,26 +363,37 @@ describe("platform onboarding API client",()=>{
   for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
- it("creates and updates facility records through the typed tenant-scoped routes",async()=>{
+ it("creates and updates ward, room and bed records through typed tenant-scoped routes",async()=>{
   const ward={id:"ward-1",departmentId:"department-1",name:"General"};
   const room={id:"room-1",wardId:"ward-1",name:"Room 101"};
   const bed={id:"bed-1",roomId:"room-1",number:"B-101",isActive:true};
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(ward),{status:201}));
   await createWard("https://api.example.test","access-token","tenant-123","department-1","General");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(ward),{status:200}));
+  await updateWard("https://api.example.test","access-token","tenant-123","department-1","ward-1","General");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(room),{status:201}));
+  await createRoom("https://api.example.test","access-token","tenant-123","ward-1","Room 101");
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(room),{status:200}));
   await updateRoom("https://api.example.test","access-token","tenant-123","ward-1","room-1","Room 101");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(bed),{status:201}));
+  await createBed("https://api.example.test","access-token","tenant-123","room-1",{number:"B-101",isActive:true});
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(bed),{status:200}));
   await updateBed("https://api.example.test","access-token","tenant-123","room-1","bed-1",{number:"B-101",isActive:true});
   const calls=fetchMock.mock.calls as [string,RequestInit][];
-  expect(calls[0][0]).toBe("https://api.example.test/api/v1/departments/department-1/wards");
-  expect(calls[0][1].method).toBe("POST");
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/departments/department-1/wards","POST"],
+   ["https://api.example.test/api/v1/departments/department-1/wards/ward-1","PUT"],
+   ["https://api.example.test/api/v1/wards/ward-1/rooms","POST"],
+   ["https://api.example.test/api/v1/wards/ward-1/rooms/room-1","PUT"],
+   ["https://api.example.test/api/v1/rooms/room-1/beds","POST"],
+   ["https://api.example.test/api/v1/rooms/room-1/beds/bed-1","PUT"]
+  ]);
   expect(JSON.parse(String(calls[0][1].body))).toEqual({name:"General"});
-  expect(calls[1][0]).toBe("https://api.example.test/api/v1/wards/ward-1/rooms/room-1");
-  expect(calls[1][1].method).toBe("PUT");
-  expect(JSON.parse(String(calls[1][1].body))).toEqual({name:"Room 101"});
-  expect(calls[2][0]).toBe("https://api.example.test/api/v1/rooms/room-1/beds/bed-1");
-  expect(calls[2][1].method).toBe("PUT");
-  expect(JSON.parse(String(calls[2][1].body))).toEqual({number:"B-101",isActive:true});
+  expect(JSON.parse(String(calls[1][1].body))).toEqual({name:"General"});
+  expect(JSON.parse(String(calls[2][1].body))).toEqual({name:"Room 101"});
+  expect(JSON.parse(String(calls[3][1].body))).toEqual({name:"Room 101"});
+  expect(JSON.parse(String(calls[4][1].body))).toEqual({number:"B-101",isActive:true});
+  expect(JSON.parse(String(calls[5][1].body))).toEqual({number:"B-101",isActive:true});
   for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
