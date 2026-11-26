@@ -1,5 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
+import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
@@ -317,4 +318,62 @@ describe("platform onboarding API client",()=>{
   expect(options.cache).toBe("no-store");
   expect(options.credentials).toBe("omit");
  });
+ it("lists wards, rooms and beds under their parent resource with tenant scope",async()=>{
+  const page={items:[],page:1,pageSize:100,totalCount:0,totalPages:0};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  await listWards("https://api.example.test","access-token","tenant-123","department-1");
+  await listRooms("https://api.example.test","access-token","tenant-123","ward-1");
+  await listBeds("https://api.example.test","access-token","tenant-123","room-1");
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>call[0])).toEqual([
+   "https://api.example.test/api/v1/departments/department-1/wards?page=1&pageSize=100",
+   "https://api.example.test/api/v1/wards/ward-1/rooms?page=1&pageSize=100",
+   "https://api.example.test/api/v1/rooms/room-1/beds?page=1&pageSize=100"
+  ]);
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("creates and updates facility records through the typed tenant-scoped routes",async()=>{
+  const ward={id:"ward-1",departmentId:"department-1",name:"General"};
+  const room={id:"room-1",wardId:"ward-1",name:"Room 101"};
+  const bed={id:"bed-1",roomId:"room-1",number:"B-101",isActive:true};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(ward),{status:201}));
+  await createWard("https://api.example.test","access-token","tenant-123","department-1","General");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(room),{status:200}));
+  await updateRoom("https://api.example.test","access-token","tenant-123","ward-1","room-1","Room 101");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(bed),{status:200}));
+  await updateBed("https://api.example.test","access-token","tenant-123","room-1","bed-1",{number:"B-101",isActive:true});
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls[0][0]).toBe("https://api.example.test/api/v1/departments/department-1/wards");
+  expect(calls[0][1].method).toBe("POST");
+  expect(JSON.parse(String(calls[0][1].body))).toEqual({name:"General"});
+  expect(calls[1][0]).toBe("https://api.example.test/api/v1/wards/ward-1/rooms/room-1");
+  expect(calls[1][1].method).toBe("PUT");
+  expect(JSON.parse(String(calls[1][1].body))).toEqual({name:"Room 101"});
+  expect(calls[2][0]).toBe("https://api.example.test/api/v1/rooms/room-1/beds/bed-1");
+  expect(calls[2][1].method).toBe("PUT");
+  expect(JSON.parse(String(calls[2][1].body))).toEqual({number:"B-101",isActive:true});
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("uses DELETE without expecting a response body for every facility level",async()=>{
+  fetchMock.mockResolvedValue(new Response(null,{status:204}));
+  await deleteHospital("https://api.example.test","access-token","tenant-123","hospital-1");
+  await deleteDepartment("https://api.example.test","access-token","tenant-123","hospital-1","department-1");
+  await deleteWard("https://api.example.test","access-token","tenant-123","department-1","ward-1");
+  await deleteRoom("https://api.example.test","access-token","tenant-123","ward-1","room-1");
+  await deleteBed("https://api.example.test","access-token","tenant-123","room-1","bed-1");
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/hospitals/hospital-1","DELETE"],
+   ["https://api.example.test/api/v1/hospitals/hospital-1/departments/department-1","DELETE"],
+   ["https://api.example.test/api/v1/departments/department-1/wards/ward-1","DELETE"],
+   ["https://api.example.test/api/v1/wards/ward-1/rooms/room-1","DELETE"],
+   ["https://api.example.test/api/v1/rooms/room-1/beds/bed-1","DELETE"]
+  ]);
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
 });
