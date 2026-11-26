@@ -553,6 +553,18 @@ function Workspace() {
   const isClinicalWorkspace = hasPermission("encounter.read");
   const canReadPatients = hasPermission("patient.read");
   const canReadPatientIdentifiers = hasPermission("patient.identifier.read");
+
+  useEffect(() => {
+    if (canReadPatientIdentifiers || patientSearchMode !== "mrn") return;
+    setPatientSearchMode("name");
+    setPatientQuery("");
+    setSelectedPatient(null);
+    setPatients([]);
+    setPatientTotal(0);
+    setPatientTotalPages(0);
+    setHasSearched(false);
+    setSearchError("");
+  }, [canReadPatientIdentifiers, patientSearchMode]);
   const canRegisterPatients = hasPermission("patient.register") && hasPermission("patient.duplicate.review");
   const canManageAppointments = hasPermission("appointment.manage");
   const canReadQueue = hasPermission("queue.read");
