@@ -880,6 +880,7 @@ function Workspace() {
           tenantId={selectedTenantId}
           hospital={selectedHospital}
           departments={departments}
+          departmentsLoading={departmentsLoading}
           permissions={selectedContext.permissions ?? []}
           scopes={selectedContext.scopes ?? []}
           onRefreshHospitals={refreshHospitals}
