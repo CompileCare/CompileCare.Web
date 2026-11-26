@@ -17,6 +17,7 @@ import {
   getPlatformOperatorStatus,
   getHospitals,
   searchPatients,
+  findPatientByMrn,
   checkPatientDuplicateCandidates,
   registerPatient,
   assignPatientMedicalRecordNumber,
@@ -363,6 +364,7 @@ function Workspace() {
   const [hospitalsError,setHospitalsError] = useState("");
   const [selectedHospitalId,setSelectedHospitalId] = useState("");
   const [patientQuery,setPatientQuery] = useState("");
+  const [patientSearchMode,setPatientSearchMode] = useState<"name"|"mrn">("name");
   const [patients,setPatients] = useState<Patient[]>([]);
   const [patientTotal,setPatientTotal] = useState(0);
   const [patientPage,setPatientPage] = useState(1);
@@ -550,6 +552,19 @@ function Workspace() {
   const hasPermission = (permission:string) => selectedContext?.permissions?.includes(permission) ?? false;
   const isClinicalWorkspace = hasPermission("encounter.read");
   const canReadPatients = hasPermission("patient.read");
+  const canReadPatientIdentifiers = hasPermission("patient.identifier.read");
+
+  useEffect(() => {
+    if (canReadPatientIdentifiers || patientSearchMode !== "mrn") return;
+    setPatientSearchMode("name");
+    setPatientQuery("");
+    setSelectedPatient(null);
+    setPatients([]);
+    setPatientTotal(0);
+    setPatientTotalPages(0);
+    setHasSearched(false);
+    setSearchError("");
+  }, [canReadPatientIdentifiers, patientSearchMode]);
   const canRegisterPatients = hasPermission("patient.register") && hasPermission("patient.duplicate.review");
   const canManageAppointments = hasPermission("appointment.manage");
   const canReadQueue = hasPermission("queue.read");
@@ -680,8 +695,17 @@ function Workspace() {
 
   async function handlePatientSearch(pageNumber = 1) {
     if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) return;
-    if (patientQuery.trim().length < 2) {
-      setSearchError("Enter at least two characters to search.");
+    const query = patientQuery.trim();
+    if (patientSearchMode === "name" && query.length < 2) {
+      setSearchError("Enter at least two characters to search by patient name.");
+      setPatients([]);
+      setPatientTotal(0);
+      setPatientTotalPages(0);
+      setHasSearched(false);
+      return;
+    }
+    if (patientSearchMode === "mrn" && !query) {
+      setSearchError("Enter a medical record number to search.");
       setPatients([]);
       setPatientTotal(0);
       setPatientTotalPages(0);
@@ -693,11 +717,19 @@ function Workspace() {
     setHasSearched(false);
     setPatientPage(pageNumber);
     try {
-      const page = await searchPatients(
-        apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,patientQuery,pageNumber);
-      setPatients(page.items);
-      setPatientTotal(page.totalCount);
-      setPatientTotalPages(page.totalPages);
+      if (patientSearchMode === "mrn") {
+        const lookup = await findPatientByMrn(
+          apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,query);
+        setPatients([lookup.patient]);
+        setPatientTotal(1);
+        setPatientTotalPages(1);
+      } else {
+        const page = await searchPatients(
+          apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,query,pageNumber);
+        setPatients(page.items);
+        setPatientTotal(page.totalCount);
+        setPatientTotalPages(page.totalPages);
+      }
       setHasSearched(true);
     } catch (error) {
       setPatients([]);
@@ -808,6 +840,7 @@ function Workspace() {
     setPatientTotalPages(0);
     setPatientPage(1);
     setPatientQuery("");
+    setPatientSearchMode("name");
     setHasSearched(false);
     setSearchError("");
     clearRegistrationDraft();
@@ -821,6 +854,7 @@ function Workspace() {
     setPatientTotalPages(0);
     setPatientPage(1);
     setPatientQuery("");
+    setPatientSearchMode("name");
     setHasSearched(false);
     setSearchError("");
     clearRegistrationDraft();
@@ -958,12 +992,32 @@ function Workspace() {
         {canReadPatients && (<section className="section reception-section" id="reception">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
           <div className="search-panel">
-            <label htmlFor="patient-search">Patient name</label>
-            <div className="search-row">
-              <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder="Search by given or family name" disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}/>
-              <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy || patientQuery.trim().length < 2}>{searchLoading ? "Searching…" : "Search patients"}</button>
+            <div className="appointment-grid">
+              <div>
+                <label htmlFor="patient-search-mode">Search by</label>
+                <select id="patient-search-mode" value={patientSearchMode} onChange={event => {
+                  setPatientSearchMode(event.target.value as "name"|"mrn");
+                  setPatientQuery("");
+                  setSelectedPatient(null);
+                  setHasSearched(false);
+                  setPatients([]);
+                  setPatientTotal(0);
+                  setPatientTotalPages(0);
+                  setSearchError("");
+                }} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}>
+                  <option value="name">Patient name</option>
+                  {canReadPatientIdentifiers && <option value="mrn">Medical record number (MRN)</option>}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="patient-search">{patientSearchMode === "mrn" ? "Medical record number (MRN)" : "Patient name"}</label>
+                <div className="search-row">
+                  <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder={patientSearchMode === "mrn" ? "Enter the exact hospital MRN" : "Search by given or family name"} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}/>
+                  <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy || (patientSearchMode === "name" ? patientQuery.trim().length < 2 : !patientQuery.trim())}>{searchLoading ? "Searching…" : "Search patients"}</button>
+                </div>
+              </div>
             </div>
-            <p className="helper-text">Search is limited to the selected hospital. Results are not stored in browser storage.</p>
+            <p className="helper-text">{patientSearchMode === "mrn" ? "Exact MRN lookup is limited to the selected hospital and requires patient identifier read permission." : "Search is limited to the selected hospital. Results are not stored in browser storage."}</p>
             {searchError && <p className="inline-error" role="alert">{searchError}</p>}
             {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
             {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
