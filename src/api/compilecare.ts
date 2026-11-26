@@ -579,6 +579,39 @@ export function rescheduleAppointment(
   return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments/${encodeURIComponent(appointmentId)}/reschedule`, accessToken, tenantId, input);
 }
 
+export function createStaffProfile(
+  baseUrl: string, accessToken: string, tenantId: string,
+  input: { staffCode: string; givenName: string; middleName: string | null; familyName: string | null; providerDesignation: string | null; hospitalId: string; departmentId: string | null; effectiveFrom: string }
+): Promise<StaffProfile> {
+  return postJson(baseUrl, "/api/v1/staff/", accessToken, tenantId, input);
+}
+
+export function updateStaffProfile(
+  baseUrl: string, accessToken: string, tenantId: string, staffId: string,
+  input: { givenName: string; middleName: string | null; familyName: string | null; providerDesignation: string | null }
+): Promise<StaffProfile> {
+  return putJson(baseUrl, `/api/v1/staff/${encodeURIComponent(staffId)}`, accessToken, tenantId, input);
+}
+
+export function setStaffProfileActive(
+  baseUrl: string, accessToken: string, tenantId: string, staffId: string, isActive: boolean
+): Promise<StaffProfile> {
+  return postJson(baseUrl, `/api/v1/staff/${encodeURIComponent(staffId)}/${isActive ? "reactivate" : "deactivate"}`, accessToken, tenantId);
+}
+
+export function addStaffAssignment(
+  baseUrl: string, accessToken: string, tenantId: string, staffId: string,
+  input: { hospitalId: string; departmentId: string | null; effectiveFrom: string }
+): Promise<StaffAssignment> {
+  return postJson(baseUrl, `/api/v1/staff/${encodeURIComponent(staffId)}/assignments`, accessToken, tenantId, input);
+}
+
+export function endStaffAssignment(
+  baseUrl: string, accessToken: string, tenantId: string, staffId: string, assignmentId: string, effectiveTo: string
+): Promise<StaffAssignment> {
+  return postJson(baseUrl, `/api/v1/staff/${encodeURIComponent(staffId)}/assignments/${encodeURIComponent(assignmentId)}/end`, accessToken, tenantId, { effectiveTo });
+}
+
 export function listStaffProfiles(
   baseUrl: string, accessToken: string, tenantId: string, query?: string, page = 1
 ): Promise<Page<StaffProfile>> {

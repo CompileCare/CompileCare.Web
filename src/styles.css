@@ -278,3 +278,44 @@
 .reschedule-panel .registration-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:900px){.appointment-publish-form{grid-template-columns:repeat(2,minmax(0,1fr))}.appointment-list-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.appointment-publish-form,.appointment-list-toolbar,.reschedule-panel .appointment-list-toolbar{grid-template-columns:1fr}.appointment-publish-action button,.appointment-list-toolbar>button{width:100%;min-height:42px}.appointment-record-main{align-items:flex-start;flex-direction:column}.appointment-record-actions{display:grid;grid-template-columns:1fr}.appointment-record-actions button{width:100%;min-height:40px}.reschedule-panel .registration-actions{display:grid;grid-template-columns:1fr}.reschedule-panel .registration-actions button{width:100%;min-height:40px}}
+
+
+/* Staff and provider workspace */
+.staff-management-section{margin-top:28px}
+.staff-create-panel,.staff-directory-panel{display:grid;gap:15px}
+.staff-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.staff-toolbar>div{display:grid;gap:5px}
+.staff-toolbar strong{font-size:13px;color:#213f53}
+.staff-toolbar small{font-size:10px;color:#738895}
+.staff-toolbar button,.staff-search button{min-height:38px;padding:8px 13px;border:1px solid #0e827c;border-radius:8px;background:#0e827c;color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+.staff-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
+.staff-form>div{display:grid;gap:7px;min-width:0}
+.staff-form label,.staff-search label,.staff-assignment-form label{font-size:11px;font-weight:700;color:#476274}
+.staff-form input,.staff-form select,.staff-search input,.staff-assignment-form input,.staff-assignment-form select{width:100%;min-height:40px;border:1px solid #d6e1e7;border-radius:8px;padding:9px 11px;background:#fff;color:#213f53;font:inherit;font-size:12px}
+.staff-form input:focus,.staff-form select:focus,.staff-search input:focus,.staff-assignment-form input:focus,.staff-assignment-form select:focus{outline:3px solid #b8e6df;border-color:#0e827c}
+.staff-form-actions{grid-column:1/-1;display:flex!important;flex-direction:row;gap:8px}
+.staff-form-actions button,.staff-record-actions button,.staff-assignment-form button{min-height:36px;padding:8px 12px;border:1px solid #d7e2e8;border-radius:7px;background:#fff;color:#31566b;font-size:11px;font-weight:700;cursor:pointer}
+.staff-form-actions button[type=submit],.staff-assignment-form button[type=submit]{background:#0e827c;border-color:#0e827c;color:#fff}
+.staff-search{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end}
+.staff-search>div{display:grid;gap:7px}
+.staff-search .secondary-action,.staff-record-actions .secondary-action,.staff-assignment-form .secondary-action{background:#fff;border-color:#d7e2e8;color:#526b7a}
+.staff-record-list{display:grid;gap:12px}
+.staff-record{display:grid;gap:12px;padding:15px;border:1px solid #e2e9ed;border-radius:10px;background:#fff}
+.staff-record-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.staff-record-header>div{display:grid;gap:5px}
+.staff-record-header strong{font-size:13px;color:#1e3d51}
+.staff-record-header small{font-size:10px;color:#738895}
+.staff-status{padding:5px 9px;border-radius:999px;background:#f0f3f5;color:#657985;font-size:10px;font-weight:800;white-space:nowrap}
+.staff-status.staff-active{background:#e6f5ef;color:#17664e}
+.staff-assignment-list{display:grid;gap:8px}
+.staff-assignment-list>strong{font-size:11px;color:#476274}
+.staff-assignment{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid #edf1f3;border-radius:8px}
+.staff-assignment>div{display:grid;gap:4px;flex:1;min-width:0}
+.staff-assignment>div>span{font-size:11px;color:#31566b;font-weight:700}
+.staff-assignment small{font-size:10px;color:#738895}
+.staff-assignment>button{font-size:10px;padding:6px 9px;border:1px solid #d7e2e8;border-radius:7px;background:#fff;color:#526b7a}
+.staff-record-actions{display:flex;flex-wrap:wrap;gap:8px}
+.staff-assignment-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;padding:12px;border-radius:9px;background:#f6f9fa}
+.staff-assignment-form>div{grid-column:1/-1;display:flex;gap:8px}
+@media(max-width:900px){.staff-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.staff-toolbar{align-items:flex-start;flex-direction:column}.staff-toolbar button{width:100%;min-height:42px}.staff-form,.staff-search,.staff-assignment-form{grid-template-columns:1fr}.staff-form-actions,.staff-assignment-form>div{grid-column:auto;display:grid!important;grid-template-columns:1fr}.staff-search button{width:100%;min-height:42px}.staff-record-actions{display:grid;grid-template-columns:1fr}.staff-record-actions button{width:100%;min-height:40px}.staff-assignment{align-items:flex-start;flex-wrap:wrap}.staff-assignment>div{flex-basis:calc(100% - 10px)}}
