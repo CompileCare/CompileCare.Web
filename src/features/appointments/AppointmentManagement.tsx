@@ -17,6 +17,7 @@ interface Props {
   canRead: boolean;
   canManage: boolean;
   canPublishAvailability: boolean;
+  staffRevision?: number;
   onBusyChange: (busy: boolean) => void;
 }
 
@@ -43,7 +44,7 @@ function providerName(staff: StaffProfile): string {
 
 export function AppointmentManagement({
   baseUrl, accessToken, tenantId, hospitalId, departments, canRead, canManage,
-  canPublishAvailability, onBusyChange
+  canPublishAvailability, staffRevision = 0, onBusyChange
 }: Props) {
   const [departmentId, setDepartmentId] = useState("");
   const [date, setDate] = useState(today());
@@ -97,12 +98,14 @@ export function AppointmentManagement({
     let active = true;
     setStaffLoading(true);
     setStaffError("");
+    setStaff([]);
+    setProviderStaffId("");
     listStaffProfiles(baseUrl, accessToken, tenantId)
       .then(result => { if (active) setStaff(result.items); })
       .catch(cause => { if (active) setStaffError(errorMessage(cause)); })
       .finally(() => { if (active) setStaffLoading(false); });
     return () => { active = false; };
-  }, [baseUrl, accessToken, tenantId, canPublishAvailability]);
+  }, [baseUrl, accessToken, tenantId, canPublishAvailability, staffRevision]);
 
   useEffect(() => {
     setAppointments([]);
