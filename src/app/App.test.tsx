@@ -28,4 +28,9 @@ describe("reception workspace",()=>{
   render(<MemoryRouter initialEntries={["/#reception"]}><App/><LocationProbe/></MemoryRouter>);
   await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
  });
+
+ it("preserves non-module accessibility anchors while rejecting an inaccessible route",async()=>{
+  render(<MemoryRouter initialEntries={["/billing#workspace-main"]}><App/><LocationProbe/></MemoryRouter>);
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/#workspace-main"));
+ });
 });
