@@ -77,6 +77,14 @@ describe("PlatformTenantManagement", () => {
     expect(await screen.findByText(/Tenant created in Provisioning state/)).toBeInTheDocument();
   });
 
+  it("bounds generated tenant slugs to the API's 63-character limit", () => {
+    render(<PlatformTenantManagement {...props} />);
+    fireEvent.change(screen.getByLabelText("Tenant name *"), {
+      target: { value: "A".repeat(80) }
+    });
+    expect((screen.getByLabelText("Tenant slug *") as HTMLInputElement).value).toHaveLength(63);
+  });
+
   it("provisions the initial HospitalAdmin before activating a new tenant", async () => {
     render(<PlatformTenantManagement {...props} />);
 
