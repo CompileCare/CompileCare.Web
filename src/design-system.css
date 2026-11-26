@@ -1608,3 +1608,187 @@ a {
     flex: 1 1 auto;
   }
 }
+
+
+/* Global platform tenant administration — visible only to persisted platform operators. */
+.platform-tenant-section {
+  display: grid;
+  gap: 18px;
+}
+.platform-create-panel,
+.platform-list-panel {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-lg);
+  background: var(--cc-surface);
+  box-shadow: var(--cc-shadow-sm);
+}
+.platform-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.platform-panel-heading h3 {
+  margin: 0;
+  color: var(--cc-ink);
+  font-size: 16px;
+  font-weight: 730;
+}
+.platform-panel-heading p {
+  margin: 5px 0 0;
+}
+.platform-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
+}
+.platform-create-form > div:not(.platform-form-actions) {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.platform-create-form small {
+  color: var(--cc-muted);
+  font-size: 11px;
+}
+.platform-form-actions,
+.platform-tenant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.platform-create-form .platform-form-actions {
+  grid-column: 1 / -1;
+}
+.platform-tenant-list {
+  display: grid;
+  gap: 12px;
+}
+.platform-tenant-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--cc-border);
+  border-radius: 12px;
+  background: #ffffff;
+}
+.platform-tenant-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.platform-tenant-card-header > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.platform-tenant-card-header h4 {
+  margin: 0;
+  color: var(--cc-ink);
+  font-size: 15px;
+  font-weight: 740;
+}
+.platform-tenant-card-header code {
+  color: var(--cc-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.platform-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 760;
+}
+.platform-status-provisioning {
+  color: var(--cc-info);
+  background: var(--cc-info-bg);
+}
+.platform-status-active {
+  color: var(--cc-success);
+  background: var(--cc-success-bg);
+}
+.platform-status-suspended {
+  color: var(--cc-warning);
+  background: var(--cc-warning-bg);
+}
+.platform-status-closed {
+  color: var(--cc-muted);
+  background: #edf1f5;
+}
+.platform-tenant-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+}
+.platform-tenant-meta > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.platform-tenant-meta dt {
+  color: var(--cc-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.platform-tenant-meta dd {
+  margin: 0;
+  color: var(--cc-ink-soft);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.platform-provision-panel,
+.platform-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--cc-border-strong);
+  border-radius: 10px;
+  background: var(--cc-surface-muted);
+}
+.platform-provision-panel p,
+.platform-confirm p {
+  margin: 0;
+  color: var(--cc-ink-soft);
+  font-size: 12px;
+}
+.platform-provision-panel > label {
+  color: var(--cc-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.platform-terminal-note {
+  margin: 0;
+  color: var(--cc-muted);
+  font-size: 11px;
+}
+@media (max-width: 760px) {
+  .platform-create-form,
+  .platform-tenant-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-create-panel,
+  .platform-list-panel,
+  .platform-tenant-card {
+    padding: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .platform-tenant-card-header {
+    flex-direction: column;
+  }
+  .platform-tenant-actions button,
+  .platform-form-actions button {
+    flex: 1 1 auto;
+  }
+}
