@@ -55,6 +55,7 @@ The current-user tenant context and effective-permission contract is implemented
 ## Privacy and access boundaries
 
 - Do not persist patient search results, names or dates of birth in browser storage.
+- The active tenant and hospital selection IDs may be retained in tab-scoped sessionStorage and are revalidated against the authenticated user’s current memberships and API-filtered hospital list after reload.
 - Do not log access tokens, patient queries or patient result payloads.
 - Do not use UI role checks as authorization. The API enforces permissions on every request.
 - Patient registration is available only to memberships with both `patient.register` and `patient.duplicate.review`; clinical identity reads use the separate department-scoped route.
