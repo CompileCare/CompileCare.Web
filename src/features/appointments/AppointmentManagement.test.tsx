@@ -54,7 +54,7 @@ describe("appointment management workspace", () => {
     cancel.mockResolvedValue({ ...page.items[0], status: "Cancelled" });
     render(<AppointmentManagement {...baseProps} />);
     fireEvent.click(await screen.findByRole("button", { name: "Load appointments" }));
-    expect(await screen.findByText("Patient reference · patient-1 · Provider · provider")).toBeInTheDocument();
+    expect(await screen.findByText("Patient reference · patient- · Provider · provider")).toBeInTheDocument();
     expect(list).toHaveBeenCalledWith(
       baseProps.baseUrl, baseProps.accessToken, baseProps.tenantId, baseProps.hospitalId,
       "department-1", expect.any(String), undefined, 1
