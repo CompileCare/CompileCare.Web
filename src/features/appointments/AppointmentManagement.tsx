@@ -78,7 +78,6 @@ export function AppointmentManagement({
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
   const [rescheduleError, setRescheduleError] = useState("");
 
-  const department = departments.find(item => item.id === departmentId);
   const providers = useMemo(() => staff.filter(item =>
     item.isActive && !!item.providerDesignation && item.assignments.some(assignment =>
       assignment.isActive && assignment.hospitalId === hospitalId &&
