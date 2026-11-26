@@ -174,7 +174,7 @@ export function PlatformTenantManagement({ baseUrl, accessToken, currentIssuer, 
           <div className="platform-tenant-card-header"><div><h4>{tenant.name}</h4><code>{tenant.slug}</code></div><span className={statusClass(tenant.status)}>{tenant.status}</span></div>
           <dl className="platform-tenant-meta"><div><dt>Tenant ID</dt><dd>{tenant.id}</dd></div><div><dt>Created</dt><dd>{formatDate(tenant.createdAtUtc)}</dd></div><div><dt>Updated</dt><dd>{formatDate(tenant.updatedAtUtc)}</dd></div></dl>
           {tenant.status === "Provisioning" && <div className="platform-provision-panel">
-            <p>Provision the first tenant-wide HospitalAdmin. The identity must already exist in the configured OIDC provider.</p>
+            <p>Create the identity in your configured OIDC provider first, then enter its exact subject. CompileCare creates the tenant membership; it does not create identity-provider users.</p>
             <label htmlFor={`initial-admin-${tenant.id}`}>Initial administrator OIDC subject</label>
             <input id={`initial-admin-${tenant.id}`} value={initialAdminSubjects[tenant.id] ?? ""} onChange={event=>setInitialAdminSubjects(current=>({...current,[tenant.id]:event.target.value}))} maxLength={255} disabled={busy}/>
             <div className="platform-form-actions"><button type="button" onClick={()=>provisionAndActivate(tenant)} disabled={busy || !currentIssuer || !(initialAdminSubjects[tenant.id] ?? "").trim()}>Provision administrator and activate</button><button type="button" className="queue-action-danger" onClick={()=>setConfirmTarget({tenant,action:"close"})} disabled={busy}>Close tenant</button></div>
