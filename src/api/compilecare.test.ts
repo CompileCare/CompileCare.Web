@@ -1,5 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "./compilecare";
+import { cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles, rescheduleAppointment } from "./compilecare";
 import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
@@ -536,5 +537,46 @@ describe("platform onboarding API client",()=>{
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
   expect(options.cache).toBe("no-store");
   expect(options.credentials).toBe("omit");
+ });
+
+ it("publishes provider availability with tenant scope and no credential forwarding",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"session-1",hospitalId:"hospital-1",departmentId:"department-1",providerStaffId:"provider-1",localDate:"2026-12-10",startsAtUtc:"2026-12-10T03:30:00Z",endsAtUtc:"2026-12-10T07:30:00Z",slotDurationMinutes:30,timeZoneId:"Asia/Kolkata",createdAtUtc:"2026-11-26T00:00:00Z"}),{status:201}));
+  const session=await createAvailabilitySession("https://api.example.test","token","tenant-1","hospital-1",{departmentId:"department-1",providerStaffId:"provider-1",localDate:"2026-12-10",startLocalTime:"09:00",endLocalTime:"13:00",slotDurationMinutes:30,timeZoneId:"Asia/Kolkata"});
+  expect(session.id).toBe("session-1");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-1/availability-sessions");
+  expect(options.method).toBe("POST");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("lists appointments with department, date, status and pagination filters",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:2,pageSize:25,totalCount:30,totalPages:2}),{status:200}));
+  const result=await listAppointments("https://api.example.test","token","tenant-1","hospital-1","department-1","2026-12-10","Booked",2);
+  expect(result.totalPages).toBe(2);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-1/appointments?departmentId=department-1&date=2026-12-10&page=2&pageSize=25&status=Booked");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
+  expect(options.cache).toBe("no-store");
+ });
+
+ it("cancels and reschedules appointments through their hospital-scoped actions",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"appointment-1",status:"Cancelled"}),{status:200}));
+  await cancelAppointment("https://api.example.test","token","tenant-1","hospital-1","appointment-1");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"appointment-2",status:"Booked"}),{status:200}));
+  await rescheduleAppointment("https://api.example.test","token","tenant-1","hospital-1","appointment-1",{availabilitySessionId:"session-2",patientId:"patient-1",slotStartsAtUtc:"2026-12-10T04:00:00Z",reason:"Follow-up"});
+  expect((fetchMock.mock.calls[0][0] as string)).toContain("/appointments/appointment-1/cancel");
+  expect((fetchMock.mock.calls[1][0] as string)).toContain("/appointments/appointment-1/reschedule");
+  expect(new Headers((fetchMock.mock.calls[1][1] as RequestInit).headers).get("X-Tenant-ID")).toBe("tenant-1");
+ });
+
+ it("loads staff profiles using the active tenant context",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[],page:1,pageSize:100,totalCount:0,totalPages:0}),{status:200}));
+  const result=await listStaffProfiles("https://api.example.test","token","tenant-1");
+  expect(result.items).toEqual([]);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/staff?page=1&pageSize=100");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
  });
 });
