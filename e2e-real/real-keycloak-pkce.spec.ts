@@ -61,7 +61,7 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
   );
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
 
-  const tenantSelect = page.getByLabel("Tenant");
+  const tenantSelect = page.locator("#tenant-select");
   await expect(tenantSelect.locator("option")).toHaveCount(3);
   await expect(tenantSelect.locator("option").filter({ hasText: "CI Tenant A" })).toHaveCount(1);
   await expect(tenantSelect.locator("option").filter({ hasText: "CI Tenant B" })).toHaveCount(1);
