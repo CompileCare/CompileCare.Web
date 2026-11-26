@@ -798,12 +798,13 @@ function Workspace() {
     try {
       const page = await getHospitals(apiBaseUrl,user.access_token,selectedTenantId);
       setHospitals(page.items);
-      setSelectedHospitalId(current =>
-        preferredHospitalId && page.items.some(item => item.id === preferredHospitalId)
-          ? preferredHospitalId
-          : page.items.some(item => item.id === current)
-            ? current
-            : page.items.length === 1 ? page.items[0].id : "");
+      const nextHospitalId = preferredHospitalId && page.items.some(item => item.id === preferredHospitalId)
+        ? preferredHospitalId
+        : page.items.some(item => item.id === selectedHospitalId)
+          ? selectedHospitalId
+          : page.items.length === 1 ? page.items[0].id : "";
+      if (nextHospitalId !== selectedHospitalId) changeHospital(nextHospitalId);
+      else setSelectedHospitalId(nextHospitalId);
     } finally {
       setHospitalsLoading(false);
     }
