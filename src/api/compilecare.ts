@@ -21,6 +21,23 @@ export interface UserTenantContext {
   permissions: string[];
 }
 
+export interface TenantMembership {
+  id: string;
+  issuer: string;
+  subject: string;
+  role: string;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  scopes: OrganizationScope[];
+}
+
+export interface TenantMembershipScopeInput {
+  scopeType: OrganizationScope["scopeType"];
+  hospitalId: string | null;
+  departmentId: string | null;
+}
+
 export interface Hospital {
   id: string;
   name: string;
@@ -122,6 +139,53 @@ export function getHospitals(
   tenantId: string
 ): Promise<Page<Hospital>> {
   return getJson(baseUrl, "/api/v1/hospitals?page=1&pageSize=100", accessToken, tenantId);
+}
+
+export function listTenantMemberships(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  page = 1
+): Promise<Page<TenantMembership>> {
+  const parameters = new URLSearchParams({ page: String(page), pageSize: "50" });
+  return getJson(baseUrl, `/api/v1/tenant/memberships?${parameters.toString()}`, accessToken, tenantId);
+}
+
+export function createTenantMembership(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  input: { issuer: string; subject: string; role: string; scopes: TenantMembershipScopeInput[] }
+): Promise<TenantMembership> {
+  return postJson(baseUrl, "/api/v1/tenant/memberships", accessToken, tenantId, input);
+}
+
+export function updateTenantMembership(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  membershipId: string,
+  input: { role: string; scopes: TenantMembershipScopeInput[] }
+): Promise<TenantMembership> {
+  return putJson(baseUrl, `/api/v1/tenant/memberships/${encodeURIComponent(membershipId)}`, accessToken, tenantId, input);
+}
+
+export function deactivateTenantMembership(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  membershipId: string
+): Promise<TenantMembership> {
+  return postJson(baseUrl, `/api/v1/tenant/memberships/${encodeURIComponent(membershipId)}/deactivate`, accessToken, tenantId);
+}
+
+export function reactivateTenantMembership(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  membershipId: string
+): Promise<TenantMembership> {
+  return postJson(baseUrl, `/api/v1/tenant/memberships/${encodeURIComponent(membershipId)}/reactivate`, accessToken, tenantId);
 }
 
 export function searchPatients(
