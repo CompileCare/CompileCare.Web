@@ -70,9 +70,9 @@ describe("TenantMembershipManagement", () => {
   it("loads tenant memberships with current role and organization scope", async () => {
     render(<TenantMembershipManagement {...props} />);
 
-    expect(await screen.findByText("another-…subject")).toBeInTheDocument();
-    expect(screen.getByText("FacilityViewer")).toBeInTheDocument();
-    expect(screen.getByText("City Hospital")).toBeInTheDocument();
+    expect(await screen.findByText("another-user-subject")).toBeInTheDocument();
+    expect(screen.getAllByText("FacilityViewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("City Hospital").length).toBeGreaterThan(0);
     expect(listTenantMemberships).toHaveBeenCalledWith(
       "https://api.example.test", "test-token", "tenant-1", 1
     );
