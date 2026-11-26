@@ -65,7 +65,7 @@ describe("FacilityManagement", () => {
     vi.mocked(createBed).mockResolvedValue(bed);
   });
 
-  it("does not expose mutation controls to a read-only facility membership", () => {
+  it("does not expose mutation controls to a read-only facility membership", async () => {
     render(
       <FacilityManagement
         {...baseProps}
@@ -78,6 +78,7 @@ describe("FacilityManagement", () => {
     expect(screen.queryByRole("button", { name: "Edit hospital" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create department" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create ward" })).not.toBeInTheDocument();
+    await screen.findByText("No wards are configured for this department.");
   });
 
   it("allows a tenant-wide facility administrator to create a hospital", async () => {
