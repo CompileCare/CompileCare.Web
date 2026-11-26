@@ -25,9 +25,9 @@ const props = {
 describe("hospital MRN policy workspace", () => {
   beforeEach(() => { vi.resetAllMocks(); });
 
-  it("shows a create form only to a membership with policy-manage permission", async () => {
+  it("shows a create form to a HospitalAdmin with policy-manage permission", async () => {
     getPolicy.mockRejectedValue(new ApiError(404));
-    render(<PatientIdentifierPolicyManagement {...props} canRead={false} canManage />);
+    render(<PatientIdentifierPolicyManagement {...props} />);
     expect(await screen.findByLabelText("MRN prefix")).toBeInTheDocument();
     expect(screen.getByLabelText("Sequence digits")).toHaveValue(6);
   });
