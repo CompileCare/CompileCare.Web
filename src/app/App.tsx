@@ -644,7 +644,7 @@ function Workspace() {
     // Keep legacy module hashes working while preserving accessibility/other in-page anchors.
     const fragment = legacyHashSection
       ? (nextSection ? `#${nextSection}` : "")
-      : location.hash;
+      : location.hash || (nextSection ? `#${nextSection}` : "");
     const canonicalLocation = nextSection
       ? `/${nextSection}${fragment}`
       : `/${fragment}`;
