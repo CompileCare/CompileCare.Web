@@ -16,6 +16,7 @@ interface Props {
   canRead: boolean;
   canManage: boolean;
   onBusyChange: (busy: boolean) => void;
+  onDirectoryChanged: () => void;
 }
 
 const today = () => {
@@ -36,7 +37,7 @@ function fullName(staff: StaffProfile): string {
 }
 
 export function StaffManagement({
-  baseUrl, accessToken, tenantId, hospitalId, hospitalName, departments, canRead, canManage, onBusyChange
+  baseUrl, accessToken, tenantId, hospitalId, hospitalName, departments, canRead, canManage, onBusyChange, onDirectoryChanged
 }: Props) {
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [query, setQuery] = useState("");
@@ -93,6 +94,7 @@ export function StaffManagement({
         familyName: familyName.trim() || null, providerDesignation: designation.trim() || null,
         hospitalId, departmentId: initialDepartmentId || null, effectiveFrom
       });
+      onDirectoryChanged();
       setStaffCode(""); setGivenName(""); setMiddleName(""); setFamilyName(""); setDesignation("");
       setInitialDepartmentId(""); setEffectiveFrom(today()); setCreateOpen(false);
       await refresh(appliedQuery);
@@ -118,6 +120,7 @@ export function StaffManagement({
         givenName: editGivenName.trim(), middleName: editMiddleName.trim() || null,
         familyName: editFamilyName.trim() || null, providerDesignation: editDesignation.trim() || null
       });
+      onDirectoryChanged();
       setEditingId(""); await refresh(appliedQuery); setNotice("Staff profile updated.");
     } catch (cause) { setError(message(cause)); }
     finally { setSaving(false); onBusyChange(false); }
@@ -132,6 +135,7 @@ export function StaffManagement({
     setSaving(true); onBusyChange(true); setError("");
     try {
       await setStaffProfileActive(baseUrl, accessToken, tenantId, profile.id, !profile.isActive);
+      onDirectoryChanged();
       setConfirmDeactivateId(""); await refresh(appliedQuery);
       setNotice(profile.isActive ? "Staff profile deactivated. Open-ended active assignments were ended by the API." : "Staff profile reactivated.");
     } catch (cause) { setError(message(cause)); }
@@ -146,6 +150,7 @@ export function StaffManagement({
       await addStaffAssignment(baseUrl, accessToken, tenantId, profile.id, {
         hospitalId, departmentId: assignmentDepartmentId, effectiveFrom: assignmentDate
       });
+      onDirectoryChanged();
       setAssignmentStaffId(""); setAssignmentDepartmentId(""); setAssignmentDate(today());
       await refresh(appliedQuery); setNotice("Department assignment added.");
     } catch (cause) { setError(message(cause)); }
@@ -159,6 +164,7 @@ export function StaffManagement({
     try {
       await endStaffAssignment(baseUrl, accessToken, tenantId, endingAssignment.staffId,
         endingAssignment.assignment.id, assignmentEndDate);
+      onDirectoryChanged();
       setEndingAssignment(null); await refresh(appliedQuery); setNotice("Staff assignment ended.");
     } catch (cause) { setError(message(cause)); }
     finally { setSaving(false); onBusyChange(false); }
