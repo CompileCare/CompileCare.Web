@@ -77,7 +77,7 @@ export function PatientIdentifierPolicyManagement({
       {loading && <p className="inline-status" role="status">Loading the hospital MRN policy…</p>}
       {error && <p className="inline-error" role="alert">{error}</p>}
       {notice && <p className="registration-success" role="status">{notice}</p>}
-      {policy && <div className="mrn-policy-summary" aria-live="polite"><span>Configured MRN format</span><strong>{policy.prefix}{"0".repeat(Math.min(policy.numberLength, 12))}</strong><small>Prefix: {policy.prefix} · Sequence length: {policy.numberLength} digits</small><p>The policy is active. Replacement is not supported in this release to prevent existing identifiers from becoming ambiguous.</p></div>}
+      {policy && <div className="mrn-policy-summary" aria-live="polite"><span>Configured MRN format</span><strong>{policy.prefix}{"1".padStart(policy.numberLength, "0")}</strong><small>Prefix: {policy.prefix} · Sequence length: {policy.numberLength} digits</small><p>The policy is active. Replacement is not supported in this release to prevent existing identifiers from becoming ambiguous.</p></div>}
       {!loading && notConfigured && canManage && <form className="mrn-policy-form" onSubmit={handleCreate}>
         <p className="helper-text">Choose a prefix and sequence length. The API validates the format and allows only one policy per hospital.</p>
         <div><label htmlFor="mrn-policy-prefix">MRN prefix</label><input id="mrn-policy-prefix" value={prefix} onChange={event => setPrefix(event.target.value.toUpperCase())} maxLength={20} pattern="[A-Za-z0-9][A-Za-z0-9-]{0,19}" placeholder="e.g. CC-AKH" required /></div>
