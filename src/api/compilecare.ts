@@ -377,6 +377,30 @@ export interface AppointmentBookInput {
   reason: string | null;
 }
 
+export interface AppointmentPage extends Page<Appointment> {}
+
+export interface StaffAssignment {
+  id: string;
+  hospitalId: string;
+  departmentId: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  isActive: boolean;
+}
+
+export interface StaffProfile {
+  id: string;
+  staffCode: string;
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  providerDesignation: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  assignments: StaffAssignment[];
+}
+
 export interface QueueEntry {
   id: string;
   hospitalId: string;
@@ -515,6 +539,52 @@ export interface WalkInCreateInput {
   departmentId: string;
   patientId: string;
   timeZoneId: string;
+}
+
+
+export function createAvailabilitySession(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: { departmentId: string; providerStaffId: string; localDate: string; startLocalTime: string; endLocalTime: string; slotDurationMinutes: number; timeZoneId: string }
+): Promise<AvailabilitySession> {
+  return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/availability-sessions`, accessToken, tenantId, input);
+}
+
+export function listAppointments(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  departmentId: string,
+  date: string,
+  status?: string,
+  page = 1
+): Promise<AppointmentPage> {
+  const parameters = new URLSearchParams({ departmentId, date, page: String(page), pageSize: "25" });
+  if (status) parameters.set("status", status);
+  return getJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments?${parameters.toString()}`, accessToken, tenantId);
+}
+
+export function cancelAppointment(
+  baseUrl: string, accessToken: string, tenantId: string, hospitalId: string, appointmentId: string
+): Promise<Appointment> {
+  return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments/${encodeURIComponent(appointmentId)}/cancel`, accessToken, tenantId);
+}
+
+export function rescheduleAppointment(
+  baseUrl: string, accessToken: string, tenantId: string, hospitalId: string, appointmentId: string, input: AppointmentBookInput
+): Promise<Appointment> {
+  return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/appointments/${encodeURIComponent(appointmentId)}/reschedule`, accessToken, tenantId, input);
+}
+
+export function listStaffProfiles(
+  baseUrl: string, accessToken: string, tenantId: string, query?: string, page = 1
+): Promise<Page<StaffProfile>> {
+  const parameters = new URLSearchParams({ page: String(page), pageSize: "100" });
+  if (query) parameters.set("query", query);
+  return getJson(baseUrl, `/api/v1/staff?${parameters.toString()}`, accessToken, tenantId);
 }
 
 export function listAvailabilitySessions(
