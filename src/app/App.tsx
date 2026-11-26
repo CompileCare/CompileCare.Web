@@ -8,6 +8,7 @@ import { PatientSearchResults } from "../features/reception/PatientSearchResults
 import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
 import { QueueEntryRow } from "../features/queue/QueueEntryRow";
 import { ClinicalQueueRow } from "../features/clinical/ClinicalQueueRow";
+import { FacilityManagement } from "../features/facilities/FacilityManagement";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -406,6 +407,7 @@ function Workspace() {
   const [queueDate,setQueueDate] = useState(localDateToday());
   const [hospitalTimeZone,setHospitalTimeZone] = useState("Asia/Kolkata");
   const [clinicalBusy,setClinicalBusy] = useState(false);
+  const [facilityBusy,setFacilityBusy] = useState(false);
   const [activeSection,setActiveSection] = useState("");
 
   useEffect(() => {
@@ -522,19 +524,21 @@ function Workspace() {
   const canReadQueue = hasPermission("queue.read");
   const canManageQueue = hasPermission("queue.manage");
   const canReadBilling = hasPermission("billing.invoice.read") || hasPermission("billing.invoice.manage");
+  const canReadFacilities = hasPermission("facility.read");
   const selectedDepartment = departments.find(x=>x.id===selectedDepartmentId);
   const selectedSession = availabilitySessions.find(x=>x.id===selectedSessionId);
-  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy;
+  const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy||facilityBusy;
   const allowedSectionKey = [
     isClinicalWorkspace ? "clinical" : "",
     canReadPatients ? "reception" : "",
     canRegisterPatients ? "patient-registration" : "",
     canManageAppointments ? "appointments" : "",
     canReadQueue && !isClinicalWorkspace ? "queue" : "",
-    canReadBilling ? "billing" : ""
+    canReadBilling ? "billing" : "",
+    canReadFacilities ? "facilities" : ""
   ].filter(Boolean).join("|");
   const defaultActiveSection = allowedSectionKey.split("|")[0] || "";
-  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
+  const activeWorkspaceTitle = activeSection === "appointments" ? "Appointments" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
     const syncActiveSection = () => {
@@ -788,13 +792,39 @@ function Workspace() {
     clearRegistrationDraft();
   }
 
+  async function refreshHospitals(preferredHospitalId?: string) {
+    if (!user || !apiBaseUrl || !selectedTenantId) return;
+    const page = await getHospitals(apiBaseUrl,user.access_token,selectedTenantId);
+    setHospitals(page.items);
+    setSelectedHospitalId(current =>
+      preferredHospitalId && page.items.some(item => item.id === preferredHospitalId)
+        ? preferredHospitalId
+        : page.items.some(item => item.id === current)
+          ? current
+          : page.items.length === 1 ? page.items[0].id : "");
+  }
+
+  async function refreshDepartments() {
+    if (!user || !apiBaseUrl || !selectedTenantId || !selectedHospitalId) {
+      setDepartments([]);
+      setSelectedDepartmentId("");
+      return;
+    }
+    const page = await listDepartments(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId);
+    setDepartments(page.items);
+    setSelectedDepartmentId(current =>
+      page.items.some(item => item.id === current)
+        ? current
+        : page.items.length === 1 ? page.items[0].id : "");
+  }
+
   return <div className="shell">
     <a className="skip-link" href="#workspace-main">Skip to main content</a>
     <aside className="sidebar">
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canManageAppointments&&<a className={activeSection==="appointments"?"selected":undefined} aria-current={activeSection==="appointments"?"location":undefined} href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+        {isClinicalWorkspace&&<a className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} href="#clinical">Clinical workspace</a>}{canReadPatients&&<a className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} href="#reception">Reception</a>}{canRegisterPatients&&<a className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} href="#patient-registration">Patient registration</a>}{canManageAppointments&&<a className={activeSection==="appointments"?"selected":undefined} aria-current={activeSection==="appointments"?"location":undefined} href="#appointments">Appointments</a>}{canReadQueue&&!isClinicalWorkspace&&<a className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} href="#queue">Queue</a>}{canReadBilling&&<a className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} href="#billing">Billing</a>}{canReadFacilities&&<a className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} href="#facilities">Facilities</a>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
       </nav>
       <footer>Secure by design<br/><small>Tenant-scoped access</small></footer>
     </aside>
@@ -843,6 +873,19 @@ function Workspace() {
         </section>
 
         {localPlatformBootstrapEnabled && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+
+        {canReadFacilities && selectedContext && selectedTenantId && <FacilityManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          hospital={selectedHospital}
+          departments={departments}
+          permissions={selectedContext.permissions ?? []}
+          scopes={selectedContext.scopes ?? []}
+          onRefreshHospitals={refreshHospitals}
+          onRefreshDepartments={refreshDepartments}
+          onBusyChange={setFacilityBusy}
+        />}
 
         {canReadPatients && (<section className="section reception-section" id="reception">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
