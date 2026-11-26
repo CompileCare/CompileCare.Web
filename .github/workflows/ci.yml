@@ -64,7 +64,7 @@ jobs:
           echo "Verified the Web CSP blocks inline styles and scripts."
           echo "Running the complete browser workflow suite against the production Nginx container with the enforced CSP."
           CSP_TEST_BASE_URL=http://127.0.0.1:8080 npx playwright test --config=playwright.docker.config.ts e2e
-          invalid_csp_output="$(docker compose run --rm --no-deps -e CSP_CONNECT_SRC='*' web 2>&1)" && {
+          invalid_csp_output="$(docker compose -f docker-compose.yml -f docker-compose.csp-test.yml run --rm --no-deps -e CSP_CONNECT_SRC='*' web 2>&1)" && {
             echo "The Web container accepted a wildcard CSP origin unexpectedly."
             exit 1
           }
@@ -74,7 +74,7 @@ jobs:
             exit 1
           fi
           echo "Verified invalid wildcard CSP origins are rejected at container startup."
-          insecure_csp_output="$(docker compose run --rm --no-deps -e CSP_CONNECT_SRC='http://api.example.com' -e ALLOW_INSECURE_CSP_ORIGINS=false web 2>&1)" && {
+          insecure_csp_output="$(docker compose -f docker-compose.yml -f docker-compose.csp-test.yml run --rm --no-deps -e CSP_CONNECT_SRC='http://api.example.com' -e ALLOW_INSECURE_CSP_ORIGINS=false web 2>&1)" && {
             echo "The Web container accepted an HTTP CSP origin without the local-only opt-in."
             exit 1
           }
@@ -84,7 +84,7 @@ jobs:
             exit 1
           fi
           echo "Verified HTTP CSP origins are rejected without the explicit local-development opt-in."
-          missing_csp_output="$(docker compose run --rm --no-deps -e CSP_FRAME_SRC='' web 2>&1)" && {
+          missing_csp_output="$(docker compose -f docker-compose.yml -f docker-compose.csp-test.yml run --rm --no-deps -e CSP_FRAME_SRC='' web 2>&1)" && {
             echo "The Web container accepted a missing CSP_FRAME_SRC value."
             exit 1
           }
