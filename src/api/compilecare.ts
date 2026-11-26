@@ -92,6 +92,17 @@ export interface PatientIdentifierLookup {
   identifier: PatientIdentifier;
 }
 
+export interface PatientIdentifierPolicy {
+  hospitalId: string;
+  prefix: string;
+  numberLength: number;
+}
+
+export interface PatientIdentifierPolicyInput {
+  prefix: string;
+  numberLength: number;
+}
+
 export class ApiError extends Error {
   constructor(readonly status: number) {
     super(status === 401 ? "Your sign-in session is not authorized for the API." :
@@ -256,6 +267,25 @@ export function assignPatientMedicalRecordNumber(
     accessToken,
     tenantId
   );
+}
+
+export function getPatientIdentifierPolicy(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string
+): Promise<PatientIdentifierPolicy> {
+  return getJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patient-identifier-policy`, accessToken, tenantId);
+}
+
+export function createPatientIdentifierPolicy(
+  baseUrl: string,
+  accessToken: string,
+  tenantId: string,
+  hospitalId: string,
+  input: PatientIdentifierPolicyInput
+): Promise<PatientIdentifierPolicy> {
+  return postJson(baseUrl, `/api/v1/hospitals/${encodeURIComponent(hospitalId)}/patient-identifier-policy`, accessToken, tenantId, input);
 }
 
 export async function findPatientByMrn(
