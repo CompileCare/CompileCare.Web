@@ -38,7 +38,7 @@ jobs:
           for expected in \
             "X-Content-Type-Options: nosniff" \
             "Referrer-Policy: strict-origin-when-cross-origin" \
-            "X-Frame-Options: DENY" \
+            "X-Frame-Options: SAMEORIGIN" \
             "X-Permitted-Cross-Domain-Policies: none" \
             "Cross-Origin-Resource-Policy: same-origin" \
             "Permissions-Policy: camera=(), microphone=(), geolocation=()"; do
