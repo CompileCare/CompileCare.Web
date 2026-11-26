@@ -103,7 +103,7 @@ describe("PlatformTenantManagement", () => {
     render(<PlatformTenantManagement {...props} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Suspend tenant" }));
-    expect(screen.getByText(/Suspend City Hospital Group/)).toBeInTheDocument();
+    expect(screen.getByText("Tenant users will lose access until the tenant is reactivated.")).toBeInTheDocument();
     expect(suspendPlatformTenant).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm suspension" }));
