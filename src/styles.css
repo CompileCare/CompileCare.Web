@@ -243,3 +243,38 @@
 .mrn-policy-summary>small{font-size:11px;color:#617987}
 .mrn-policy-summary>p{font-size:11px;line-height:1.5;color:#617987;margin:3px 0 0}
 @media(max-width:600px){.mrn-policy-form{grid-template-columns:1fr}.mrn-policy-form>.helper-text,.mrn-policy-form>.registration-actions{grid-column:auto}.mrn-policy-form .registration-actions button{width:100%;min-height:42px}}
+
+
+/* Appointment management workspace */
+.appointment-management-section{margin-top:28px}
+.appointment-publish-panel,.appointment-list-panel{display:grid;gap:15px}
+.appointment-publish-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:end}
+.appointment-publish-form>div{display:grid;gap:7px;min-width:0}
+.appointment-publish-form label,.appointment-list-toolbar label{font-size:11px;font-weight:700;color:#476274}
+.appointment-publish-form input,.appointment-publish-form select,.appointment-list-toolbar input,.appointment-list-toolbar select{width:100%;min-height:40px;border:1px solid #d6e1e7;border-radius:8px;padding:9px 11px;background:#fff;color:#213f53;font:inherit;font-size:12px}
+.appointment-publish-form input:focus,.appointment-publish-form select:focus,.appointment-list-toolbar input:focus,.appointment-list-toolbar select:focus{outline:3px solid #b8e6df;border-color:#0e827c}
+.appointment-publish-action{align-self:end}
+.appointment-publish-action button,.appointment-list-toolbar>button{width:100%;min-height:40px}
+.appointment-list-toolbar{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:12px;align-items:end}
+.appointment-list-toolbar>div{display:grid;gap:7px;min-width:0}
+.appointment-record-list{display:grid;gap:10px}
+.appointment-record{display:grid;gap:10px;padding:14px;border:1px solid #e2e9ed;border-radius:10px;background:#fff}
+.appointment-record-main{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.appointment-record-main>div{display:grid;gap:5px;min-width:0}
+.appointment-record-main strong{font-size:13px;color:#1e3d51}
+.appointment-record-main small{font-size:10px;color:#738895;overflow-wrap:anywhere}
+.appointment-record>p{margin:0;font-size:11px;color:#607887}
+.appointment-status{border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;white-space:nowrap;background:#edf4f7;color:#476274}
+.appointment-status.status-booked{background:#e6f5ef;color:#17664e}
+.appointment-status.status-cancelled{background:#f8eeee;color:#9a4242}
+.appointment-record-actions{display:flex;flex-wrap:wrap;gap:8px}
+.appointment-record-actions button,.reschedule-panel .registration-actions button{min-height:36px;padding:8px 12px;border:1px solid #d7e2e8;border-radius:7px;background:#fff;color:#31566b;font-size:11px;font-weight:700;cursor:pointer}
+.appointment-record-actions button:hover,.reschedule-panel .registration-actions button:hover{border-color:#0e827c}
+.appointment-record-actions button:nth-child(2){color:#9a4242}
+.appointment-record-actions .secondary-action,.reschedule-panel .secondary-action{color:#526b7a}
+.reschedule-panel{display:grid;gap:12px;padding:13px;border-radius:9px;background:#f6f9fa}
+.reschedule-panel>strong{font-size:12px;color:#24475b}
+.reschedule-panel .appointment-list-toolbar{grid-template-columns:1fr 1fr}
+.reschedule-panel .registration-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){.appointment-publish-form{grid-template-columns:repeat(2,minmax(0,1fr))}.appointment-list-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.appointment-publish-form,.appointment-list-toolbar,.reschedule-panel .appointment-list-toolbar{grid-template-columns:1fr}.appointment-publish-action button,.appointment-list-toolbar>button{width:100%;min-height:42px}.appointment-record-main{align-items:flex-start;flex-direction:column}.appointment-record-actions{display:grid;grid-template-columns:1fr}.appointment-record-actions button{width:100%;min-height:40px}.reschedule-panel .registration-actions{display:grid;grid-template-columns:1fr}.reschedule-panel .registration-actions button{width:100%;min-height:40px}}
