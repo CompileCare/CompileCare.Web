@@ -318,7 +318,7 @@ export function TenantMembershipManagement({
     {success && <p className="registration-success" role="status">{success}</p>}
 
     <div className="search-panel membership-create-panel">
-      <div className="membership-panel-heading"><div><h3>Add a membership</h3><p className="helper-text">The person must already exist in the configured identity provider. Use their exact OIDC subject, not their email address.</p></div></div>
+      <div className="membership-panel-heading"><div><h3>Add a membership</h3><p className="helper-text">The person must already exist in the configured identity provider. Use their exact OIDC subject, not their email address. CompileCare creates the tenant membership; it does not create identity-provider users.</p></div></div>
       <form onSubmit={submitCreate} className="membership-create-form">
         <div><label htmlFor="membership-issuer">Identity issuer</label><input id="membership-issuer" value={currentIssuer} readOnly disabled/></div>
         <div><label htmlFor="membership-subject">OIDC subject *</label><input id="membership-subject" value={newSubject} onChange={event=>setNewSubject(event.target.value)} maxLength={255} required disabled={busy}/></div>
