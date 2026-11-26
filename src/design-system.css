@@ -1427,3 +1427,184 @@ a {
     width: 100%;
   }
 }
+
+
+/* Tenant membership administration — auditable access management. */
+.membership-section {
+  display: grid;
+  gap: 18px;
+}
+.membership-create-panel,
+.membership-list-panel {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-lg);
+  background: var(--cc-surface);
+  box-shadow: var(--cc-shadow-sm);
+}
+.membership-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.membership-panel-heading h3 {
+  margin: 0;
+  color: var(--cc-ink);
+  font-size: 16px;
+  font-weight: 730;
+}
+.membership-panel-heading p {
+  margin: 5px 0 0;
+}
+.membership-create-form,
+.membership-edit-form {
+  display: grid;
+  gap: 16px;
+}
+.membership-create-form > div:not(.membership-scope-section),
+.membership-edit-form > div:not(.membership-scope-section) {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.membership-scope-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.membership-scope-section > strong {
+  color: var(--cc-ink);
+  font-size: 12px;
+}
+.membership-scope-editor {
+  display: grid;
+  gap: 10px;
+}
+.membership-scope-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--cc-border);
+  border-radius: 10px;
+  background: var(--cc-surface-muted);
+}
+.membership-scope-row > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.membership-scope-row select {
+  width: 100%;
+  min-width: 0;
+}
+.membership-add-scope,
+.membership-remove-scope {
+  justify-self: start;
+}
+.membership-form-actions,
+.membership-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.membership-list {
+  display: grid;
+  gap: 10px;
+}
+.membership-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--cc-border);
+  border-radius: 12px;
+  background: #ffffff;
+}
+.membership-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.membership-card-main > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.membership-card-main strong {
+  color: var(--cc-ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.membership-card-main small {
+  color: var(--cc-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.membership-self {
+  width: fit-content;
+  color: var(--cc-info);
+  font-size: 10px;
+  font-weight: 700;
+}
+.membership-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+}
+.membership-status-active {
+  background: var(--cc-success-bg);
+  color: var(--cc-success);
+}
+.membership-status-inactive {
+  background: #edf1f5;
+  color: var(--cc-muted);
+}
+.membership-card-meta {
+  display: grid;
+  gap: 5px;
+  color: var(--cc-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.membership-card-meta strong {
+  color: var(--cc-ink-soft);
+}
+.membership-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--cc-border-strong);
+  border-radius: 10px;
+  background: var(--cc-surface-muted);
+}
+.membership-confirm p {
+  margin: 0;
+  color: var(--cc-ink);
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .membership-scope-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .membership-create-panel,
+  .membership-list-panel {
+    padding: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .membership-card-main {
+    flex-direction: column;
+  }
+  .membership-actions button,
+  .membership-form-actions button {
+    flex: 1 1 auto;
+  }
+}
