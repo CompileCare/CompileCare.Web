@@ -651,3 +651,36 @@ test("hospital overview stays readable without horizontal overflow on a narrow v
   expect(layout.sidebarWidth).toBeLessThanOrEqual(layout.viewportWidth);
   expect(layout.metricColumns.trim().split(/\s+/)).toHaveLength(1);
 });
+
+
+test("authenticated HospitalAdmin workspace keeps visible controls accessible by name and label", async ({ page }) => {
+  await installSession(page);
+  await installApi(page);
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(1);
+
+  const unnamedControls = await page.locator("main button:visible, main a[href]:visible").evaluateAll(elements =>
+    elements
+      .filter(element =>
+        !element.getAttribute("aria-label") &&
+        !element.getAttribute("aria-labelledby") &&
+        !element.getAttribute("title") &&
+        !(element.textContent ?? "").trim()
+      )
+      .map(element => element.outerHTML.slice(0, 180))
+  );
+  expect(unnamedControls, "authenticated interactive controls must have accessible names").toEqual([]);
+
+  const unlabeledFields = await page.locator("main input:visible, main select:visible, main textarea:visible").evaluateAll(elements =>
+    elements
+      .filter(element =>
+        !((element as HTMLInputElement).labels?.length) &&
+        !element.getAttribute("aria-label") &&
+        !element.getAttribute("aria-labelledby")
+      )
+      .map(element => element.outerHTML.slice(0, 180))
+  );
+  expect(unlabeledFields, "authenticated form fields must have associated labels").toEqual([]);
+});
