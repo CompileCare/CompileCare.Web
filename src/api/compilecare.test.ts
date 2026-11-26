@@ -1,5 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "./compilecare";
+import { addStaffAssignment, createStaffProfile, endStaffAssignment, setStaffProfileActive, updateStaffProfile } from "./compilecare";
 import { cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles, rescheduleAppointment } from "./compilecare";
 import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
@@ -578,5 +579,35 @@ describe("platform onboarding API client",()=>{
   const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/staff?page=1&pageSize=100");
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
+ });
+
+ it("creates a staff profile with the selected hospital assignment",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"staff-1",staffCode:"DOC-01",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",isActive:true,createdAtUtc:"",updatedAtUtc:"",assignments:[]}),{status:201}));
+  const profile=await createStaffProfile("https://api.example.test","token","tenant-1",{staffCode:"DOC-01",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-26"});
+  expect(profile.staffCode).toBe("DOC-01");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/staff/");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-1");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("updates staff profile and toggles its active state through explicit API actions",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"staff-1",staffCode:"DOC-01",givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant",isActive:true,createdAtUtc:"",updatedAtUtc:"",assignments:[]}),{status:200}));
+  await updateStaffProfile("https://api.example.test","token","tenant-1","staff-1",{givenName:"Asha",middleName:null,familyName:"Patil",providerDesignation:"Consultant"});
+  fetchMock.mockResolvedValueOnce(new Response("{}",{status:200}));
+  await setStaffProfileActive("https://api.example.test","token","tenant-1","staff-1",false);
+  expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.test/api/v1/staff/staff-1");
+  expect(fetchMock.mock.calls[1][0]).toBe("https://api.example.test/api/v1/staff/staff-1/deactivate");
+ });
+
+ it("adds and ends staff assignments with tenant-scoped requests",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"assignment-1",hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-26",effectiveTo:null,isActive:true}),{status:201}));
+  await addStaffAssignment("https://api.example.test","token","tenant-1","staff-1",{hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-26"});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"assignment-1",hospitalId:"hospital-1",departmentId:"department-1",effectiveFrom:"2026-11-26",effectiveTo:"2026-12-01",isActive:false}),{status:200}));
+  const ended=await endStaffAssignment("https://api.example.test","token","tenant-1","staff-1","assignment-1","2026-12-01");
+  expect(ended.effectiveTo).toBe("2026-12-01");
+  expect((fetchMock.mock.calls[0][0] as string)).toContain("/staff/staff-1/assignments");
+  expect((fetchMock.mock.calls[1][0] as string)).toContain("/staff/staff-1/assignments/assignment-1/end");
+  expect(new Headers((fetchMock.mock.calls[1][1] as RequestInit).headers).get("X-Tenant-ID")).toBe("tenant-1");
  });
 });
