@@ -433,3 +433,75 @@ button:not(:disabled):active{transform:translateY(1px)}
 .overview-shortcuts>a:hover{background:#e8f5f2;color:#087f78}
 @media(max-width:1000px){.overview-heading{grid-template-columns:1fr}.overview-controls{justify-content:flex-start}}
 @media(max-width:700px){.overview-metrics{grid-template-columns:1fr}.overview-metric{min-height:112px}.overview-controls{display:grid;grid-template-columns:1fr 1fr}.overview-controls>div{min-width:0}.overview-controls button{grid-column:1/-1}.overview-shortcuts{align-items:stretch}.overview-shortcuts>span{flex-basis:100%}.overview-shortcuts>a{justify-content:space-between;flex:1 1 100%}}
+
+
+/* Stabilize the hospital overview and shell at tablet and mobile widths. */
+@media (max-width: 900px) {
+  .shell {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar,
+  .content,
+  .hospital-overview-section,
+  .overview-heading,
+  .overview-controls,
+  .overview-metrics,
+  .overview-metric,
+  .overview-shortcuts {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .overview-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overview-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overview-controls > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .overview-controls input,
+  .overview-controls select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .overview-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overview-metric {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .overview-shortcuts > a {
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Destructive appointment actions use a high-contrast danger surface. */
+.appointment-record-actions button.danger-action {
+  border-color: #b42318;
+  background: #b42318;
+  color: #ffffff;
+}
+
+.appointment-record-actions button.danger-action:hover {
+  border-color: #8f1c13;
+  background: #8f1c13;
+  color: #ffffff;
+}
