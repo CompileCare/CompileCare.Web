@@ -15,6 +15,7 @@ import { FacilityManagement } from "../features/facilities/FacilityManagement";
 import { PatientIdentifierPolicyManagement } from "../features/reception/PatientIdentifierPolicyManagement";
 import { TenantMembershipManagement } from "../features/memberships/TenantMembershipManagement";
 import { PlatformTenantManagement } from "../features/platform/PlatformTenantManagement";
+import { readWorkspaceSelection, resolveHospitalSelection, resolveTenantSelection, writeWorkspaceSelection, WORKSPACE_TENANT_SELECTION_KEY, workspaceHospitalSelectionKey } from "./workspaceSelection";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -522,10 +523,10 @@ function Workspace() {
       .then(page => {
         if (!active) return;
         setContexts(page.items);
-        setSelectedTenantId(current =>
-          current && page.items.some(item => item.tenantId === current)
-            ? current
-            : page.items.length === 1 ? page.items[0].tenantId : "");
+        const storedTenantId = readWorkspaceSelection(WORKSPACE_TENANT_SELECTION_KEY);
+        const nextTenantId = resolveTenantSelection(page.items, selectedTenantId, storedTenantId);
+        setSelectedTenantId(nextTenantId);
+        writeWorkspaceSelection(WORKSPACE_TENANT_SELECTION_KEY, nextTenantId);
         setContextsResolved(true);
       })
       .catch(error => {
@@ -554,7 +555,10 @@ function Workspace() {
       .then(page => {
         if (!active) return;
         setHospitals(page.items);
-        setSelectedHospitalId(page.items.length === 1 ? page.items[0].id : "");
+        const hospitalSelectionKey = workspaceHospitalSelectionKey(selectedTenantId);
+        const nextHospitalId = resolveHospitalSelection(page.items, readWorkspaceSelection(hospitalSelectionKey));
+        setSelectedHospitalId(nextHospitalId);
+        writeWorkspaceSelection(hospitalSelectionKey, nextHospitalId);
       })
       .catch(error => { if (active) setHospitalsError(getErrorMessage(error)); })
       .finally(() => { if (active) setHospitalsLoading(false); });
@@ -901,6 +905,7 @@ function Workspace() {
 
   function changeTenant(tenantId: string) {
     if (tenantId === selectedTenantId) return;
+    writeWorkspaceSelection(WORKSPACE_TENANT_SELECTION_KEY, tenantId);
     setSelectedTenantId(tenantId);
     setSelectedPatient(null); setAvailabilitySessions([]); setSlots([]); setBookedAppointment(null); setQueueEntry(null); setQueueEntries([]);
     setSelectedHospitalId("");
@@ -917,6 +922,7 @@ function Workspace() {
   }
 
   function changeHospital(hospitalId: string) {
+    writeWorkspaceSelection(workspaceHospitalSelectionKey(selectedTenantId), hospitalId);
     setSelectedHospitalId(hospitalId);
     setSelectedPatient(null); setAvailabilitySessions([]); setSlots([]); setBookedAppointment(null); setQueueEntry(null); setQueueEntries([]);
     setPatients([]);
@@ -941,6 +947,7 @@ function Workspace() {
         : page.items.some(item => item.id === selectedHospitalId)
           ? selectedHospitalId
           : page.items.length === 1 ? page.items[0].id : "";
+      writeWorkspaceSelection(workspaceHospitalSelectionKey(selectedTenantId), nextHospitalId);
       if (nextHospitalId !== selectedHospitalId) changeHospital(nextHospitalId);
       else setSelectedHospitalId(nextHospitalId);
     } finally {
@@ -1038,6 +1045,7 @@ function Workspace() {
           canReadBilling={canReadBilling}
           canReadPatients={canReadPatients}
           canReadStaff={canReadStaff}
+          isActive={activeSection === "overview"}
         />}
 
         {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
