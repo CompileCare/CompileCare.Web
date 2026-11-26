@@ -33,8 +33,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "The appointment request could not be completed.";
 }
 
-function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+function formatDateTime(value: string, timeZoneId?: string): string {
+  return new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short", ...(timeZoneId ? { timeZone: timeZoneId } : {}) });
 }
 
 function providerName(staff: StaffProfile): string {
@@ -49,6 +49,7 @@ export function AppointmentManagement({
   const [date, setDate] = useState(today());
   const [status, setStatus] = useState("");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [sessionTimeZones, setSessionTimeZones] = useState<Record<string, string>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -105,6 +106,7 @@ export function AppointmentManagement({
 
   useEffect(() => {
     setAppointments([]);
+    setSessionTimeZones({});
     setTotalCount(0);
     setPage(1);
     setTotalPages(0);
@@ -122,6 +124,12 @@ export function AppointmentManagement({
     try {
       const result = await listAppointments(baseUrl, accessToken, tenantId, hospitalId, departmentId, date, status || undefined, nextPage);
       setAppointments(result.items);
+      try {
+        const sessions = await listAvailabilitySessions(baseUrl, accessToken, tenantId, hospitalId, date, departmentId);
+        setSessionTimeZones(Object.fromEntries(sessions.items.map(session => [session.id, session.timeZoneId])));
+      } catch {
+        setSessionTimeZones({});
+      }
       setTotalCount(result.totalCount);
       setPage(result.page);
       setTotalPages(result.totalPages);
@@ -244,7 +252,7 @@ export function AppointmentManagement({
       {appointments.length > 0 && <div className="appointment-record-list">
         {appointments.map(appointment => <article className="appointment-record" key={appointment.id}>
           <div className="appointment-record-main">
-            <div><strong>{formatDateTime(appointment.slotStartsAtUtc)}</strong><small>Patient reference · {appointment.patientId.slice(0, 8)} · Provider · {appointment.providerStaffId.slice(0, 8)}</small></div>
+            <div><strong>{formatDateTime(appointment.slotStartsAtUtc, sessionTimeZones[appointment.availabilitySessionId])}</strong><small>Patient reference · {appointment.patientId.slice(0, 8)} · Provider · {appointment.providerStaffId.slice(0, 8)}</small></div>
             <span className={`appointment-status status-${appointment.status.toLowerCase()}`}>{appointment.status}</span>
           </div>
           {appointment.reason && <p>{appointment.reason}</p>}
@@ -255,7 +263,7 @@ export function AppointmentManagement({
           </div>}
           {rescheduling?.id === appointment.id && <div className="reschedule-panel">
             <strong>Choose a new appointment slot</strong>
-            <div className="appointment-list-toolbar"><div><label htmlFor={`reschedule-date-${appointment.id}`}>New local date</label><input id={`reschedule-date-${appointment.id}`} type="date" min={today()} value={rescheduleDate} onChange={event => void loadRescheduleDate(event.target.value)} /></div><div><label htmlFor={`reschedule-session-${appointment.id}`}>Provider session</label><select id={`reschedule-session-${appointment.id}`} value={rescheduleSessionId} onChange={event => void chooseRescheduleSession(event.target.value)}><option value="">Select session</option>{rescheduleSessions.map(session => <option key={session.id} value={session.id}>{formatDateTime(session.startsAtUtc)} · {session.providerStaffId.slice(0, 8)}</option>)}</select></div></div>
+            <div className="appointment-list-toolbar"><div><label htmlFor={`reschedule-date-${appointment.id}`}>New local date</label><input id={`reschedule-date-${appointment.id}`} type="date" min={today()} value={rescheduleDate} onChange={event => void loadRescheduleDate(event.target.value)} /></div><div><label htmlFor={`reschedule-session-${appointment.id}`}>Provider session</label><select id={`reschedule-session-${appointment.id}`} value={rescheduleSessionId} onChange={event => void chooseRescheduleSession(event.target.value)}><option value="">Select session</option>{rescheduleSessions.map(session => <option key={session.id} value={session.id}>{formatDateTime(session.startsAtUtc, session.timeZoneId)} · {session.providerStaffId.slice(0, 8)}</option>)}</select></div></div>
             {rescheduleSlots.length > 0 && <div className="slot-grid" role="group" aria-label="Reschedule appointment slots">{rescheduleSlots.map(slot => <button type="button" key={slot.startsAtUtc} disabled={!slot.isAvailable} aria-pressed={rescheduleSlotStart === slot.startsAtUtc} className={rescheduleSlotStart === slot.startsAtUtc ? "slot-selected" : ""} onClick={() => setRescheduleSlotStart(slot.startsAtUtc)}><span>{new Date(slot.startsAtUtc).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span><small>{slot.isAvailable ? "Available" : "Unavailable"}</small></button>)}</div>}
             {rescheduleError && <p className="inline-error" role="alert">{rescheduleError}</p>}
             <div className="registration-actions"><button type="button" onClick={() => void saveReschedule()} disabled={!rescheduleSlotStart || rescheduleLoading}>{rescheduleLoading ? "Rescheduling…" : "Confirm new slot"}</button><button type="button" className="secondary-action" onClick={() => setRescheduling(null)}>Close</button></div>
