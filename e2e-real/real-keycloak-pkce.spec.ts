@@ -134,6 +134,8 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
   await expect(page.locator("#hospital-select option:checked")).toHaveText(/CI Hospital B/);
   await expect(page.getByRole("link", { name: "Facilities" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Patient registration" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Reception" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Find a registered patient" })).toHaveCount(0);
 
   await expect.poll(
     () => hospitalRequests.some(item => item.tenantId === tenantBId && item.hasBearerToken)
