@@ -59,7 +59,9 @@ describe("appointment management workspace", () => {
       baseProps.baseUrl, baseProps.accessToken, baseProps.tenantId, baseProps.hospitalId,
       "department-1", expect.any(String), undefined, 1
     );
-    fireEvent.click(screen.getByRole("button", { name: "Cancel appointment" }));
+    const cancelButton = screen.getByRole("button", { name: "Cancel appointment" });
+    expect(cancelButton).toHaveClass("danger-action");
+    fireEvent.click(cancelButton);
     fireEvent.click(screen.getByRole("button", { name: "Confirm cancellation" }));
     await waitFor(() => expect(cancel).toHaveBeenCalledWith(
       baseProps.baseUrl, baseProps.accessToken, baseProps.tenantId, baseProps.hospitalId, "appointment-1"
