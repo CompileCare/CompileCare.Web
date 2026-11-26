@@ -226,3 +226,20 @@
   .billing-receipt{position:absolute;left:0;top:0;width:100%;margin:0;padding:24px;border:0;border-radius:0;background:#fff;box-shadow:none;color:#111}
   .billing-receipt button{display:none!important}
 }
+
+
+/* Hospital MRN policy administration */
+.mrn-policy-section{margin-top:28px}
+.mrn-policy-panel{display:grid;gap:15px}
+.mrn-policy-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.mrn-policy-form>div{display:grid;gap:7px}
+.mrn-policy-form label{font-size:11px;font-weight:700;color:#476274}
+.mrn-policy-form input{width:100%;min-height:42px;border:1px solid #d6e1e7;border-radius:8px;padding:10px 12px;font:inherit;font-size:12px}
+.mrn-policy-form input:focus{outline:3px solid #b8e6df;border-color:#0e827c}
+.mrn-policy-form>.helper-text,.mrn-policy-form>.registration-actions{grid-column:1/-1}
+.mrn-policy-summary{display:grid;gap:7px;padding:15px;border:1px solid #dcefeb;border-radius:10px;background:#f4faf8}
+.mrn-policy-summary>span{font-size:10px;font-weight:800;letter-spacing:1px;color:#287d79}
+.mrn-policy-summary>strong{font-size:22px;letter-spacing:1px;color:#193f4c;font-variant-numeric:tabular-nums}
+.mrn-policy-summary>small{font-size:11px;color:#617987}
+.mrn-policy-summary>p{font-size:11px;line-height:1.5;color:#617987;margin:3px 0 0}
+@media(max-width:600px){.mrn-policy-form{grid-template-columns:1fr}.mrn-policy-form>.helper-text,.mrn-policy-form>.registration-actions{grid-column:auto}.mrn-policy-form .registration-actions button{width:100%;min-height:42px}}
