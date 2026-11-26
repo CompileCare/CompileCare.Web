@@ -659,7 +659,14 @@ test("authenticated HospitalAdmin workspace keeps visible controls accessible by
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
-  await expect(page.getByRole("main")).toHaveCount(1);
+  const main = page.getByRole("main");
+  await expect(main).toHaveCount(1);
+
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(main).toBeFocused();
 
   const unnamedControls = await page.locator("main button:visible, main a[href]:visible").evaluateAll(elements =>
     elements
