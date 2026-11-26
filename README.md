@@ -62,7 +62,7 @@ The current-user tenant context and effective-permission contract is implemented
 
 ## Container security policy (CSP)
 
-The Nginx container enforces a Content-Security-Policy header at runtime. The policy defaults to same-origin resources, blocks objects and framing, restricts scripts to the Web origin, and permits network/iframe access only to explicitly configured origins. It does not use wildcard sources, `unsafe-eval` or inline scripts. The current application policy blocks inline styles as well as inline scripts; UI styles are served from the same origin.
+The Nginx container disables server-version disclosure and enforces a Content-Security-Policy header at runtime. The policy defaults to same-origin resources, blocks objects and framing, restricts scripts to the Web origin, and permits network/iframe access only to explicitly configured origins. It does not use wildcard sources, `unsafe-eval` or inline scripts. The current application policy blocks inline styles as well as inline scripts; UI styles are served from the same origin.
 
 Set both runtime environment variables on the Web container:
 

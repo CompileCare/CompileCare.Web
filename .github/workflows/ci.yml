@@ -37,6 +37,12 @@ jobs:
             exit 1
           fi
           headers="$(curl --fail --silent --show-error --head http://localhost:8080/)"
+          if grep -Eqi '^Server: nginx/[0-9]' <<<"$headers"; then
+            echo "The Web response must not disclose the Nginx version."
+            echo "$headers"
+            exit 1
+          fi
+          echo "Verified the Web response does not disclose the Nginx version."
           for expected in \
             "X-Content-Type-Options: nosniff" \
             "Referrer-Policy: strict-origin-when-cross-origin" \
