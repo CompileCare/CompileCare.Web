@@ -147,8 +147,8 @@ export function AppointmentManagement({
     setPublishing(true); onBusyChange(true); setAvailabilityError(""); setAvailabilityNotice("");
     try {
       await createAvailabilitySession(baseUrl, accessToken, tenantId, hospitalId, {
-        departmentId, providerStaffId, localDate: date, startLocalTime: startTime,
-        endLocalTime: endTime, slotDurationMinutes: Number(slotDuration), timeZoneId: timeZoneId.trim()
+        departmentId, providerStaffId, localDate: date, startLocalTime: `${startTime}:00`,
+        endLocalTime: `${endTime}:00`, slotDurationMinutes: Number(slotDuration), timeZoneId: timeZoneId.trim()
       });
       setAvailabilityNotice("Provider availability published. Reception can now book its slots.");
       setProviderStaffId("");
