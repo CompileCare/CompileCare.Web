@@ -15,6 +15,8 @@ interface Props {
   canReadAppointments: boolean;
   canReadQueue: boolean;
   canReadCollection: boolean;
+  canReadPatients: boolean;
+  canReadStaff: boolean;
 }
 
 const today = () => {
@@ -29,7 +31,7 @@ function failure(error: unknown): string {
 
 export function HospitalOverview({
   baseUrl, accessToken, tenantId, hospitalId, hospitalName, departments, timeZoneId,
-  canReadAppointments, canReadQueue, canReadCollection
+  canReadAppointments, canReadQueue, canReadCollection, canReadPatients, canReadStaff
 }: Props) {
   const [departmentId, setDepartmentId] = useState("");
   const [date, setDate] = useState(today());
@@ -104,8 +106,8 @@ export function HospitalOverview({
       {canReadAppointments && <a href="#appointment-management">Appointments <span>Manage bookings</span></a>}
       {canReadQueue && <a href="#queue">Queue <span>Arrival and patient flow</span></a>}
       {canReadCollection && <a href="#billing">Billing <span>Invoices and collection</span></a>}
-      <a href="#reception">Reception <span>Patient search and registration</span></a>
-      <a href="#staff-management">Workforce <span>Staff and provider assignments</span></a>
+      {canReadPatients && <a href="#reception">Reception <span>Patient search and registration</span></a>}
+      {canReadStaff && <a href="#staff-management">Workforce <span>Staff and provider assignments</span></a>}
     </div>
   </section>;
 }
