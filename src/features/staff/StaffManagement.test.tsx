@@ -27,7 +27,8 @@ const props = {
   departments: [{ id: "department-1", hospitalId: "hospital-1", name: "Medicine", code: "MED" }],
   canRead: true,
   canManage: true,
-  onBusyChange: vi.fn()
+  onBusyChange: vi.fn(),
+  onDirectoryChanged: vi.fn()
 };
 const profile = {
   id: "staff-1", staffCode: "DOC-01", givenName: "Asha", middleName: null, familyName: "Patil",
@@ -68,5 +69,6 @@ describe("staff management workspace", () => {
       })
     ));
     expect(await screen.findByText("Staff profile created and assigned to the selected hospital.")).toBeInTheDocument();
+    expect(props.onDirectoryChanged).toHaveBeenCalledTimes(1);
   });
 });
