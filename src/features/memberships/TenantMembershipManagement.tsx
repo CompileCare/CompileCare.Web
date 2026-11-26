@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import type { OrganizationScope, Hospital, Department, TenantMembership, TenantMembershipScopeInput } from "../../api/compilecare";
 import {
   ApiError,
@@ -260,7 +261,7 @@ export function TenantMembershipManagement({
       : !!scope.hospitalId && !!scope.departmentId);
   }
 
-  async function submitCreate(event: React.FormEvent<HTMLFormElement>) {
+  async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!currentIssuer || !newSubject.trim() || !validScopes(newScopes)) {
       setError("Enter the OIDC subject and complete at least one valid organization scope.");
@@ -287,7 +288,7 @@ export function TenantMembershipManagement({
     setSuccess("");
   }
 
-  async function submitEdit(event: React.FormEvent<HTMLFormElement>) {
+  async function submitEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const membership = memberships.find(item => item.id === editingId);
     if (!membership || !validScopes(editingScopes)) {
