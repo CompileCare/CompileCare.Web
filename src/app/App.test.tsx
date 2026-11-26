@@ -21,7 +21,7 @@ describe("reception workspace",()=>{
   render(<MemoryRouter initialEntries={["/billing#billing"]}><App/><LocationProbe/></MemoryRouter>);
   expect(screen.getByRole("heading",{name:"Reception workspace"})).toBeInTheDocument();
   expect(screen.queryByRole("link",{name:"Billing"})).not.toBeInTheDocument();
-  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/"));
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent(/^\/$/));
  });
 
  it("rejects legacy hash-only module URLs when signed out",async()=>{
@@ -31,6 +31,6 @@ describe("reception workspace",()=>{
 
  it("preserves non-module accessibility anchors while rejecting an inaccessible route",async()=>{
   render(<MemoryRouter initialEntries={["/billing#workspace-main"]}><App/><LocationProbe/></MemoryRouter>);
-  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent("/#workspace-main"));
+  await waitFor(()=>expect(screen.getByTestId("current-location")).toHaveTextContent(/^\/#workspace-main$/));
  });
 });
