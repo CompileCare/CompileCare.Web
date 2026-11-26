@@ -319,3 +319,94 @@
 .staff-assignment-form>div{grid-column:1/-1;display:flex;gap:8px}
 @media(max-width:900px){.staff-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.staff-toolbar{align-items:flex-start;flex-direction:column}.staff-toolbar button{width:100%;min-height:42px}.staff-form,.staff-search,.staff-assignment-form{grid-template-columns:1fr}.staff-form-actions,.staff-assignment-form>div{grid-column:auto;display:grid!important;grid-template-columns:1fr}.staff-search button{width:100%;min-height:42px}.staff-record-actions{display:grid;grid-template-columns:1fr}.staff-record-actions button{width:100%;min-height:40px}.staff-assignment{align-items:flex-start;flex-wrap:wrap}.staff-assignment>div{flex-basis:calc(100% - 10px)}}
+
+
+/* CompileCare workspace visual system refresh */
+:root{
+  --cc-ink:#17364b;
+  --cc-muted:#6c8291;
+  --cc-line:#e1e9ed;
+  --cc-surface:#fff;
+  --cc-canvas:#f4f7f9;
+  --cc-brand:#087f78;
+  --cc-brand-strong:#066c67;
+  --cc-brand-soft:#e8f5f2;
+  --cc-shadow:0 10px 28px rgba(24,55,73,.055);
+  --cc-radius:14px;
+  color-scheme:light;
+}
+body{background:var(--cc-canvas);color:var(--cc-ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font-family:inherit}
+button{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(8,127,120,.25);outline-offset:2px}
+button:not(:disabled):active{transform:translateY(1px)}
+.shell{min-height:100dvh;grid-template-columns:252px minmax(0,1fr);background:var(--cc-canvas)}
+.sidebar{position:sticky;top:0;height:100dvh;min-height:100dvh;padding:25px 18px 20px;background:linear-gradient(180deg,#102d45 0%,#0d263c 100%);border-right:1px solid rgba(255,255,255,.06)}
+.brand{gap:11px;padding:2px 7px}
+.brand b{width:40px;height:40px;border-radius:13px;box-shadow:0 5px 15px rgba(45,212,191,.18)}
+.sidebar nav{margin-top:43px;gap:5px}
+.sidebar nav p{margin:18px 10px 5px;font-size:9px;letter-spacing:1.8px;color:#8ca6b8}
+.sidebar nav a,.sidebar nav span{position:relative;padding:11px 12px;border:1px solid transparent;border-radius:9px;color:#d8e5ed;font-size:12px;transition:background .16s,border-color .16s,color .16s}
+.sidebar nav a:hover{background:rgba(255,255,255,.075);color:#fff}
+.sidebar nav .selected{background:rgba(45,212,191,.13);border-color:rgba(45,212,191,.14);color:#f4fffd}
+.sidebar nav .selected:before{content:"";position:absolute;left:-1px;top:8px;bottom:8px;width:3px;border-radius:0 4px 4px 0;background:#2dd4bf}
+.sidebar footer{padding:14px 10px 0;border-top:1px solid rgba(255,255,255,.1);color:#d0e0e9}
+.sidebar footer small{color:#89a5b8}
+.content{padding:30px clamp(20px,4vw,58px) 48px;max-width:1600px}
+.content header{position:sticky;top:0;z-index:20;padding:14px 0 17px;margin:0 0 24px;background:rgba(244,247,249,.94);backdrop-filter:blur(14px);border-bottom:1px solid rgba(216,227,233,.8)}
+.content header>div:first-child>label{color:#7a919f;font-size:9px;letter-spacing:1.9px}
+.content h1{font-size:clamp(21px,2vw,26px);font-weight:750;letter-spacing:-.7px;color:#17364b}
+.session{gap:10px;color:#597181}
+.session>span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session button{padding:9px 15px;border-radius:9px;background:var(--cc-brand);box-shadow:0 3px 9px rgba(8,127,120,.13)}
+.session button:hover,.search-row button:hover,.registration-actions button:hover,.appointment-publish-action button:hover{background:var(--cc-brand-strong)}
+.context-panel,.search-panel,.cards article{border-color:var(--cc-line);border-radius:var(--cc-radius);box-shadow:var(--cc-shadow)}
+.context-panel{padding:23px}
+.context-panel h2,.section-heading h2{color:var(--cc-ink);letter-spacing:-.55px}
+.section{margin-top:32px}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:15px}
+.section-heading h2{font-size:20px;font-weight:750}
+.section-heading p,.helper-text{color:var(--cc-muted)}
+.search-panel{padding:20px}
+.patient-result,.appointment-record,.staff-record{transition:border-color .16s,box-shadow .16s}
+.patient-result-selectable:hover{border-color:#c5e4df}
+.appointment-record:hover,.staff-record:hover{border-color:#d3e2e7;box-shadow:0 5px 18px rgba(24,55,73,.045)}
+.pagination button:hover,.appointment-record-actions button:hover,.staff-record-actions button:hover{border-color:var(--cc-brand);color:var(--cc-brand-strong)}
+.notice{border-radius:11px;box-shadow:0 3px 12px rgba(92,75,26,.04)}
+.inline-status,.inline-error,.registration-success{border-radius:10px}
+.pagefoot{color:#8093a0}
+@media(max-width:1100px){
+  .shell{grid-template-columns:220px minmax(0,1fr)}
+  .sidebar{padding-left:13px;padding-right:13px}
+  .content{padding-left:24px;padding-right:24px}
+}
+@media(max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:relative;top:auto;height:auto;min-height:0;padding:15px 20px 12px;border-right:0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar nav{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:15px -4px 0;padding:2px 4px 7px;gap:6px}
+  .sidebar nav::-webkit-scrollbar{display:none}
+  .sidebar nav p{flex:0 0 100%;margin:6px 0 1px}
+  .sidebar nav a,.sidebar nav span{flex:0 0 auto;white-space:nowrap;padding:9px 11px}
+  .sidebar footer{display:none}
+  .content{max-width:none;padding-top:22px}
+  .content header{top:0}
+}
+@media(max-width:600px){
+  .sidebar{padding:13px 14px 9px}
+  .brand{padding:0 3px}
+  .brand b{width:36px;height:36px}
+  .sidebar nav{margin-top:12px}
+  .content{padding:15px 14px 34px}
+  .content header{margin-bottom:19px;padding:10px 0 13px;gap:9px}
+  .content header>div:first-child{min-width:0}
+  .content h1{font-size:21px}
+  .session{width:100%;justify-content:space-between}
+  .session>span{max-width:calc(100% - 90px)}
+  .section{margin-top:25px}
+  .section-heading{align-items:flex-start;flex-direction:column;gap:5px}
+  .section-heading h2{font-size:18px}
+  .context-panel,.search-panel{padding:15px;border-radius:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
