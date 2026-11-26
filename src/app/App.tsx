@@ -593,9 +593,9 @@ function Workspace() {
   const isWorkflowBusy = duplicateLoading||registrationLoading||availabilityLoading||slotsLoading||bookingLoading||checkInLoading||walkInLoading||queueLoading||!!queueActionLoadingId||clinicalBusy||facilityBusy||appointmentManagementBusy||staffManagementBusy||identifierPolicyBusy||membershipBusy||platformBusy;
   const allowedSectionKey = [
     isClinicalWorkspace ? "clinical" : "",
+    canViewOverview ? "overview" : "",
     canReadPatients ? "reception" : "",
     canRegisterPatients ? "patient-registration" : "",
-    canViewOverview ? "overview" : "",
     canReadAppointments || canManageAppointments || canPublishAvailability ? "appointment-management" : "",
     canReadStaff || canManageStaff ? "staff-management" : "",
     canReadQueue && !isClinicalWorkspace ? "queue" : "",
