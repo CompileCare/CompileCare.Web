@@ -69,6 +69,14 @@ describe("appointment management workspace", () => {
     expect(await screen.findByText("Appointment cancelled.")).toBeInTheDocument();
   });
 
+  it("refreshes the provider directory after staff records or assignments change", async () => {
+    listStaff.mockResolvedValue({ items: [], page: 1, pageSize: 100, totalCount: 0, totalPages: 0 });
+    const { rerender } = render(<AppointmentManagement {...baseProps} canPublishAvailability staffRevision={0} />);
+    await waitFor(() => expect(listStaff).toHaveBeenCalledTimes(1));
+    rerender(<AppointmentManagement {...baseProps} canPublishAvailability staffRevision={1} />);
+    await waitFor(() => expect(listStaff).toHaveBeenCalledTimes(2));
+  });
+
   it("publishes availability only for a provider assigned to the selected hospital and department", async () => {
     listStaff.mockResolvedValue({
       items: [{
