@@ -65,5 +65,25 @@ jobs:
             exit 1
           fi
           echo "Verified invalid wildcard CSP origins are rejected at container startup."
+          insecure_csp_output="$(docker compose run --rm --no-deps -e CSP_CONNECT_SRC='http://api.example.com' -e ALLOW_INSECURE_CSP_ORIGINS=false web 2>&1)" && {
+            echo "The Web container accepted an HTTP CSP origin without the local-only opt-in."
+            exit 1
+          }
+          if ! grep -Fq "HTTP CSP origins are allowed only when ALLOW_INSECURE_CSP_ORIGINS=true" <<<"$insecure_csp_output"; then
+            echo "The Web container failed for an unexpected reason when given an HTTP CSP origin."
+            echo "$insecure_csp_output"
+            exit 1
+          fi
+          echo "Verified HTTP CSP origins are rejected without the explicit local-development opt-in."
+          missing_csp_output="$(docker compose run --rm --no-deps -e CSP_FRAME_SRC='' web 2>&1)" && {
+            echo "The Web container accepted a missing CSP_FRAME_SRC value."
+            exit 1
+          }
+          if ! grep -Fq "CSP_FRAME_SRC must contain at least one explicit origin" <<<"$missing_csp_output"; then
+            echo "The Web container failed for an unexpected reason when CSP_FRAME_SRC was missing."
+            echo "$missing_csp_output"
+            exit 1
+          fi
+          echo "Verified missing CSP origins are rejected at container startup."
       - if: always()
         run: docker compose down --volumes --remove-orphans
