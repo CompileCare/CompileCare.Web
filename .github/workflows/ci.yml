@@ -43,7 +43,10 @@ jobs:
             "X-Frame-Options: DENY" \
             "X-Permitted-Cross-Domain-Policies: none" \
             "Cross-Origin-Resource-Policy: same-origin" \
-            "Permissions-Policy: camera=(), microphone=(), geolocation=()"; do
+            "Permissions-Policy: camera=(), microphone=(), geolocation=()" \
+            "Content-Security-Policy: default-src 'self';" \
+            "connect-src 'self' https://api.example.com https://identity.example.com;" \
+            "frame-src 'self' https://identity.example.com;"; do
             if ! grep -Fqi "$expected" <<<"$headers"; then
               echo "Missing or incorrect security response header: $expected"
               echo "$headers"
@@ -52,5 +55,15 @@ jobs:
             fi
           done
           echo "Verified all required static-workspace security response headers."
+          invalid_csp_output="$(docker compose run --rm --no-deps -e CSP_CONNECT_SRC='*' web 2>&1)" && {
+            echo "The Web container accepted a wildcard CSP origin unexpectedly."
+            exit 1
+          }
+          if ! grep -Fq "CSP_CONNECT_SRC contains an invalid origin" <<<"$invalid_csp_output"; then
+            echo "The Web container failed for an unexpected reason when given an invalid CSP origin."
+            echo "$invalid_csp_output"
+            exit 1
+          fi
+          echo "Verified invalid wildcard CSP origins are rejected at container startup."
       - if: always()
         run: docker compose down --volumes --remove-orphans
