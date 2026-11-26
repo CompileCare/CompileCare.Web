@@ -1219,3 +1219,211 @@ a {
     flex: 1 1 auto;
   }
 }
+
+
+/* Facility hierarchy workspace */
+.facilities-section {
+  display: grid;
+  gap: var(--cc-space-4);
+  min-width: 0;
+}
+.facility-hospital-card,
+.facility-create-hospital,
+.facility-level {
+  min-width: 0;
+  display: grid;
+  gap: var(--cc-space-3);
+}
+.facility-card-heading,
+.facility-level-heading,
+.facility-selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cc-space-3);
+  min-width: 0;
+}
+.facility-card-heading h3,
+.facility-level-heading h3 {
+  margin: 3px 0 0;
+}
+.facility-card-heading p {
+  margin: 4px 0 0;
+  color: var(--cc-muted);
+}
+.facility-count,
+.facility-level-heading > span {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 1px solid var(--cc-border);
+  border-radius: 999px;
+  background: var(--cc-surface-muted);
+  color: var(--cc-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.facility-hierarchy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cc-space-4);
+  min-width: 0;
+}
+.facility-level > label,
+.facility-inline-form label,
+.facility-create-form label {
+  color: var(--cc-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.facility-level select,
+.facility-inline-form input,
+.facility-create-form input,
+.facility-bed-edit input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius-sm);
+  background: var(--cc-surface);
+  color: var(--cc-ink);
+}
+.facility-inline-form,
+.facility-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cc-space-3);
+  align-items: end;
+  min-width: 0;
+}
+.facility-inline-form > div,
+.facility-create-form > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.facility-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.facility-create-form > button {
+  justify-self: start;
+}
+.facility-selected-item {
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--cc-border);
+  border-bottom: 1px solid var(--cc-border);
+}
+.facility-selected-item strong {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.facility-selected-item > span {
+  color: var(--cc-muted);
+  font-size: 12px;
+}
+.facility-bed-list {
+  display: grid;
+  gap: 8px;
+}
+.facility-bed-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-sm);
+  background: var(--cc-surface-muted);
+}
+.facility-bed-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.facility-bed-active,
+.facility-bed-inactive {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.facility-bed-active {
+  background: var(--cc-success-bg);
+  color: var(--cc-success);
+}
+.facility-bed-inactive {
+  background: var(--cc-surface);
+  color: var(--cc-muted);
+}
+.facility-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  color: var(--cc-ink-soft);
+  font-size: 12px;
+  font-weight: 650;
+}
+.facility-checkbox input {
+  width: 16px;
+  height: 16px;
+}
+.facility-bed-edit {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.facility-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cc-space-3);
+  padding: var(--cc-space-4);
+  border: 1px solid #e7b5ae;
+  border-radius: var(--cc-radius-md);
+  background: var(--cc-danger-bg);
+  color: var(--cc-ink);
+}
+.facility-delete-confirm p {
+  margin: 4px 0 0;
+  color: var(--cc-muted);
+}
+.facility-delete-confirm .facility-form-actions {
+  grid-column: auto;
+}
+@media (max-width: 900px) {
+  .facility-hierarchy-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .facility-inline-form,
+  .facility-create-form,
+  .facility-bed-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .facility-bed-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .facility-bed-row > button:last-child {
+    grid-column: 2;
+  }
+  .facility-card-heading {
+    align-items: flex-start;
+  }
+  .facility-delete-confirm .facility-form-actions {
+    width: 100%;
+  }
+}
