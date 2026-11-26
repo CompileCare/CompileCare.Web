@@ -1,4 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
+import { createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "./compilecare";
 import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
@@ -512,4 +513,28 @@ describe("platform onboarding API client",()=>{
   for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
+
+ it("loads the hospital-scoped MRN policy without caching",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({hospitalId:"hospital-456",prefix:"CC-AKH",numberLength:6}),{status:200}));
+  const policy=await getPatientIdentifierPolicy("https://api.example.test","access-token","tenant-123","hospital-456");
+  expect(policy.prefix).toBe("CC-AKH");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patient-identifier-policy");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("creates a hospital MRN policy with validated tenant context",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({hospitalId:"hospital-456",prefix:"CC-AKH",numberLength:6}),{status:201}));
+  const policy=await createPatientIdentifierPolicy("https://api.example.test","access-token","tenant-123","hospital-456",{prefix:"CC-AKH",numberLength:6});
+  expect(policy.numberLength).toBe(6);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patient-identifier-policy");
+  expect(options.method).toBe("POST");
+  expect(JSON.parse(String(options.body))).toEqual({prefix:"CC-AKH",numberLength:6});
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
 });
