@@ -649,5 +649,5 @@ test("hospital overview stays readable without horizontal overflow on a narrow v
   expect(layout.bodyWidth).toBeLessThanOrEqual(layout.viewportWidth);
   expect(layout.mainWidth).toBeLessThanOrEqual(layout.viewportWidth);
   expect(layout.sidebarWidth).toBeLessThanOrEqual(layout.viewportWidth);
-  expect(layout.metricColumns.trim().split(/\\s+/)).toHaveLength(1);
+  expect(layout.metricColumns.trim().split(/\s+/)).toHaveLength(1);
 });
