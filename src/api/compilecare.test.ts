@@ -1,5 +1,5 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
+import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
@@ -281,6 +281,45 @@ describe("platform onboarding API client",()=>{
  const fetchMock=vi.fn();
  beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
  afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
+
+ it("discovers only the current authenticated identity's persisted platform operator status",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({isPlatformOperator:false}),{status:200}));
+  const result=await getPlatformOperatorStatus("https://api.example.test","access-token");
+  expect(result.isPlatformOperator).toBe(false);
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/platform/operator/status");
+  expect(options.method).toBe("GET");
+  expect(new Headers(options.headers).get("Authorization")).toBe("Bearer access-token");
+  expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("lists platform tenants without attaching a customer tenant header",async()=>{
+  const page={items:[],page:1,pageSize:50,totalCount:0,totalPages:0};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  await listPlatformTenants("https://api.example.test","access-token");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/platform/tenants?page=1&pageSize=50");
+  expect(options.method).toBe("GET");
+  expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
+ });
+
+ it("suspends and closes platform tenants through explicit global lifecycle routes",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"tenant-1",status:"Suspended"}),{status:200}));
+  await suspendPlatformTenant("https://api.example.test","access-token","tenant-1");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"tenant-1",status:"Closed"}),{status:200}));
+  await closePlatformTenant("https://api.example.test","access-token","tenant-1");
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/platform/tenants/tenant-1/suspend","POST"],
+   ["https://api.example.test/api/v1/platform/tenants/tenant-1/close","POST"]
+  ]);
+  for(const [,options] of calls) {
+   expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
+   expect(JSON.parse(String(options.body))).toEqual({});
+  }
+ });
 
  it("bootstraps only through an authenticated no-store platform request",async()=>{
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({status:"Platform operator provisioned"}),{status:201}));
