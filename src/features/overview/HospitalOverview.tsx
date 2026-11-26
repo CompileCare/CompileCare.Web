@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getDailyCollectionReport, listAppointments, listQueue
 } from "../../api/compilecare";
@@ -42,6 +42,7 @@ export function HospitalOverview({
   const [queueError, setQueueError] = useState("");
   const [collectionError, setCollectionError] = useState("");
   const [loading, setLoading] = useState(false);
+  const requestSequence = useRef(0);
 
   useEffect(() => {
     setDepartmentId(current => departments.some(item => item.id === current)
@@ -49,29 +50,33 @@ export function HospitalOverview({
   }, [departments, hospitalId]);
 
   async function refresh() {
+    const sequence = ++requestSequence.current;
     setLoading(true);
     setAppointmentError(""); setQueueError(""); setCollectionError("");
     const tasks: Promise<void>[] = [];
     if (canReadAppointments && departmentId) {
       tasks.push(listAppointments(baseUrl, accessToken, tenantId, hospitalId, departmentId, date)
-        .then(result => setAppointmentCount(result.totalCount))
-        .catch(error => { setAppointmentCount(null); setAppointmentError(failure(error)); }));
+        .then(result => { if (sequence === requestSequence.current) setAppointmentCount(result.totalCount); })
+        .catch(error => { if (sequence === requestSequence.current) { setAppointmentCount(null); setAppointmentError(failure(error)); } }));
     } else setAppointmentCount(null);
     if (canReadQueue && departmentId) {
       tasks.push(listQueue(baseUrl, accessToken, tenantId, hospitalId, departmentId, date)
-        .then(result => setQueueCount(result.totalCount))
-        .catch(error => { setQueueCount(null); setQueueError(failure(error)); }));
+        .then(result => { if (sequence === requestSequence.current) setQueueCount(result.totalCount); })
+        .catch(error => { if (sequence === requestSequence.current) { setQueueCount(null); setQueueError(failure(error)); } }));
     } else setQueueCount(null);
     if (canReadCollection) {
       tasks.push(getDailyCollectionReport(baseUrl, accessToken, tenantId, hospitalId, date, timeZoneId)
-        .then(result => setCollection(result))
-        .catch(error => { setCollection(null); setCollectionError(failure(error)); }));
+        .then(result => { if (sequence === requestSequence.current) setCollection(result); })
+        .catch(error => { if (sequence === requestSequence.current) { setCollection(null); setCollectionError(failure(error)); } }));
     } else setCollection(null);
     await Promise.all(tasks);
-    setLoading(false);
+    if (sequence === requestSequence.current) setLoading(false);
   }
 
-  useEffect(() => { void refresh(); }, [baseUrl, accessToken, tenantId, hospitalId, departmentId, date, timeZoneId, canReadAppointments, canReadQueue, canReadCollection]);
+  useEffect(() => {
+    void refresh();
+    return () => { requestSequence.current++; };
+  }, [baseUrl, accessToken, tenantId, hospitalId, departmentId, date, timeZoneId, canReadAppointments, canReadQueue, canReadCollection]);
 
   return <section className="section hospital-overview-section" id="overview">
     <div className="section-heading overview-heading">
