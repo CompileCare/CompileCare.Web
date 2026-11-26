@@ -7,7 +7,7 @@ async function json(route: Route, body: unknown, status = 200) {
   await route.fulfill({
     status,
     contentType: "application/json",
-    headers: { "access-control-allow-origin": "http://127.0.0.1:4174" },
+    headers: { "access-control-allow-origin": route.request().headers()["origin"] ?? "http://127.0.0.1:4174" },
     body: JSON.stringify(body)
   });
 }
@@ -87,7 +87,7 @@ test("OIDC silently renews a short-lived session and uses the renewed token for 
       return route.fulfill({
         status: 204,
         headers: {
-          "access-control-allow-origin": "http://127.0.0.1:4174",
+          "access-control-allow-origin": request.headers()["origin"] ?? "http://127.0.0.1:4174",
           "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
           "access-control-allow-headers": "Authorization, Content-Type, X-Tenant-ID"
         }
@@ -197,7 +197,7 @@ test("shows a safe reauthentication warning then returns to sign-in when the acc
       return route.fulfill({
         status: 204,
         headers: {
-          "access-control-allow-origin": "http://127.0.0.1:4174",
+          "access-control-allow-origin": request.headers()["origin"] ?? "http://127.0.0.1:4174",
           "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
           "access-control-allow-headers": "Authorization, Content-Type, X-Tenant-ID"
         }
