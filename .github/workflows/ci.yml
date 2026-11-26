@@ -27,10 +27,28 @@ jobs:
           docker compose build
           docker compose up -d
           for i in $(seq 1 20); do
-            if curl --fail http://localhost:8080/ >/dev/null; then exit 0; fi
+            if curl --fail http://localhost:8080/ >/dev/null; then break; fi
             sleep 2
           done
-          docker compose logs
-          exit 1
+          if ! curl --fail http://localhost:8080/ >/dev/null; then
+            docker compose logs
+            exit 1
+          fi
+          headers="$(curl --fail --silent --show-error --head http://localhost:8080/)"
+          for expected in \
+            "X-Content-Type-Options: nosniff" \
+            "Referrer-Policy: strict-origin-when-cross-origin" \
+            "X-Frame-Options: DENY" \
+            "X-Permitted-Cross-Domain-Policies: none" \
+            "Cross-Origin-Resource-Policy: same-origin" \
+            "Permissions-Policy: camera=(), microphone=(), geolocation=()"; do
+            if ! grep -Fqi "$expected" <<<"$headers"; then
+              echo "Missing or incorrect security response header: $expected"
+              echo "$headers"
+              docker compose logs
+              exit 1
+            fi
+          done
+          echo "Verified all required static-workspace security response headers."
       - if: always()
         run: docker compose down --volumes --remove-orphans
