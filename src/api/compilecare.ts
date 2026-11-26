@@ -44,6 +44,60 @@ export interface Hospital {
   code: string | null;
 }
 
+export interface StaffAssignment {
+  id: string;
+  hospitalId: string;
+  departmentId: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  isActive: boolean;
+}
+
+export interface StaffProfile {
+  id: string;
+  staffCode: string;
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  providerDesignation: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  assignments: StaffAssignment[];
+}
+
+export interface StaffPage {
+  items: StaffProfile[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface StaffProfileCreateInput {
+  staffCode: string;
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  providerDesignation: string | null;
+  hospitalId: string;
+  departmentId: string | null;
+  effectiveFrom: string | null;
+}
+
+export interface StaffProfileUpdateInput {
+  givenName: string;
+  middleName: string | null;
+  familyName: string | null;
+  providerDesignation: string | null;
+}
+
+export interface StaffAssignmentInput {
+  hospitalId: string;
+  departmentId: string | null;
+  effectiveFrom: string;
+}
+
 export interface Patient {
   id: string;
   givenName: string;
@@ -389,6 +443,28 @@ export function getBillingReceipt(baseUrl:string,accessToken:string,tenantId:str
 export function getDailyCollectionReport(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string,businessDate:string,timeZoneId:string):Promise<DailyCollectionReport> {
   const parameters=new URLSearchParams({businessDate,timeZoneId});
   return getJson(baseUrl,`/api/v1/hospitals/${encodeURIComponent(hospitalId)}/billing/reports/daily-collection?${parameters.toString()}`,accessToken,tenantId);
+}
+
+export function listStaffProfiles(baseUrl:string,accessToken:string,tenantId:string,query="",page=1,pageSize=50):Promise<StaffPage> {
+  const parameters = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (query.trim()) parameters.set("query", query.trim());
+  return getJson(baseUrl,`/api/v1/staff?${parameters.toString()}`,accessToken,tenantId);
+}
+export function createStaffProfile(baseUrl:string,accessToken:string,tenantId:string,input:StaffProfileCreateInput):Promise<StaffProfile> {
+  return postJson(baseUrl,"/api/v1/staff",accessToken,tenantId,input);
+}
+export function updateStaffProfile(baseUrl:string,accessToken:string,tenantId:string,staffId:string,input:StaffProfileUpdateInput):Promise<StaffProfile> {
+  return putJson(baseUrl,`/api/v1/staff/${encodeURIComponent(staffId)}`,accessToken,tenantId,input);
+}
+export function setStaffProfileActive(baseUrl:string,accessToken:string,tenantId:string,staffId:string,isActive:boolean):Promise<StaffProfile> {
+  const action = isActive ? "reactivate" : "deactivate";
+  return postJson(baseUrl,`/api/v1/staff/${encodeURIComponent(staffId)}/${action}`,accessToken,tenantId,{});
+}
+export function addStaffAssignment(baseUrl:string,accessToken:string,tenantId:string,staffId:string,input:StaffAssignmentInput):Promise<StaffAssignment> {
+  return postJson(baseUrl,`/api/v1/staff/${encodeURIComponent(staffId)}/assignments`,accessToken,tenantId,input);
+}
+export function endStaffAssignment(baseUrl:string,accessToken:string,tenantId:string,staffId:string,assignmentId:string,effectiveTo:string):Promise<StaffAssignment> {
+  return postJson(baseUrl,`/api/v1/staff/${encodeURIComponent(staffId)}/assignments/${encodeURIComponent(assignmentId)}/end`,accessToken,tenantId,{effectiveTo});
 }
 
 export function listDepartments(baseUrl:string,accessToken:string,tenantId:string,hospitalId:string):Promise<Page<Department>> {
