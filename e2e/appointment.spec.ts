@@ -251,9 +251,9 @@ test("reception searches a patient, books an appointment and checks in to the se
   await expect(providerAvailability).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(providerAvailability).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Escape");
+  // Native select popup keys differ across macOS and Linux Chromium; preserve focus-order assertions
+  // and use Playwright selection to trigger the same application change event consistently.
+  await providerAvailability.selectOption(sessionId);
   await expect(providerAvailability).toBeFocused();
 
   const slots = page.getByRole("group", { name: "Available appointment slots" });

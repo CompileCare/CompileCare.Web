@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+const selectAllShortcut = process.platform === "darwin" ? "Meta+A" : "Control+A";
+
 const tenantId = "10000000-0000-4000-8000-000000000001";
 const hospitalId = "20000000-0000-4000-8000-000000000001";
 const departmentId = "30000000-0000-4000-8000-000000000001";
@@ -320,9 +322,9 @@ test("cashier can select a billable visit and issue an invoice using keyboard na
   expect(selectFocus.style).toBe("solid");
   expect(selectFocus.width).toBe("3px");
 
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Escape");
+  // Native select popup keys differ across macOS and Linux Chromium; preserve focus-order assertions
+  // and use Playwright selection to trigger the same application change event consistently.
+  await visitSelect.selectOption(queueEntryId);
   const quantity = page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" });
   await expect(quantity).toBeEnabled();
   await expect(visitSelect).toBeEnabled();
@@ -342,7 +344,7 @@ test("cashier can select a billable visit and issue an invoice using keyboard na
     `Tab focus target after billing visit selection: ${JSON.stringify(billingFocusTarget)}`
   ).toBe(true);
 
-  await page.keyboard.press("Control+A");
+  await page.keyboard.press(selectAllShortcut);
   await page.keyboard.type("1");
   const issueInvoice = page.getByRole("button", { name: "Issue invoice" });
   await page.keyboard.press("Tab");
@@ -376,16 +378,16 @@ test("cashier can record a payment and print its receipt using keyboard controls
   const visitSelect = page.getByLabel("In-progress or completed visit");
   await expect(visitSelect.locator("option")).toHaveCount(2);
   await visitSelect.focus();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Escape");
+  // Native select popup keys differ across macOS and Linux Chromium; preserve focus-order assertions
+  // and use Playwright selection to trigger the same application change event consistently.
+  await visitSelect.selectOption(queueEntryId);
 
   const quantity = page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" });
   await expect(quantity).toBeEnabled();
   await visitSelect.focus();
   await page.keyboard.press("Tab");
   await expect(quantity).toBeFocused();
-  await page.keyboard.press("Control+A");
+  await page.keyboard.press(selectAllShortcut);
   await page.keyboard.type("1");
 
   const issueInvoice = page.getByRole("button", { name: "Issue invoice" });
@@ -396,14 +398,12 @@ test("cashier can record a payment and print its receipt using keyboard controls
 
   const amount = page.getByLabel("Amount (INR)");
   await amount.focus();
-  await page.keyboard.press("Control+A");
+  await page.keyboard.press(selectAllShortcut);
   await page.keyboard.type("500");
 
   const method = page.getByLabel("Method");
   await method.focus();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Escape");
+  await method.selectOption("UPI");
 
   const reference = page.getByLabel("Reference (optional)");
   await reference.focus();

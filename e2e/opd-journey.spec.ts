@@ -392,12 +392,19 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
   };
 }
 
+async function assertNoHorizontalOverflow(page: Page) {
+  const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(375);
+}
+
 test("staff-assisted OPD journey connects patient registration, walk-in, clinical sign-off and billing", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
   await installSession(page);
   const api = await installApi(page);
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
 
   await page.getByLabel("Given name *").fill("Asha");
   await page.getByLabel("Middle name").fill("R.");
@@ -417,6 +424,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
 
   await page.getByRole("button", { name: "Add to queue" }).click();
   await expect(page.locator(".token-card")).toContainText("12");
+  await assertNoHorizontalOverflow(page);
   await expect(page.getByRole("button", { name: "Call" })).toBeVisible();
   await page.getByRole("button", { name: "Call" }).click();
   await expect(page.getByRole("button", { name: "Start consultation" })).toBeVisible();
@@ -426,9 +434,11 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   api.setPermissions(clinicalPermissions);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Clinical workspace" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Refresh clinical queue" }).click();
   await page.getByRole("button", { name: "Open / start encounter" }).click();
   await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await page.getByRole("checkbox", { name: /I have verified the patient identity/ }).check();
   await page.getByLabel("Chief complaint *").fill("Intermittent headache");
   await page.getByLabel("Assessment *").fill("Assessment recorded for test journey");
@@ -447,6 +457,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   api.setPermissions(billingPermissions);
   await page.reload();
   await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Load billable visits" }).click();
   await page.getByLabel("In-progress or completed visit").selectOption(queueEntryId);
   await page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" }).fill("1");
@@ -457,6 +468,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await page.getByLabel("Reference (optional)").fill("OPD-JOURNEY-UPI");
   await page.getByRole("button", { name: "Record payment" }).click();
   await expect(page.getByText("Invoice fully settled.")).toBeVisible();
+  await assertNoHorizontalOverflow(page);
   await expect(page.locator(".invoice-status")).toHaveText("Paid");
 });
 
