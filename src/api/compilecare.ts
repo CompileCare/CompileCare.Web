@@ -64,6 +64,7 @@ export interface StaffProfile {
   createdAtUtc: string;
   updatedAtUtc: string;
   assignments: StaffAssignment[];
+  canManageWithinScope: boolean;
 }
 
 export interface StaffPage {
