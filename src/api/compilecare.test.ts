@@ -1,6 +1,7 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,createDepartment,createHospital,createPlatformTenant,provisionInitialTenantAdministrator } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
+import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
 import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
@@ -412,6 +413,43 @@ describe("platform onboarding API client",()=>{
    ["https://api.example.test/api/v1/wards/ward-1/rooms/room-1","DELETE"],
    ["https://api.example.test/api/v1/rooms/room-1/beds/bed-1","DELETE"]
   ]);
+  for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("lists tenant memberships with the selected tenant and bounded pagination",async()=>{
+  const page={items:[],page:1,pageSize:50,totalCount:0,totalPages:0};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+  await listTenantMemberships("https://api.example.test","access-token","tenant-123");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/tenant/memberships?page=1&pageSize=50");
+  expect(options.method).toBe("GET");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("creates, updates, deactivates and reactivates tenant memberships through tenant-scoped routes",async()=>{
+  const membership={id:"membership-1",issuer:"https://identity.example.test",subject:"oidc-subject-123",role:"FacilityViewer",isActive:true,createdAtUtc:"2026-11-26T00:00:00Z",updatedAtUtc:"2026-11-26T00:00:00Z",scopes:[{scopeType:"Hospital" as const,hospitalId:"hospital-1",departmentId:null}]};
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(membership),{status:201}));
+  await createTenantMembership("https://api.example.test","access-token","tenant-123",{issuer:membership.issuer,subject:membership.subject,role:"FacilityViewer",scopes:membership.scopes});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(membership),{status:200}));
+  await updateTenantMembership("https://api.example.test","access-token","tenant-123","membership-1",{role:"FacilityManager",scopes:membership.scopes});
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({...membership,isActive:false}),{status:200}));
+  await deactivateTenantMembership("https://api.example.test","access-token","tenant-123","membership-1");
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(membership),{status:200}));
+  await reactivateTenantMembership("https://api.example.test","access-token","tenant-123","membership-1");
+
+  const calls=fetchMock.mock.calls as [string,RequestInit][];
+  expect(calls.map(call=>[call[0],call[1].method])).toEqual([
+   ["https://api.example.test/api/v1/tenant/memberships","POST"],
+   ["https://api.example.test/api/v1/tenant/memberships/membership-1","PUT"],
+   ["https://api.example.test/api/v1/tenant/memberships/membership-1/deactivate","POST"],
+   ["https://api.example.test/api/v1/tenant/memberships/membership-1/reactivate","POST"]
+  ]);
+  expect(JSON.parse(String(calls[0][1].body))).toEqual({issuer:membership.issuer,subject:membership.subject,role:"FacilityViewer",scopes:membership.scopes});
+  expect(JSON.parse(String(calls[1][1].body))).toEqual({role:"FacilityManager",scopes:membership.scopes});
+  expect(calls[2][1].body).toBeUndefined();
+  expect(calls[3][1].body).toBeUndefined();
   for(const [,options] of calls) expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
  });
 
