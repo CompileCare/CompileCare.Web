@@ -364,6 +364,7 @@ function Workspace() {
   const [contextsError,setContextsError] = useState("");
   const [isPlatformOperator,setIsPlatformOperator] = useState(false);
   const [platformOperatorLoading,setPlatformOperatorLoading] = useState(false);
+  const [platformOperatorResolved,setPlatformOperatorResolved] = useState(false);
   const [platformOperatorError,setPlatformOperatorError] = useState("");
   const [selectedTenantId,setSelectedTenantId] = useState("");
   const [hospitals,setHospitals] = useState<Hospital[]>([]);
@@ -471,11 +472,13 @@ function Workspace() {
     if (!user || !apiBaseUrl) {
       setIsPlatformOperator(false);
       setPlatformOperatorLoading(false);
+      setPlatformOperatorResolved(true);
       setPlatformOperatorError("");
       return;
     }
     let active = true;
     setPlatformOperatorLoading(true);
+    setPlatformOperatorResolved(false);
     setPlatformOperatorError("");
     getPlatformOperatorStatus(apiBaseUrl, user.access_token)
       .then(result => { if (active) setIsPlatformOperator(result.isPlatformOperator); })
@@ -486,7 +489,12 @@ function Workspace() {
           ? "Your session could not be verified for platform administration. Sign in again if this continues."
           : "Platform operator status could not be verified. Tenant workspaces remain available according to your membership.");
       })
-      .finally(() => { if (active) setPlatformOperatorLoading(false); });
+      .finally(() => {
+        if (active) {
+          setPlatformOperatorLoading(false);
+          setPlatformOperatorResolved(true);
+        }
+      });
     return () => { active = false; };
   }, [user?.access_token]);
 
@@ -623,7 +631,7 @@ function Workspace() {
   const activeWorkspaceTitle = activeSection === "overview" ? "Hospital workspace" : activeSection === "staff-management" ? "Staff and providers" : activeSection === "appointment-management" ? "Appointments" : activeSection === "appointments" ? "Appointment booking" : activeSection === "queue" ? "Queue operations" : activeSection === "billing" ? "Billing" : activeSection === "facilities" ? "Facility management" : activeSection === "mrn-policy" ? "MRN policy administration" : activeSection === "memberships" ? "Membership administration" : activeSection === "platform-tenants" ? "Platform tenant administration" : activeSection === "patient-registration" ? "Patient registration" : activeSection === "clinical" || isClinicalWorkspace ? "Clinical workspace" : activeSection === "reception" || canReadPatients || !user ? "Reception workspace" : "Hospital workspace";
 
   useEffect(() => {
-    if (sessionLoading || (user && !contextsResolved)) return;
+    if (sessionLoading || (user && (!contextsResolved || !platformOperatorResolved))) return;
     const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
     const moduleSections = [
       "clinical","reception","patient-registration","overview","appointment-management",
@@ -651,7 +659,7 @@ function Workspace() {
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
-  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId]);
+  },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId,platformOperatorResolved]);
 
   useEffect(() => {
     const sectionId = location.hash.slice(1);
