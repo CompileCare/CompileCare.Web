@@ -41,3 +41,55 @@ test("skip link moves keyboard focus to the main workspace landmark", async ({ p
   await expect(main).toBeFocused();
   await expect(main).toHaveAttribute("id", "workspace-main");
 });
+
+test("public workspace exposes a single main landmark and one level-one heading", async ({ page }) => {
+  await page.goto("/");
+
+  const main = page.getByRole("main");
+  await expect(main).toHaveCount(1);
+  await expect(main.locator("h1")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
+
+test("public workspace controls and images expose accessible names and labels", async ({ page }) => {
+  await page.goto("/");
+
+  const unnamedControls = await page.locator("button, a[href]").evaluateAll(elements =>
+    elements
+      .filter(element =>
+        !element.getAttribute("aria-label") &&
+        !element.getAttribute("aria-labelledby") &&
+        !element.getAttribute("title") &&
+        !(element.textContent ?? "").trim()
+      )
+      .map(element => element.outerHTML.slice(0, 180))
+  );
+  expect(unnamedControls, "interactive controls must have an accessible name").toEqual([]);
+
+  const unlabeledFields = await page.locator("input, select, textarea").evaluateAll(elements =>
+    elements
+      .filter(element =>
+        !((element as HTMLInputElement).labels?.length) &&
+        !element.getAttribute("aria-label") &&
+        !element.getAttribute("aria-labelledby")
+      )
+      .map(element => element.outerHTML.slice(0, 180))
+  );
+  expect(unlabeledFields, "form fields must have an associated label").toEqual([]);
+
+  await expect(page.locator("img:not([alt])"), "images must declare alternative text").toHaveCount(0);
+});
+
+test("reduced-motion preference suppresses nonessential transitions", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const transitionDurations = await page.locator("body *").evaluateAll(elements =>
+    elements
+      .map(element => getComputedStyle(element).transitionDuration)
+      .filter(duration => duration !== "0s")
+  );
+
+  expect(transitionDurations).toEqual([]);
+});
