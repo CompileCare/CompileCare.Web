@@ -32,6 +32,7 @@ interface Props {
   tenantId: string;
   hospital: Hospital | undefined;
   departments: Department[];
+  departmentsLoading: boolean;
   permissions: string[];
   scopes: OrganizationScope[];
   onRefreshHospitals: (preferredHospitalId?: string) => Promise<void>;
@@ -49,7 +50,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function FacilityManagement({
-  baseUrl, accessToken, tenantId, hospital, departments, permissions, scopes,
+  baseUrl, accessToken, tenantId, hospital, departments, departmentsLoading, permissions, scopes,
   onRefreshHospitals, onRefreshDepartments, onBusyChange
 }: Props) {
   const [departmentId, setDepartmentId] = useState("");
@@ -125,6 +126,8 @@ export function FacilityManagement({
       return;
     }
     let active = true;
+    setError("");
+    setWards([]); setWardId(""); setRooms([]); setRoomId(""); setBeds([]);
     setWardsLoading(true);
     listWards(baseUrl, accessToken, tenantId, departmentId)
       .then(page => {
@@ -144,6 +147,8 @@ export function FacilityManagement({
       return;
     }
     let active = true;
+    setError("");
+    setRooms([]); setRoomId(""); setBeds([]);
     setRoomsLoading(true);
     listRooms(baseUrl, accessToken, tenantId, wardId)
       .then(page => {
@@ -353,11 +358,11 @@ export function FacilityManagement({
       <section className="search-panel facility-level">
         <div className="facility-level-heading"><div><label>LEVEL 01</label><h3>Departments</h3></div><span>{departments.length}</span></div>
         <label htmlFor="facility-department-select">Select department</label>
-        <select id="facility-department-select" value={departmentId} onChange={event=>{setDepartmentId(event.target.value);setWardId("");setRoomId("");}} disabled={departments.length===0||busy}><option value="">Choose department</option>{departments.map(item=><option key={item.id} value={item.id}>{item.name}{item.code ? " · " + item.code : ""}</option>)}</select>
+        <select id="facility-department-select" value={departmentId} onChange={event=>{setDepartmentId(event.target.value);setWardId("");setRoomId("");}} disabled={departmentsLoading||departments.length===0||busy}><option value="">Choose department</option>{departments.map(item=><option key={item.id} value={item.id}>{item.name}{item.code ? " · " + item.code : ""}</option>)}</select>
         {department && <div className="facility-selected-item"><strong>{department.name}</strong><span>{department.code||"No code"}</span>{canWrite&&!editingDepartment&&<button type="button" className="clinical-secondary" onClick={()=>{setDepartmentName(department.name);setDepartmentCode(department.code??"");setEditingDepartment(true);}}>Edit</button>}{canDelete&&<button type="button" className="queue-action-danger" onClick={()=>askDelete("department",department.id,department.name)} disabled={busy}>Delete</button>}</div>}
         {editingDepartment&&department&&<form className="facility-inline-form" onSubmit={submitDepartment}><div><label htmlFor="facility-department-name">Department name *</label><input id="facility-department-name" value={departmentName} maxLength={200} onChange={event=>setDepartmentName(event.target.value)} required disabled={busy}/></div><div><label htmlFor="facility-department-code">Department code</label><input id="facility-department-code" value={departmentCode} maxLength={50} onChange={event=>setDepartmentCode(event.target.value)} disabled={busy}/></div><div className="facility-form-actions"><button type="submit" disabled={busy||!departmentName.trim()}>Save department</button><button type="button" className="clinical-secondary" onClick={()=>setEditingDepartment(false)} disabled={busy}>Cancel</button></div></form>}
         {canManageHospital&&<form className="facility-create-form" onSubmit={submitNewDepartment}><label htmlFor="facility-new-department-name">Add department</label><input id="facility-new-department-name" value={newDepartmentName} maxLength={200} onChange={event=>setNewDepartmentName(event.target.value)} placeholder="e.g. General Medicine" disabled={busy} required/><input aria-label="New department code" value={newDepartmentCode} maxLength={50} onChange={event=>setNewDepartmentCode(event.target.value)} placeholder="Department code (optional)" disabled={busy}/><button type="submit" disabled={busy||!newDepartmentName.trim()}>Create department</button></form>}
-        {departments.length===0&&<p className="inline-status">No departments are available for this hospital.</p>}
+        {departmentsLoading&&<p className="inline-status" role="status">Loading departments…</p>}{!departmentsLoading&&departments.length===0&&<p className="inline-status">No departments are available for this hospital.</p>}
       </section>
 
       <section className="search-panel facility-level">
