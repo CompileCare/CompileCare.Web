@@ -2,7 +2,7 @@ import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
 import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
 import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,findPatientByMrn,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
 
 describe("CompileCare API client",()=>{
  const fetchMock=vi.fn();
@@ -106,6 +106,26 @@ describe("CompileCare API client",()=>{
   expect(options.method).toBe("POST");
   expect(options.body).toBeUndefined();
   expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+ });
+
+ it("looks up an exact MRN within the selected hospital and tenant",async()=>{
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+   patient:{id:"patient-1",givenName:"Asha",middleName:null,familyName:"Patil",dateOfBirth:"1988-04-12",hospitalId:"hospital-456",registeredAtUtc:"2026-11-24T00:00:00Z"},
+   identifier:{id:"identifier-1",patientId:"patient-1",hospitalId:"hospital-456",typeCode:"MRN",value:"HOSP000001",assignedAtUtc:"2026-11-24T00:00:00Z"}
+  }),{status:200}));
+  const result=await findPatientByMrn("https://api.example.test","access-token","tenant-123","hospital-456"," HOSP000001 ");
+  expect(result.identifier.value).toBe("HOSP000001");
+  const [url,options]=fetchMock.mock.calls[0] as [string,RequestInit];
+  expect(url).toBe("https://api.example.test/api/v1/hospitals/hospital-456/patients/by-mrn/HOSP000001");
+  expect(new Headers(options.headers).get("X-Tenant-ID")).toBe("tenant-123");
+  expect(options.cache).toBe("no-store");
+  expect(options.credentials).toBe("omit");
+ });
+
+ it("rejects an empty MRN before sending a request",async()=>{
+  await expect(findPatientByMrn("https://api.example.test","access-token","tenant-123","hospital-456","  "))
+   .rejects.toThrow("Enter a medical record number to search.");
+  expect(fetchMock).not.toHaveBeenCalled();
  });
 });
 
