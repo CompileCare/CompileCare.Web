@@ -118,17 +118,15 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "The membership request could not be completed.";
 }
 
-function formatScope(scope: OrganizationScope, hospitals: Hospital[]): string {
+function formatScope(scope: OrganizationScope, hospitals: Hospital[], departmentsByHospital: Record<string, Department[]>): string {
   if (scope.scopeType === "Tenant") return "Entire tenant";
   const hospital = hospitals.find(item => item.id === scope.hospitalId);
   const hospitalName = hospital?.name ?? "Hospital";
-  return scope.scopeType === "Hospital"
-    ? hospitalName
-    : `${hospitalName} · Department ${scope.departmentId}`;
-}
-
-function displaySubject(subject: string): string {
-  return subject.length > 18 ? `${subject.slice(0, 8)}…${subject.slice(-6)}` : subject;
+  if (scope.scopeType === "Hospital") return hospitalName;
+  const department = scope.hospitalId
+    ? departmentsByHospital[scope.hospitalId]?.find(item => item.id === scope.departmentId)
+    : undefined;
+  return `${hospitalName} · ${department?.name ?? "Department"}`;
 }
 
 export function TenantMembershipManagement({
@@ -160,7 +158,7 @@ export function TenantMembershipManagement({
   const [editingScopes, setEditingScopes] = useState<OrganizationScope[]>([]);
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; subject: string; active: boolean } | null>(null);
 
-  const departmentScopeKey = [...newScopes, ...editingScopes]
+  const departmentScopeKey = [...newScopes, ...editingScopes, ...memberships.flatMap(membership => membership.scopes)]
     .filter(scope => scope.scopeType === "Department" && scope.hospitalId)
     .map(scope => scope.hospitalId!)
     .filter((id, index, all) => all.indexOf(id) === index)
@@ -337,10 +335,10 @@ export function TenantMembershipManagement({
           const isSelf = membership.issuer === currentIssuer && membership.subject === currentSubject;
           return <article className="membership-card" key={membership.id}>
             <div className="membership-card-main">
-              <div><strong>{displaySubject(membership.subject)}</strong>{isSelf && <span className="membership-self">Your account</span>}<small>{membership.issuer}</small></div>
+              <div><strong>{membership.subject}</strong>{isSelf && <span className="membership-self">Your account</span>}<small>{membership.issuer}</small></div>
               <span className={membership.isActive ? "membership-status membership-status-active" : "membership-status membership-status-inactive"}>{membership.isActive ? "Active" : "Inactive"}</span>
             </div>
-            <div className="membership-card-meta"><span>Role: <strong>{membership.role}</strong></span><span>{membership.scopes.map(scope => formatScope(scope, hospitals)).join(" · ")}</span></div>
+            <div className="membership-card-meta"><span>Role: <strong>{membership.role}</strong></span><span>{membership.scopes.map(scope => formatScope(scope, hospitals, departmentsByHospital)).join(" · ")}</span></div>
             {editingId === membership.id ? <form className="membership-edit-form" onSubmit={submitEdit}>
               <div><label htmlFor={`membership-role-${membership.id}`}>Role</label><select id={`membership-role-${membership.id}`} value={editingRole} onChange={event=>setEditingRole(event.target.value)} disabled={busy}>{roles.map(role=><option key={role} value={role}>{role}</option>)}</select></div>
               <div className="membership-scope-section"><strong>Organization scopes</strong><ScopeEditor value={editingScopes} onChange={setEditingScopes} allowedScopeTypes={allowedScopeTypes} hospitals={hospitals} departmentsByHospital={departmentsByHospital} onLoadDepartments={loadDepartmentsForHospital} disabled={busy} idPrefix={`membership-edit-${membership.id}`}/></div>
@@ -352,7 +350,7 @@ export function TenantMembershipManagement({
                 : <button type="button" className="clinical-secondary" onClick={()=>setConfirmTarget({id:membership.id,subject:membership.subject,active:false})} disabled={busy || isSelf}>Reactivate</button>}
             </div>}
             {confirmTarget?.id === membership.id && <div className="membership-confirm" role="group" aria-labelledby={`membership-confirm-${membership.id}`}>
-              <p id={`membership-confirm-${membership.id}`}>{confirmTarget.active ? "Deactivate" : "Reactivate"} membership for <strong>{displaySubject(confirmTarget.subject)}</strong>?</p>
+              <p id={`membership-confirm-${membership.id}`}>{confirmTarget.active ? "Deactivate" : "Reactivate"} membership for <strong>{confirmTarget.subject}</strong>?</p>
               <div className="membership-form-actions"><button type="button" className={confirmTarget.active ? "queue-action-danger" : ""} onClick={confirmLifecycleChange} disabled={busy}>{confirmTarget.active ? "Confirm deactivation" : "Confirm reactivation"}</button><button type="button" className="clinical-secondary" onClick={()=>setConfirmTarget(null)} disabled={busy}>Cancel</button></div>
             </div>}
           </article>;
