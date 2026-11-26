@@ -14,6 +14,14 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Verify npm generated a lockfile
+        run: test -s package-lock.json
+      - name: Upload npm lockfile for reviewed reproducible dependency resolution
+        uses: actions/upload-artifact@v4
+        with:
+          name: compilecare-web-package-lock
+          path: package-lock.json
+          if-no-files-found: error
       - name: Report dependency advisories
         run: npm audit --json || true
       - run: npm test
