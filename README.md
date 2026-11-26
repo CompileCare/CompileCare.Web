@@ -59,3 +59,24 @@ The current-user tenant context and effective-permission contract is implemented
 - Do not log access tokens, patient queries or patient result payloads.
 - Do not use UI role checks as authorization. The API enforces permissions on every request.
 - Patient registration is available only to memberships with both `patient.register` and `patient.duplicate.review`; clinical identity reads use the separate department-scoped route.
+
+## Container security policy (CSP)
+
+The Nginx container enforces a Content-Security-Policy header at runtime. The policy defaults to same-origin resources, blocks objects and framing, restricts scripts to the Web origin, and permits network/iframe access only to explicitly configured origins. It does not use wildcard sources, `unsafe-eval` or inline scripts. The current application policy allows inline styles for existing UI styling; remove that allowance only after the UI has been migrated and browser-tested without inline style attributes.
+
+Set both runtime environment variables on the Web container:
+
+- `CSP_CONNECT_SRC`: space-separated bare origins for the API and OIDC authority used by browser fetch/XHR, discovery, token and session requests.
+- `CSP_FRAME_SRC`: space-separated bare origins permitted for the OIDC silent-renew iframe (normally the identity-provider origin).
+
+Values must be explicit `https://host[:port]` origins in deployed environments. Do not include paths, wildcards, quotes, semicolons or CSP directives. The container validates the values before Nginx starts and exits on missing or malformed configuration. CSP is rendered from the Nginx template at container startup, so changing runtime origin configuration does not require rebuilding the static Web bundle.
+
+Example production container configuration (replace these example origins with the exact deployed origins):
+
+```yaml
+environment:
+  CSP_CONNECT_SRC: "https://api.example.com https://identity.example.com"
+  CSP_FRAME_SRC: "https://identity.example.com"
+```
+
+The repository's standalone Docker smoke Compose file uses reserved `example.com` origins only to validate header generation; they are not deployment defaults. CompileCare.Local supplies its own loopback origins and explicitly opts into HTTP for local development. Never set `ALLOW_INSECURE_CSP_ORIGINS=true` outside local development. The browser's same-origin Web origin is automatically included as `'self'`.
