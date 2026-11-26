@@ -29,7 +29,7 @@ function slugify(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, 63);
 }
 
 function formatDate(value: string): string {
@@ -162,7 +162,7 @@ export function PlatformTenantManagement({ baseUrl, accessToken, currentIssuer, 
       <div className="platform-panel-heading"><div><h3>Create a tenant</h3><p className="helper-text">New tenants start in Provisioning. They cannot use tenant-scoped APIs until the initial HospitalAdmin is provisioned and the tenant is activated.</p></div></div>
       <form className="platform-create-form" onSubmit={submitCreate}>
         <div><label htmlFor="platform-tenant-name">Tenant name *</label><input id="platform-tenant-name" value={name} onChange={event=>{setName(event.target.value);if(!slugTouched)setSlug(slugify(event.target.value));}} maxLength={160} required disabled={busy}/></div>
-        <div><label htmlFor="platform-tenant-slug">Tenant slug *</label><input id="platform-tenant-slug" value={slug} onChange={event=>{setSlug(event.target.value);setSlugTouched(true);}} maxLength={80} required disabled={busy}/><small>Lowercase letters, numbers and hyphens. Must be unique.</small></div>
+        <div><label htmlFor="platform-tenant-slug">Tenant slug *</label><input id="platform-tenant-slug" value={slug} onChange={event=>{setSlug(event.target.value);setSlugTouched(true);}} maxLength={63} required disabled={busy}/><small>Lowercase letters, numbers and hyphens; maximum 63 characters and must be unique.</small></div>
         <div className="platform-form-actions"><button type="submit" disabled={busy || !name.trim() || !slugify(slug)}>{busy ? "Saving…" : "Create tenant"}</button></div>
       </form>
     </div>
