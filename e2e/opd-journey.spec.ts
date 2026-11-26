@@ -601,3 +601,53 @@ test("reception can complete duplicate review and patient MRN registration using
 
   await expect(page.getByText(/MRN CC000001 was assigned/)).toBeVisible();
 });
+
+test("hospital overview stays readable without horizontal overflow on a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installSession(page);
+  const api = await installApi(page, true);
+  api.setPermissions([
+    ...receptionPermissions,
+    "appointment.read",
+    "billing.report.read"
+  ]);
+
+  // The shared OPD fixture handles authentication, hospital context and queue
+  // requests. Add only the dashboard-specific read endpoints for this scenario.
+  await page.route("https://api.test/**", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === "GET" && url.pathname === hospitalPath + "/appointments") {
+      return json(route, { items: [], page: 1, pageSize: 25, totalCount: 0, totalPages: 0 });
+    }
+    if (request.method() === "GET" && url.pathname === hospitalPath + "/billing/reports/daily-collection") {
+      return json(route, {
+        businessDate: "2026-11-26",
+        timeZoneId: "Asia/Kolkata",
+        totalCollected: 2500,
+        byMethod: { Cash: 1500, UPI: 1000 },
+        paymentCount: 5
+      });
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/#overview");
+  await expect(page.getByRole("heading", { name: "Today at a glance" })).toBeVisible();
+  await expect(page.getByText("₹2,500")).toBeVisible();
+
+  const layout = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    bodyWidth: document.body.scrollWidth,
+    mainWidth: document.querySelector("main")?.getBoundingClientRect().width ?? 0,
+    sidebarWidth: document.querySelector("aside")?.getBoundingClientRect().width ?? 0,
+    metricColumns: getComputedStyle(document.querySelector(".overview-metrics")!).gridTemplateColumns
+  }));
+
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.bodyWidth).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.mainWidth).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.sidebarWidth).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.metricColumns.trim().split(/\\s+/)).toHaveLength(1);
+});
