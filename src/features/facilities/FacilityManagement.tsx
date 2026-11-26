@@ -42,7 +42,7 @@ interface Props {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 409) return "This item has dependent records or changed since it was loaded. Refresh the hierarchy and resolve its dependencies before deleting it.";
+    if (error.status === 409) return "This operation conflicts with an existing record or current state. Refresh and review the affected records before trying again.";
     return error.message;
   }
   if (error instanceof Error) return error.message;
