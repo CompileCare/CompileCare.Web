@@ -644,6 +644,12 @@ function Workspace() {
     }
   },[allowedSectionKey,defaultActiveSection,location.hash,location.pathname,navigate,sessionLoading,user,contextsResolved,contexts.length,selectedTenantId]);
 
+  useEffect(() => {
+    const sectionId = location.hash.slice(1);
+    if (!sectionId) return;
+    document.getElementById(sectionId)?.scrollIntoView?.({ block: "start" });
+  },[location.hash,location.pathname,activeSection]);
+
   async function loadAvailability() {
     if(!user||!apiBaseUrl||!selectedTenantId||!selectedHospitalId||!selectedDepartmentId)return;
     setAvailabilityLoading(true);setAvailabilityError("");setAvailabilitySessions([]);setSelectedSessionId("");setSlots([]);setSelectedSlotStart("");setBookingError("");setBookedAppointment(null);setQueueEntry(null);
