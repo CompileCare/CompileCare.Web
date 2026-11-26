@@ -67,6 +67,18 @@ async function installAuthenticatedSession(page: Page) {
   });
 }
 
+async function loadBillableVisits(page: Page, trigger: () => Promise<void>) {
+  const queueResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return response.request().method() === "GET" &&
+      url.pathname === hospitalPath + "/queue" &&
+      response.ok();
+  });
+  await trigger();
+  const response = await queueResponse;
+  expect(response.ok(), "Billable queue request should succeed before visit options are asserted").toBe(true);
+}
+
 async function installApiMocks(page: Page, permissions: string[] = billingPermissions) {
   let invoice: Record<string, unknown> | null = null;
   const payments: FakePayment[] = [];
@@ -250,7 +262,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
   await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
   await expect(page.getByText("OPD Consultation")).toBeVisible();
 
-  await page.getByRole("button", { name: "Load billable visits" }).click();
+  await loadBillableVisits(page, () => page.getByRole("button", { name: "Load billable visits" }).click());
   await page.getByLabel("In-progress or completed visit").selectOption(queueEntryId);
   await page.getByRole("spinbutton", { name: "Quantity for OPD Consultation" }).fill("1");
   await page.getByRole("button", { name: "Issue invoice" }).click();
@@ -268,7 +280,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
   await page.reload();
   await expect(page.getByRole("link", { name: "Billing" })).toBeVisible();
   await page.getByRole("link", { name: "Billing" }).click();
-  await page.getByRole("button", { name: "Load billable visits" }).click();
+  await loadBillableVisits(page, () => page.getByRole("button", { name: "Load billable visits" }).click());
   await page.getByLabel("In-progress or completed visit").selectOption(queueEntryId);
 
   await expect(page.getByRole("heading", { name: "INV-E2E-0001" })).toBeVisible();
@@ -308,7 +320,7 @@ test("cashier can select a billable visit and issue an invoice using keyboard na
   await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
 
   const loadVisits = page.getByRole("button", { name: "Load billable visits" });
-  await loadVisits.click();
+  await loadBillableVisits(page, () => loadVisits.click());
   const visitSelect = page.getByLabel("In-progress or completed visit");
   await expect(visitSelect.locator("option")).toHaveCount(2);
   await loadVisits.focus();
@@ -374,7 +386,7 @@ test("cashier can record a payment and print its receipt using keyboard controls
 
   const loadVisits = page.getByRole("button", { name: "Load billable visits" });
   await loadVisits.focus();
-  await page.keyboard.press("Enter");
+  await loadBillableVisits(page, () => page.keyboard.press("Enter"));
   const visitSelect = page.getByLabel("In-progress or completed visit");
   await expect(visitSelect.locator("option")).toHaveCount(2);
   await visitSelect.focus();
