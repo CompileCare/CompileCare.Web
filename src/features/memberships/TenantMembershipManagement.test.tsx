@@ -7,11 +7,11 @@ import {
   listTenantMemberships,
   reactivateTenantMembership,
   updateTenantMembership
-} from "../../api/compilecare";
-import type { Hospital, TenantMembership } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { Hospital, TenantMembership } from "../../api/heapcare";
 import { TenantMembershipManagement } from "./TenantMembershipManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   ApiError: class ApiError extends Error {
     constructor(readonly status: number) {
       super("Membership request failed.");
