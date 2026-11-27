@@ -84,7 +84,7 @@ describe("appointment management workspace", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The appointment or slot changed. Refresh the list and try again."
     );
-    expect(screen.getByText("Booked")).toBeInTheDocument();
+    expect(screen.getByText("Booked", { selector: ".appointment-status" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel appointment" })).toBeInTheDocument();
   });
 
