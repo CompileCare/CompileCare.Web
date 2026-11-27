@@ -1,6 +1,6 @@
 # HeapCare Web
 
-> **HeapCare migration status:** Frontend package identity, API client module path/imports, user-facing branding and session-storage selection keys are migrated and merged. Existing session values are moved to HeapCare keys on first read. The GitHub repository slug remains CompileCare.Web, and the existing Keycloak OIDC client ID, realm, issuer and callback origins remain compatibility contracts until the coordinated identity-provider migration is completed.
+> **HeapCare migration status:** Frontend package identity, API client module path/imports, user-facing branding and session-storage selection keys are migrated and merged. Existing session values are moved to HeapCare keys on first read. The GitHub repository slug is HeapCare.Web. The existing Keycloak OIDC client ID, realm, issuer and callback origins remain compatibility contracts until the coordinated identity-provider migration is completed.
 
 Authenticated hospital workspace built with React, TypeScript and Vite. This application is separate from the public-facing HeapCare.Site.
 
