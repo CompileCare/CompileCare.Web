@@ -16,6 +16,7 @@ import { PatientIdentifierPolicyManagement } from "../features/reception/Patient
 import { TenantMembershipManagement } from "../features/memberships/TenantMembershipManagement";
 import { PlatformTenantManagement } from "../features/platform/PlatformTenantManagement";
 import { readWorkspaceSelection, resolveHospitalSelection, resolveTenantSelection, writeWorkspaceSelection, WORKSPACE_TENANT_SELECTION_KEY, workspaceHospitalSelectionKey } from "./workspaceSelection";
+import { getCanonicalWorkspaceLocation, getRequestedWorkspaceSection, isWorkspaceModuleSection } from "./workspaceRoutes";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -638,14 +639,8 @@ function Workspace() {
   useEffect(() => {
     if (sessionLoading || (user && (!contextsResolved || !platformOperatorResolved))) return;
     const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
-    const moduleSections = [
-      "clinical","reception","patient-registration","overview","appointment-management",
-      "staff-management","queue","billing","facilities","mrn-policy","memberships","platform-tenants"
-    ];
-    const hashValue = location.hash.slice(1);
-    const legacyHashSection = moduleSections.includes(hashValue) ? hashValue : "";
-    const pathSection = location.pathname === "/" ? "" : location.pathname.slice(1);
-    const requestedSection = legacyHashSection || pathSection;
+    const legacyHashSection = isWorkspaceModuleSection(location.hash.slice(1));
+    const requestedSection = getRequestedWorkspaceSection(location.pathname, location.hash);
     // With multiple memberships, keep a deep link intact until the user chooses
     // the tenant whose persisted permissions determine whether that module is available.
     if (user && contexts.length > 1 && !selectedTenantId && requestedSection !== "platform-tenants") return;
@@ -656,12 +651,7 @@ function Workspace() {
     setActiveSection(nextSection);
 
     // Keep legacy module hashes working while preserving accessibility/other in-page anchors.
-    const fragment = legacyHashSection
-      ? (nextSection ? `#${nextSection}` : "")
-      : location.hash || (nextSection ? `#${nextSection}` : "");
-    const canonicalLocation = nextSection
-      ? `/${nextSection}${fragment}`
-      : `/${fragment}`;
+    const canonicalLocation = getCanonicalWorkspaceLocation(nextSection, location.hash, legacyHashSection);
     if (`${location.pathname}${location.hash}` !== canonicalLocation) {
       navigate(canonicalLocation, { replace: true });
     }
@@ -1031,7 +1021,7 @@ function Workspace() {
           {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
         </section>
 
-        {canViewOverview && selectedHospital && selectedTenantId && user && apiBaseUrl && <HospitalOverview
+        {canViewOverview && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "overview"}><HospitalOverview
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1046,18 +1036,18 @@ function Workspace() {
           canReadPatients={canReadPatients}
           canReadStaff={canReadStaff}
           isActive={activeSection === "overview"}
-        />}
+        /></div>}
 
         {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
 
-        {isPlatformOperator && user && apiBaseUrl && <PlatformTenantManagement
+        {isPlatformOperator && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "platform-tenants"}><PlatformTenantManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           currentIssuer={String(user.profile.iss ?? "")}
           onBusyChange={setPlatformBusy}
-        />}
+        /></div>}
 
-        {canReadFacilities && selectedContext && selectedTenantId && <FacilityManagement
+        {canReadFacilities && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "facilities"}><FacilityManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1069,9 +1059,9 @@ function Workspace() {
           onRefreshHospitals={refreshHospitals}
           onRefreshDepartments={refreshDepartments}
           onBusyChange={setFacilityBusy}
-        />}
+        /></div>}
 
-        {(canReadStaff || canManageStaff) && selectedHospital && selectedTenantId && user && apiBaseUrl && <StaffManagement
+        {(canReadStaff || canManageStaff) && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "staff-management"}><StaffManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1082,9 +1072,9 @@ function Workspace() {
           canManage={canManageStaff}
           onBusyChange={setStaffManagementBusy}
           onDirectoryChanged={() => setStaffDirectoryRevision(current => current + 1)}
-        />}
+        /></div>}
 
-        {canAccessIdentifierPolicy && selectedHospital && selectedTenantId && user && apiBaseUrl && <PatientIdentifierPolicyManagement
+        {canAccessIdentifierPolicy && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "mrn-policy"}><PatientIdentifierPolicyManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1093,9 +1083,9 @@ function Workspace() {
           canRead={canReadIdentifierPolicy}
           canManage={canManageIdentifierPolicy}
           onBusyChange={setIdentifierPolicyBusy}
-        />}
+        /></div>}
 
-        {canManageMemberships && selectedContext && selectedTenantId && <TenantMembershipManagement
+        {canManageMemberships && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "memberships"}><TenantMembershipManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1105,9 +1095,9 @@ function Workspace() {
           scopes={selectedContext.scopes ?? []}
           hospitals={hospitals}
           onBusyChange={setMembershipBusy}
-        />}
+        /></div>}
 
-        {canReadPatients && (<section className="section reception-section" id="reception">
+        {canReadPatients && (<section className="section reception-section workspace-route" hidden={activeSection !== "reception"} id="reception">
           <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid">
@@ -1156,7 +1146,7 @@ function Workspace() {
         </section>)}
 
 
-        {canManageAppointments && (<section className="section appointment-section" id="appointments">
+        {canManageAppointments && (<section className="section appointment-section workspace-route" hidden={activeSection !== "appointment-management"} id="appointments">
           <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
           <div className="search-panel">
             <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
@@ -1191,7 +1181,7 @@ function Workspace() {
           </div>
         </section>)}
 
-        {(canReadAppointments || canManageAppointments || canPublishAvailability) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <AppointmentManagement
+        {(canReadAppointments || canManageAppointments || canPublishAvailability) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "appointment-management"}><AppointmentManagement
           baseUrl={apiBaseUrl}
           accessToken={user.access_token}
           tenantId={selectedTenantId}
@@ -1202,9 +1192,9 @@ function Workspace() {
           canPublishAvailability={canPublishAvailability}
           staffRevision={staffDirectoryRevision}
           onBusyChange={setAppointmentManagementBusy}
-        />}
+        /></div>}
 
-        {canManageQueue && (<section className="section walkin-section">
+        {canManageQueue && (<section className="section walkin-section workspace-route" hidden={activeSection !== "queue"}>
           <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
           <div className="search-panel walkin-panel">
             <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
@@ -1214,7 +1204,7 @@ function Workspace() {
           </div>
         </section>)}
 
-        {canReadQueue && !isClinicalWorkspace && (<section className="section queue-section" id="queue">
+        {canReadQueue && !isClinicalWorkspace && (<section className="section queue-section workspace-route" hidden={activeSection !== "queue"} id="queue">
           <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
           <div className="search-panel">
             <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
@@ -1234,11 +1224,11 @@ function Workspace() {
           </div>
         </section>)}
 
-        {canReadBilling && selectedTenantId && selectedHospitalId && user && <BillingWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]}/>}
+        {canReadBilling && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "billing"}><BillingWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]}/></div>}
 
-        {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/>}
+        {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "clinical"}><ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/></div>}
 
-        {canRegisterPatients && (<section className="section registration-section" id="patient-registration">
+        {canRegisterPatients && (<section className="section registration-section workspace-route" hidden={activeSection !== "patient-registration"} id="patient-registration">
           <div className="section-heading">
             <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
           </div>

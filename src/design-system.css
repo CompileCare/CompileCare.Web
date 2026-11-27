@@ -1792,3 +1792,7 @@ a {
     flex: 1 1 auto;
   }
 }
+
+
+/* Route-level workspaces retain mounted state while exposing one module page at a time. */
+.workspace-route[hidden]{display:none!important}

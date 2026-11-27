@@ -406,6 +406,8 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
 
+  await page.getByRole("link", { name: "Patient registration" }).click();
+  await expect(page.getByRole("heading", { name: "Patient registration" })).toBeVisible();
   await page.getByLabel("Given name *").fill("Asha");
   await page.getByLabel("Middle name").fill("R.");
   await page.getByLabel("Family name").fill("Patil");
@@ -416,12 +418,16 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
   await page.getByRole("button", { name: "Register patient" }).click();
   await expect(page.getByText(/MRN CC000001 was assigned/)).toBeVisible();
 
+  await page.getByRole("link", { name: "Reception" }).click();
+  await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
   await page.getByLabel("Patient name").fill("Asha");
   await page.getByRole("button", { name: "Search patients" }).click();
   await expect(page.locator(".patient-result-selectable")).toHaveCount(1);
   await expect(page.locator(".patient-result-selectable").getByText("Asha R. Patil")).toBeVisible();
   await page.locator(".patient-result-selectable").click();
 
+  await page.getByRole("link", { name: "Queue" }).click();
+  await expect(page.getByRole("heading", { name: "Queue operations" })).toBeVisible();
   await page.getByRole("button", { name: "Add to queue" }).click();
   await expect(page.locator(".token-card")).toContainText("12");
   await assertNoHorizontalOverflow(page);
@@ -449,6 +455,8 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
 
   api.setPermissions(receptionPermissions);
   await page.reload();
+  await page.getByRole("link", { name: "Queue" }).click();
+  await expect(page.getByRole("heading", { name: "Queue operations" })).toBeVisible();
   await page.getByRole("button", { name: "Refresh queue" }).click();
   await expect(page.getByRole("button", { name: "Complete" })).toBeVisible();
   await page.getByRole("button", { name: "Complete" }).click();
@@ -456,6 +464,7 @@ test("staff-assisted OPD journey connects patient registration, walk-in, clinica
 
   api.setPermissions(billingPermissions);
   await page.reload();
+  await page.getByRole("link", { name: "Billing" }).click();
   await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Load billable visits" }).click();
@@ -564,6 +573,8 @@ test("reception can complete duplicate review and patient MRN registration using
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Reception workspace" })).toBeVisible();
+  await page.getByRole("link", { name: "Patient registration" }).click();
+  await expect(page.getByRole("heading", { name: "Patient registration" })).toBeVisible();
 
   const givenName = page.getByLabel("Given name *");
   await givenName.focus();
