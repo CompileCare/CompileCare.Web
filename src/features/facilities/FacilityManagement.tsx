@@ -20,8 +20,8 @@ import {
   updateHospital,
   updateRoom,
   updateWard
-} from "../../api/compilecare";
-import type { Bed, Department, Hospital, OrganizationScope, Room, Ward } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { Bed, Department, Hospital, OrganizationScope, Room, Ward } from "../../api/heapcare";
 
 type DeleteKind = "hospital" | "department" | "ward" | "room" | "bed";
 type DeleteTarget = { kind: DeleteKind; id: string; label: string };
