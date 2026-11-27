@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getDailyCollectionReport, listAppointments, listQueue } from "../../api/compilecare";
+import { getDailyCollectionReport, listAppointments, listQueue } from "../../api/heapcare";
 import { HospitalOverview } from "./HospitalOverview";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   getDailyCollectionReport: vi.fn(),
   listAppointments: vi.fn(),
   listQueue: vi.fn()
