@@ -124,5 +124,37 @@ for (const roleCase of authenticatedRoleCases) {
         roleCase.name + " authenticated workspace has horizontal overflow at " + width + "px"
       ).toBeLessThanOrEqual(dimensions.viewport);
     }
+
+    // Run semantic checks against the real authenticated workspace rendered for
+    // this persisted role, not only the public shell or a mocked permission set.
+    const unnamedControls = await main.locator("button:visible, a[href]:visible").evaluateAll(elements =>
+      elements
+        .filter(element =>
+          !element.getAttribute("aria-label") &&
+          !element.getAttribute("aria-labelledby") &&
+          !element.getAttribute("title") &&
+          !(element.textContent ?? "").trim() &&
+          !element.querySelector("img[alt]")
+        )
+        .map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(
+      unnamedControls,
+      roleCase.name + " authenticated workspace controls must expose accessible names"
+    ).toEqual([]);
+
+    const unlabeledFields = await main.locator("input:visible, select:visible, textarea:visible").evaluateAll(elements =>
+      elements
+        .filter(element =>
+          !((element as HTMLInputElement).labels?.length) &&
+          !element.getAttribute("aria-label") &&
+          !element.getAttribute("aria-labelledby")
+        )
+        .map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(
+      unlabeledFields,
+      roleCase.name + " authenticated workspace fields must expose programmatic labels"
+    ).toEqual([]);
   });
 }
