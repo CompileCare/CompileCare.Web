@@ -10,6 +10,8 @@ type BrowserUserManifest = {
   users?: Record<string, BrowserUserCredentials>;
   tenantAId?: string;
   tenantBId?: string;
+  hospitalAId?: string;
+  hospitalBId?: string;
 };
 
 function loadBrowserUserManifest(): BrowserUserManifest {
@@ -68,9 +70,13 @@ for (const roleCase of authenticatedRoleCases) {
       expect(tenantId, roleCase.name + " tenant fixture must be provisioned").toBeTruthy();
       const tenantSelect = page.locator("#tenant-select");
       await expect(tenantSelect).toBeVisible();
+      await expect(tenantSelect.locator("option[value='" + tenantId + "']")).toHaveCount(1);
       await tenantSelect.selectOption(tenantId!);
       await expect(tenantSelect).toHaveValue(tenantId!);
-      await expect(page.locator("#hospital-select")).toBeVisible();
+
+      const hospitalId = roleCase.tenant === "tenantAId" ? manifest.hospitalAId : manifest.hospitalBId;
+      expect(hospitalId, roleCase.name + " hospital fixture must be provisioned").toBeTruthy();
+      await expect(page.locator("#hospital-select")).toHaveValue(hospitalId!);
     }
 
     const main = page.getByRole("main");
@@ -80,6 +86,10 @@ for (const roleCase of authenticatedRoleCases) {
 
     // The skip link must be the first keyboard stop after OIDC sign-in.
     // Check the actual focused style, then verify activation moves focus to main.
+    await page.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    });
     const skipLink = page.getByRole("link", { name: "Skip to main content" });
     await page.keyboard.press("Tab");
     await expect(skipLink).toBeFocused();
