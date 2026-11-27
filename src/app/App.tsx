@@ -16,7 +16,7 @@ import { PatientIdentifierPolicyManagement } from "../features/reception/Patient
 import { TenantMembershipManagement } from "../features/memberships/TenantMembershipManagement";
 import { PlatformTenantManagement } from "../features/platform/PlatformTenantManagement";
 import { readWorkspaceSelection, resolveHospitalSelection, resolveTenantSelection, writeWorkspaceSelection, WORKSPACE_TENANT_SELECTION_KEY, workspaceHospitalSelectionKey } from "./workspaceSelection";
-import { getCanonicalWorkspaceLocation, getRequestedWorkspaceSection, WORKSPACE_MODULE_SECTIONS } from "./workspaceRoutes";
+import { getCanonicalWorkspaceLocation, getRequestedWorkspaceSection, isWorkspaceModuleSection } from "./workspaceRoutes";
 import {
   ApiError,
   getCurrentUserTenantContexts,
@@ -639,7 +639,7 @@ function Workspace() {
   useEffect(() => {
     if (sessionLoading || (user && (!contextsResolved || !platformOperatorResolved))) return;
     const allowedSections = allowedSectionKey ? allowedSectionKey.split("|") : [];
-    const legacyHashSection = WORKSPACE_MODULE_SECTIONS.includes(location.hash.slice(1));
+    const legacyHashSection = isWorkspaceModuleSection(location.hash.slice(1));
     const requestedSection = getRequestedWorkspaceSection(location.pathname, location.hash);
     // With multiple memberships, keep a deep link intact until the user chooses
     // the tenant whose persisted permissions determine whether that module is available.
