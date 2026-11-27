@@ -63,7 +63,7 @@ import {
   type Appointment,
   type QueueEntry,
   type QueueAction
-} from "../api/compilecare";
+} from "../api/heapcare";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 const localPlatformBootstrapEnabled = import.meta.env.VITE_ENABLE_PLATFORM_BOOTSTRAP === "true";
