@@ -1,0 +1,128 @@
+import { readFileSync } from "node:fs";
+import { expect, test } from "@playwright/test";
+
+type BrowserUserCredentials = {
+  username: string;
+  password: string;
+};
+
+type BrowserUserManifest = {
+  users?: Record<string, BrowserUserCredentials>;
+  tenantAId?: string;
+  tenantBId?: string;
+  hospitalAId?: string;
+  hospitalBId?: string;
+};
+
+function loadBrowserUserManifest(): BrowserUserManifest {
+  const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
+  if (!path) {
+    throw new Error("HEAPCARE_BROWSER_TEST_USER_FILE must point to the ephemeral CI user credentials file.");
+  }
+
+  return JSON.parse(readFileSync(path, "utf8")) as BrowserUserManifest;
+}
+
+async function signInWithKeycloak(
+  page: import("@playwright/test").Page,
+  credentials: BrowserUserCredentials
+): Promise<void> {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await page.waitForURL(url =>
+    url.origin === "http://keycloak.localhost:8082" &&
+    url.pathname.endsWith("/protocol/openid-connect/auth")
+  );
+  await expect(page.locator("#kc-form-login")).toBeVisible();
+  await page.locator("#username").fill(credentials.username);
+  await page.locator("#password").fill(credentials.password);
+  await page.locator("#kc-login").click();
+
+  await page.waitForURL(url =>
+    url.origin === "http://localhost:8080" &&
+    url.pathname === "/"
+  );
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+}
+
+const authenticatedRoleCases = [
+  { name: "HospitalAdmin", identity: "shared", tenant: "tenantAId" },
+  { name: "FacilityManager", identity: "facility-manager", tenant: "tenantAId" },
+  { name: "FacilityViewer", identity: "shared", tenant: "tenantBId" },
+  { name: "PatientRegistrar", identity: "patient-registrar", tenant: "tenantAId" },
+  { name: "ClinicalUser", identity: "clinical-user", tenant: "tenantAId" },
+  { name: "PlatformOperator", identity: "platform" }
+] as const;
+
+for (const roleCase of authenticatedRoleCases) {
+  test("real Keycloak " + roleCase.name + " workspace meets the authenticated shell accessibility baseline", async ({ page }) => {
+    const manifest = loadBrowserUserManifest();
+    const credentials = manifest.users?.[roleCase.identity];
+    expect(credentials?.username, roleCase.name + " synthetic username must be provisioned").toBeTruthy();
+    expect(credentials?.password, roleCase.name + " synthetic password must be provisioned").toBeTruthy();
+
+    await signInWithKeycloak(page, credentials!);
+
+    if ("tenant" in roleCase) {
+      const tenantId = manifest[roleCase.tenant];
+      expect(tenantId, roleCase.name + " tenant fixture must be provisioned").toBeTruthy();
+      const tenantSelect = page.locator("#tenant-select");
+      await expect(tenantSelect).toBeVisible();
+      await expect(tenantSelect.locator("option[value='" + tenantId + "']")).toHaveCount(1);
+      await tenantSelect.selectOption(tenantId!);
+      await expect(tenantSelect).toHaveValue(tenantId!);
+
+      const hospitalId = roleCase.tenant === "tenantAId" ? manifest.hospitalAId : manifest.hospitalBId;
+      expect(hospitalId, roleCase.name + " hospital fixture must be provisioned").toBeTruthy();
+      await expect(page.locator("#hospital-select")).toHaveValue(hospitalId!);
+    }
+
+    const main = page.getByRole("main");
+    await expect(main).toHaveCount(1);
+    await expect(main).toHaveAttribute("id", "workspace-main");
+    await expect(main.locator("h1")).toHaveCount(1);
+
+    // The skip link must be the first keyboard stop after OIDC sign-in.
+    // Check the actual focused style, then verify activation moves focus to main.
+    await page.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    });
+    const skipLink = page.getByRole("link", { name: "Skip to main content" });
+    await page.keyboard.press("Tab");
+    await expect(skipLink).toBeFocused();
+
+    const focusStyle = await skipLink.evaluate(element => {
+      const style = window.getComputedStyle(element);
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth
+      };
+    });
+    expect(focusStyle.outlineStyle).not.toBe("none");
+    expect(Number.parseFloat(focusStyle.outlineWidth)).toBeGreaterThan(0);
+
+    await page.keyboard.press("Enter");
+    await expect(main).toBeFocused();
+
+    // Check the authenticated workspace at the same narrow widths used by the
+    // public shell baseline; hidden modules must not force page-level overflow.
+    for (const width of [768, 375, 320]) {
+      await page.setViewportSize({ width, height: 812 });
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: Math.max(
+          document.documentElement.scrollWidth,
+          document.body.scrollWidth
+        )
+      }));
+
+      expect(
+        dimensions.document,
+        roleCase.name + " authenticated workspace has horizontal overflow at " + width + "px"
+      ).toBeLessThanOrEqual(dimensions.viewport);
+    }
+  });
+}
