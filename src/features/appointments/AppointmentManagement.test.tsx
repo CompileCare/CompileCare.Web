@@ -86,6 +86,7 @@ describe("appointment management workspace", () => {
     );
     expect(screen.getByText("Booked", { selector: ".appointment-status" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel appointment" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm cancellation" })).not.toBeInTheDocument();
   });
 
   it("refreshes the provider directory after staff records or assignments change", async () => {
