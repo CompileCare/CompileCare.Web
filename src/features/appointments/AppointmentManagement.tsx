@@ -3,10 +3,10 @@ import type { FormEvent } from "react";
 import {
   ApiError, cancelAppointment, createAvailabilitySession, getAppointmentSlots,
   listAppointments, listAvailabilitySessions, listStaffProfiles, rescheduleAppointment
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 import type {
   Appointment, AppointmentSlot, AvailabilitySession, Department, StaffProfile
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 
 interface Props {
   baseUrl: string;
