@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { PatientDuplicateCheck } from "../../api/compilecare";
 import { PatientRegistrationWorkspace } from "./PatientRegistrationWorkspace";
@@ -18,8 +19,8 @@ const duplicateCheck: PatientDuplicateCheck = {
   hasMoreCandidates: false
 };
 
-function renderWorkspace(overrides: Partial<React.ComponentProps<typeof PatientRegistrationWorkspace>> = {}) {
-  const props: React.ComponentProps<typeof PatientRegistrationWorkspace> = {
+function renderWorkspace(overrides: Partial<ComponentProps<typeof PatientRegistrationWorkspace>> = {}) {
+  const props: ComponentProps<typeof PatientRegistrationWorkspace> = {
     hospitalSelected: true,
     givenName: "Asha",
     middleName: "R.",
