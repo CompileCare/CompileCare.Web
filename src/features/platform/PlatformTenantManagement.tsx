@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import type { PlatformTenant } from "../../api/compilecare";
+import type { PlatformTenant } from "../../api/heapcare";
 import {
   activatePlatformTenant,
   closePlatformTenant,
@@ -8,7 +8,7 @@ import {
   listPlatformTenants,
   provisionInitialTenantAdministrator,
   suspendPlatformTenant
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 
 interface Props {
   baseUrl: string;
