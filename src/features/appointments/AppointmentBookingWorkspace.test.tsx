@@ -26,6 +26,12 @@ describe("AppointmentBookingWorkspace",()=>{
     fireEvent.change(screen.getByLabelText("Provider availability"),{target:{value:session.id}});
     expect(props.onSelectSession).toHaveBeenCalledWith(session.id);
   });
+  it("announces the provider session and available slot counts",()=>{
+    const unavailableSlot:AppointmentSlot={...slot,startsAtUtc:"2026-11-28T04:30:00Z",endsAtUtc:"2026-11-28T05:00:00Z",isAvailable:false};
+    renderWorkspace({availabilitySessions:[session],selectedSessionId:session.id,slots:[slot,unavailableSlot]});
+    expect(screen.getByText("1 provider session found.")).toHaveAttribute("role","status");
+    expect(screen.getByText("2 slots loaded; 1 available.")).toHaveAttribute("role","status");
+  });
   it("keeps check-in disabled after the appointment has already been checked in",()=>{
     renderWorkspace({availabilitySessions:[session],selectedSessionId:session.id,slots:[slot],selectedSlotStart:slot.startsAtUtc,selectedSessionTimeZoneId:session.timeZoneId,bookedAppointment:appointment,queueEntry});
     expect(screen.getByRole("button",{name:"Checked in"})).toBeDisabled();
