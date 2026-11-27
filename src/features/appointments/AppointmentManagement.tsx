@@ -217,7 +217,10 @@ export function AppointmentManagement({
       setConfirmCancelId("");
       await refreshAppointments(page);
       setNotice("Appointment cancelled.");
-    } catch (cause) { setError(errorMessage(cause)); }
+    } catch (cause) {
+      setConfirmCancelId("");
+      setError(errorMessage(cause));
+    }
     finally { setLoading(false); onBusyChange(false); }
   }
 

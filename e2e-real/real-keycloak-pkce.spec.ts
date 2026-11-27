@@ -24,6 +24,9 @@ type BrowserUserManifest = {
   appointmentSlotStartsAtUtc?: string;
   appointmentPatientId?: string;
   appointmentPatientFamilyName?: string;
+  appointmentManagementCancelPatientId?: string;
+  appointmentManagementCancelAppointmentId?: string;
+  appointmentManagementCancelPatientFamilyName?: string;
   clinicalQueueEntryId?: string;
   clinicalQueueTokenNumber?: number;
   clinicalQueueDateLocal?: string;
@@ -538,6 +541,46 @@ for (const roleCase of persistedRoleBrowserCases) {
       await expect(receiptPanel.getByRole("button", { name: "Print receipt" })).toBeVisible();
 
       expect(queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
+
+      // Manage a separate synthetic booked appointment through the real
+      // PatientRegistrar appointment-management workspace and cancellation UI.
+      expect(manifest.appointmentManagementCancelPatientId).toBeTruthy();
+      expect(manifest.appointmentManagementCancelAppointmentId).toBeTruthy();
+      await page.getByRole("link", { name: "Appointments" }).click();
+      await expect(page.getByRole("heading", { name: "Appointment management" })).toBeVisible();
+      await page.locator("#appointment-list-department").selectOption(manifest.departmentAId!);
+      await page.locator("#appointment-list-date").fill(manifest.appointmentDateLocal!);
+
+      const appointmentsResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId + "/appointments" &&
+        response.request().method() === "GET"
+      );
+      await page.getByRole("button", { name: "Load appointments" }).click();
+      expect((await appointmentsResponse).status()).toBe(200);
+
+      const cancellationCard = page.locator(".appointment-record").filter({
+        hasText: "Patient reference · " + manifest.appointmentManagementCancelPatientId.slice(0, 8)
+      });
+      await expect(cancellationCard).toHaveCount(1);
+      await expect(cancellationCard.locator(".appointment-status")).toHaveText("Booked");
+      await expect(cancellationCard).not.toContainText(manifest.appointmentManagementCancelPatientFamilyName ?? "");
+
+      await cancellationCard.getByRole("button", { name: "Cancel appointment" }).click();
+      await expect(cancellationCard.getByRole("button", { name: "Confirm cancellation" })).toBeVisible();
+
+      const cancellationResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId +
+          "/appointments/" + manifest.appointmentManagementCancelAppointmentId + "/cancel" &&
+        response.request().method() === "POST"
+      );
+      await cancellationCard.getByRole("button", { name: "Confirm cancellation" }).click();
+      const cancelledResponse = await cancellationResponse;
+      expect(cancelledResponse.status()).toBe(200);
+      await expect(cancellationCard.locator(".appointment-status")).toHaveText("Cancelled");
+      await expect(page.getByText("Appointment cancelled.")).toBeVisible();
+      await expect(cancellationCard.getByRole("button", { name: /Cancel appointment|Confirm cancellation/ })).toHaveCount(0);
     }
   });
 }

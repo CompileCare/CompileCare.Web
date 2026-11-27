@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles
+  ApiError, cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles
 } from "../../api/heapcare";
 import { AppointmentManagement } from "./AppointmentManagement";
 
@@ -67,6 +67,26 @@ describe("appointment management workspace", () => {
       baseProps.baseUrl, baseProps.accessToken, baseProps.tenantId, baseProps.hospitalId, "appointment-1"
     ));
     expect(await screen.findByText("Appointment cancelled.")).toBeInTheDocument();
+  });
+
+  it("keeps a checked-in booking visible and explains a cancellation conflict", async () => {
+    cancel.mockRejectedValue(new ApiError(409));
+    render(<AppointmentManagement {...baseProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Load appointments" }));
+
+    expect(await screen.findByText("Patient reference · patient- · Provider · provider")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel appointment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm cancellation" }));
+
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith(
+      baseProps.baseUrl, baseProps.accessToken, baseProps.tenantId, baseProps.hospitalId, "appointment-1"
+    ));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The appointment or slot changed. Refresh the list and try again."
+    );
+    expect(screen.getByText("Booked", { selector: ".appointment-status" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel appointment" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm cancellation" })).not.toBeInTheDocument();
   });
 
   it("refreshes the provider directory after staff records or assignments change", async () => {
