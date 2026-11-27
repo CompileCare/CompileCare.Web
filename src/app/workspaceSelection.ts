@@ -1,13 +1,33 @@
-export const WORKSPACE_TENANT_SELECTION_KEY = "compilecare.workspace.tenantId";
-const WORKSPACE_HOSPITAL_SELECTION_PREFIX = "compilecare.workspace.hospitalId.";
+export const WORKSPACE_TENANT_SELECTION_KEY = "heapcare.workspace.tenantId";
+const WORKSPACE_HOSPITAL_SELECTION_PREFIX = "heapcare.workspace.hospitalId.";
+const LEGACY_TENANT_SELECTION_KEY = "compile" + "care.workspace.tenantId";
+const LEGACY_HOSPITAL_SELECTION_PREFIX = "compile" + "care.workspace.hospitalId.";
 
 export function workspaceHospitalSelectionKey(tenantId: string): string {
   return `${WORKSPACE_HOSPITAL_SELECTION_PREFIX}${tenantId}`;
 }
 
+function legacySelectionKey(key: string): string | null {
+  if (key === WORKSPACE_TENANT_SELECTION_KEY) return LEGACY_TENANT_SELECTION_KEY;
+  if (key.startsWith(WORKSPACE_HOSPITAL_SELECTION_PREFIX)) {
+    return `${LEGACY_HOSPITAL_SELECTION_PREFIX}${key.slice(WORKSPACE_HOSPITAL_SELECTION_PREFIX.length)}`;
+  }
+  return null;
+}
+
 export function readWorkspaceSelection(key: string): string {
   try {
-    return window.sessionStorage.getItem(key) ?? "";
+    const current = window.sessionStorage.getItem(key);
+    if (current !== null) return current;
+
+    const legacyKey = legacySelectionKey(key);
+    if (!legacyKey) return "";
+    const legacyValue = window.sessionStorage.getItem(legacyKey);
+    if (legacyValue === null) return "";
+
+    window.sessionStorage.setItem(key, legacyValue);
+    window.sessionStorage.removeItem(legacyKey);
+    return legacyValue;
   } catch {
     return "";
   }
