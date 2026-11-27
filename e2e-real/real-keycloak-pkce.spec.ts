@@ -7,9 +7,9 @@ type BrowserUserCredentials = {
 };
 
 function loadBrowserUser(): BrowserUserCredentials {
-  const path = process.env.COMPILECARE_BROWSER_TEST_USER_FILE;
+  const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
   if (!path) {
-    throw new Error("COMPILECARE_BROWSER_TEST_USER_FILE must point to the ephemeral CI user credentials file.");
+    throw new Error("HEAPCARE_BROWSER_TEST_USER_FILE must point to the ephemeral CI user credentials file.");
   }
 
   const credentials = JSON.parse(readFileSync(path, "utf8")) as Partial<BrowserUserCredentials>;
