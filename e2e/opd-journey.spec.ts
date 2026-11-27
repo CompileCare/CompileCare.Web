@@ -158,8 +158,8 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
       return json(route, {
         items: [{
           tenantId,
-          tenantName: "CompileCare Demo Group",
-          tenantSlug: "compilecare-demo",
+          tenantName: "HeapCare Demo Group",
+          tenantSlug: "heapcare-demo",
           role,
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions: state.permissions
@@ -173,7 +173,7 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
 
     if (method === "GET" && path === "/api/v1/hospitals") {
       return json(route, {
-        items: [{ id: hospitalId, name: "CompileCare Demo Hospital", code: "DEMO01" }],
+        items: [{ id: hospitalId, name: "HeapCare Demo Hospital", code: "DEMO01" }],
         page: 1,
         pageSize: 100,
         totalCount: 1,
