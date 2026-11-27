@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "../../api/compilecare";
+import { ApiError, createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "../../api/heapcare";
 import { PatientIdentifierPolicyManagement } from "./PatientIdentifierPolicyManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   ApiError: class ApiError extends Error { constructor(readonly status: number) { super("API error"); } },
   getPatientIdentifierPolicy: vi.fn(),
   createPatientIdentifierPolicy: vi.fn()
