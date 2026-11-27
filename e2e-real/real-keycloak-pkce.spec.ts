@@ -212,6 +212,7 @@ for (const roleCase of persistedRoleBrowserCases) {
     const credentials = loadBrowserUserForRole(roleCase.key);
     const hospitalRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+    const queueResponses: number[] = [];
 
     // Record only request metadata. Never retain tokens, credentials, or patient data.
     page.on("request", request => {
@@ -225,6 +226,13 @@ for (const roleCase of persistedRoleBrowserCases) {
       };
       if (url.pathname === "/api/v1/hospitals") hospitalRequests.push(evidence);
       if (url.pathname.includes("/queue")) queueRequests.push(evidence);
+    });
+
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (url.origin === "http://localhost:8081" && url.pathname.includes("/queue")) {
+        queueResponses.push(response.status());
+      }
     });
 
     await signInWithKeycloak(page, credentials);
@@ -253,12 +261,68 @@ for (const roleCase of persistedRoleBrowserCases) {
       const refreshClinicalQueue = page.getByRole("button", { name: "Refresh clinical queue" });
       await expect(refreshClinicalQueue).toBeEnabled();
       await refreshClinicalQueue.click();
+      await expect.poll(
+        () => queueResponses.some(status => status === 200)
+      ).toBe(true);
       await expect(page.getByText(
-        "Refresh the clinical queue to see in-progress consultations and recent completed visits."
+        "Refresh the clinical queue to see in-progress consultations and completed visits."
       )).toBeVisible();
+      await expect(page.getByRole("alert")).toHaveCount(0);
       await expect.poll(
         () => queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
       ).toBe(true);
     }
   });
 }
+
+
+test("real Keycloak Authorization Code + PKCE grants only the persisted PlatformOperator control plane", async ({ page }) => {
+  const credentials = loadBrowserUserForRole("platform");
+  const platformRequests: Array<{ path: string; hasBearerToken: boolean }> = [];
+
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.origin !== "http://localhost:8081") return;
+    const headers = request.headers();
+    if (url.pathname.startsWith("/api/v1/platform/")) {
+      platformRequests.push({
+        path: url.pathname,
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
+      });
+    }
+  });
+
+  await signInWithKeycloak(page, credentials);
+
+  await expect(page.getByRole("link", { name: "Tenant lifecycle" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tenant lifecycle administration" })).toBeVisible();
+  await expect(page.getByText(
+    "Platform operator access is active. Use Platform tenants to provision and manage customer tenants."
+  )).toBeVisible();
+
+  for (const label of [
+    "Reception",
+    "Patient registration",
+    "Appointments",
+    "Staff",
+    "Queue",
+    "Billing",
+    "Facilities",
+    "Memberships"
+  ]) {
+    await expect(page.getByRole("link", { name: label })).toHaveCount(0);
+  }
+
+  await expect(page.getByRole("button", { name: "Create tenant" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Registered tenants" })).toBeVisible();
+  await expect.poll(
+    () => platformRequests.some(item =>
+      item.path === "/api/v1/platform/operator/status" && item.hasBearerToken
+    )
+  ).toBe(true);
+  await expect.poll(
+    () => platformRequests.some(item =>
+      item.path === "/api/v1/platform/tenants" && item.hasBearerToken
+    )
+  ).toBe(true);
+});
