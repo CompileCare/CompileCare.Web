@@ -81,7 +81,7 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
     const headers = request.headers();
     const evidence = {
       tenantId: headers["x-tenant-id"] ?? "",
-      hasBearerToken: /^Bearer\s+\S+$/i.test(headers.authorization ?? "")
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
     };
 
     if (url.pathname === "/api/v1/hospitals") {
@@ -221,10 +221,10 @@ for (const roleCase of persistedRoleBrowserCases) {
       const evidence = {
         path: url.pathname,
         tenantId: headers["x-tenant-id"] ?? "",
-        hasBearerToken: /^Bearer\\s+\\S+$/i.test(headers.authorization ?? "")
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
       };
       if (url.pathname === "/api/v1/hospitals") hospitalRequests.push(evidence);
-      if (/\\/queue(?:\\/|$)/.test(url.pathname)) queueRequests.push(evidence);
+      if (url.pathname.includes("/queue")) queueRequests.push(evidence);
     });
 
     await signInWithKeycloak(page, credentials);
