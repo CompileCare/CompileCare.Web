@@ -1170,6 +1170,37 @@ function Workspace() {
             onHospitalTimeZoneChange={setHospitalTimeZone} onWalkIn={handleWalkIn} onDepartmentChange={value=>{setSelectedDepartmentId(value);setQueueEntries([]);}} onQueueDateChange={value=>{setQueueDate(value);setQueueEntries([]);}} onLoadQueue={loadQueue} onQueueActionReasonChange={setQueueActionReason} onQueueAction={handleQueueAction}
           />
         </div>}
+
+        {canReadBilling && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "billing"}><BillingWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]}/></div>}
+
+        {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "clinical"}><ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/></div>}
+
+        {canRegisterPatients && <div className="workspace-route" hidden={activeSection !== "patient-registration"}>
+          <PatientRegistrationWorkspace
+            hospitalSelected={!!selectedHospitalId}
+            givenName={registrationGivenName}
+            middleName={registrationMiddleName}
+            familyName={registrationFamilyName}
+            dateOfBirth={registrationDob}
+            duplicateLoading={duplicateLoading}
+            duplicateError={duplicateError}
+            duplicateCheck={duplicateCheck}
+            duplicateAcknowledged={duplicateAcknowledged}
+            registrationLoading={registrationLoading}
+            registrationError={registrationError}
+            registrationSuccess={registrationSuccess}
+            onGivenNameChange={value => { setRegistrationGivenName(value); resetRegistrationReview(); }}
+            onMiddleNameChange={value => { setRegistrationMiddleName(value); resetRegistrationReview(); }}
+            onFamilyNameChange={value => { setRegistrationFamilyName(value); resetRegistrationReview(); }}
+            onDateOfBirthChange={value => { setRegistrationDob(value); resetRegistrationReview(); }}
+            onCheckDuplicates={handleDuplicateCheck}
+            onDuplicateAcknowledgedChange={setDuplicateAcknowledged}
+            onSubmit={handlePatientRegistration}
+          />
+        </div>}
+      </>}
+
+      {!user && !sessionLoading && <section className="hero"><label>YOUR HOSPITAL, ONE WORKSPACE</label><h2>Good care starts with<br/><em>connected workflows.</em></h2><p>Sign in with your hospital identity to access the work areas assigned to you.</p><div className="symbol" aria-hidden="true">✚</div></section>}
       <footer className="pagefoot">CompileCare · Hospital information workspace <span>API authorization is enforced on every request.</span></footer>
     </main>
   </div>;
