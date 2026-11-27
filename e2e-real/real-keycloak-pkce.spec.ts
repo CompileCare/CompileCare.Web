@@ -226,6 +226,7 @@ for (const roleCase of persistedRoleBrowserCases) {
     const credentials = loadBrowserUserForRole(roleCase.key);
     const hospitalRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+    const patientRequests: Array<{ path: string; method: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueResponses: number[] = [];
 
     // Record only request metadata. Never retain tokens, credentials, or patient data.
@@ -235,11 +236,13 @@ for (const roleCase of persistedRoleBrowserCases) {
       const headers = request.headers();
       const evidence = {
         path: url.pathname,
+        method: request.method(),
         tenantId: headers["x-tenant-id"] ?? "",
         hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
       };
       if (url.pathname === "/api/v1/hospitals") hospitalRequests.push(evidence);
       if (url.pathname.includes("/queue")) queueRequests.push(evidence);
+      if (url.pathname.includes("/patients/departments/")) patientRequests.push(evidence);
     });
 
     page.on("response", response => {
