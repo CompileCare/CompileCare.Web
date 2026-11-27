@@ -254,7 +254,7 @@ for (const roleCase of persistedRoleBrowserCases) {
       await expect(refreshClinicalQueue).toBeEnabled();
       await refreshClinicalQueue.click();
       await expect(page.getByText(
-        "No in-progress consultations or completed visits are available for this department and date."
+        "Refresh the clinical queue to see in-progress consultations and recent completed visits."
       )).toBeVisible();
       await expect.poll(
         () => queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
