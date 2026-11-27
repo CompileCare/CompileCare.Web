@@ -362,7 +362,9 @@ for (const roleCase of persistedRoleBrowserCases) {
       // Book and check in a separate synthetic appointment patient through the
       // real PatientRegistrar browser session and the live API.
       await page.getByRole("link", { name: "Reception" }).click();
-      await page.locator("#patient-search").fill("Browser Appointment " + manifest.appointmentPatientFamilyName);
+      // The API performs a partial match against individual name fields;
+      // search by the unique synthetic family name, not the combined display name.
+      await page.locator("#patient-search").fill(manifest.appointmentPatientFamilyName!);
       const patientSearchResponse = page.waitForResponse(response =>
         new URL(response.url()).origin === "http://localhost:8081" &&
         new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId + "/patients" &&
