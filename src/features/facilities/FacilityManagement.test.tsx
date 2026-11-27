@@ -6,11 +6,11 @@ import {
   listBeds,
   listRooms,
   listWards
-} from "../../api/compilecare";
-import type { Bed, Department, Hospital, Room, Ward } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { Bed, Department, Hospital, Room, Ward } from "../../api/heapcare";
 import { FacilityManagement } from "./FacilityManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   ApiError: class ApiError extends Error {
     constructor(readonly status: number) {
       super("Facility API request failed.");
