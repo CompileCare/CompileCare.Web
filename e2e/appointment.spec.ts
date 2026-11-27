@@ -91,8 +91,8 @@ test("reception searches a patient, books an appointment and checks in to the se
       return json(route, {
         items: [{
           tenantId,
-          tenantName: "CompileCare Demo Group",
-          tenantSlug: "compilecare-demo",
+          tenantName: "HeapCare Demo Group",
+          tenantSlug: "heapcare-demo",
           role: "PatientRegistrar",
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions
@@ -106,7 +106,7 @@ test("reception searches a patient, books an appointment and checks in to the se
 
     if (method === "GET" && path === "/api/v1/hospitals") {
       return json(route, {
-        items: [{ id: hospitalId, name: "CompileCare Demo Hospital", code: "DEMO01" }],
+        items: [{ id: hospitalId, name: "HeapCare Demo Hospital", code: "DEMO01" }],
         page: 1,
         pageSize: 100,
         totalCount: 1,
@@ -185,7 +185,7 @@ test("reception searches a patient, books an appointment and checks in to the se
       bookingAttempts += 1;
       if (bookingAttempts === 1) {
         return json(route, {
-          type: "https://compilecare.in/problems/slot-unavailable",
+          type: "https://example.invalid/problems/slot-unavailable",
           title: "Appointment slot unavailable",
           detail: "The selected slot was just booked by another patient.",
           status: 409
