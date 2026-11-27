@@ -18,7 +18,7 @@ import {
   type DailyCollectionReport,
   type Department,
   type QueueEntry
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 
 const localBusinessDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date());
 const money=(value:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(value);
