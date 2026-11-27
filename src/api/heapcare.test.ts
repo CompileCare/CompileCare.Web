@@ -1,13 +1,13 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "./compilecare";
-import { addStaffAssignment, createStaffProfile, endStaffAssignment, setStaffProfileActive, updateStaffProfile } from "./compilecare";
-import { cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles, rescheduleAppointment } from "./compilecare";
-import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./compilecare";
-import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./compilecare";
-import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./compilecare";
-import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,findPatientByMrn,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./compilecare";
+import { createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "./heapcare";
+import { addStaffAssignment, createStaffProfile, endStaffAssignment, setStaffProfileActive, updateStaffProfile } from "./heapcare";
+import { cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles, rescheduleAppointment } from "./heapcare";
+import { activatePlatformTenant,bootstrapPlatformOperator,closePlatformTenant,createDepartment,createHospital,createPlatformTenant,getPlatformOperatorStatus,listPlatformTenants,provisionInitialTenantAdministrator,suspendPlatformTenant } from "./heapcare";
+import { createBed, createRoom, createWard, deleteBed, deleteDepartment, deleteHospital, deleteRoom, deleteWard, getDepartment, getHospital, listBeds, listRooms, listWards, updateBed, updateDepartment, updateHospital, updateRoom, updateWard } from "./heapcare";
+import { createTenantMembership, deactivateTenantMembership, listTenantMemberships, reactivateTenantMembership, updateTenantMembership } from "./heapcare";
+import { addOpdEncounterAmendment,cancelOpdEncounter,closeOpdEncounter,createOpdEncounterFromQueue,getDepartmentPatient,getHospitalPatient,getInvoiceForVisit,listBillingPayments,getOpdEncounterForQueue,signOpdEncounter,updateOpdEncounterNote,assignPatientMedicalRecordNumber,findPatientByMrn,bookAppointment,checkInAppointment,checkPatientDuplicateCandidates,createWalkIn,getAppointmentSlots,getCurrentUserTenantContexts,getHospitals,listAvailabilitySessions,listDepartments,listQueue,registerPatient,searchPatients,transitionQueueEntry } from "./heapcare";
 
-describe("CompileCare API client",()=>{
+describe("HeapCare API client",()=>{
  const fetchMock=vi.fn();
 
  beforeEach(()=>{vi.stubGlobal("fetch",fetchMock);});
@@ -361,10 +361,10 @@ describe("platform onboarding API client",()=>{
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"tenant-1",name:"Hospital Group",slug:"hospital-group",status:"Provisioning"}),{status:201}));
   await createPlatformTenant("https://api.example.test","access-token","Hospital Group","hospital-group");
   fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({id:"membership-1"}),{status:201}));
-  await provisionInitialTenantAdministrator("https://api.example.test","access-token","tenant-1","http://keycloak.localhost:8082/realms/compilecare","subject-1");
+  await provisionInitialTenantAdministrator("https://api.example.test","access-token","tenant-1","http://keycloak.localhost:8082/realms/heapcare","subject-1");
   const [url,options]=fetchMock.mock.calls[1] as [string,RequestInit];
   expect(url).toBe("https://api.example.test/api/v1/platform/tenants/tenant-1/initial-administrator");
-  expect(JSON.parse(String(options.body))).toEqual({issuer:"http://keycloak.localhost:8082/realms/compilecare",subject:"subject-1"});
+  expect(JSON.parse(String(options.body))).toEqual({issuer:"http://keycloak.localhost:8082/realms/heapcare",subject:"subject-1"});
   expect(new Headers(options.headers).has("X-Tenant-ID")).toBe(false);
  });
 

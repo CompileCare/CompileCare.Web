@@ -1,4 +1,4 @@
-import type { QueueAction, QueueEntry } from "../../api/compilecare";
+import type { QueueAction, QueueEntry } from "../../api/heapcare";
 
 interface QueueEntryRowProps {
   entry: QueueEntry;

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { QueueEntry, Department } from "../../api/compilecare";
+import type { QueueEntry, Department } from "../../api/heapcare";
 import { QueueWorkspace } from "./QueueWorkspace";
 const department:Department={id:"department-1",hospitalId:"hospital-1",name:"Medicine",code:"MED"};
 const queueEntry:QueueEntry={id:"queue-1",hospitalId:"hospital-1",departmentId:department.id,queueDateLocal:"2026-11-27",tokenNumber:1,status:"Waiting",checkedInAtUtc:"2026-11-27T04:00:00Z",calledAtUtc:null,startedAtUtc:null,completedAtUtc:null};

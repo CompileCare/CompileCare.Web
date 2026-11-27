@@ -2,10 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cancelAppointment, createAvailabilitySession, listAppointments, listStaffProfiles
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 import { AppointmentManagement } from "./AppointmentManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   ApiError: class ApiError extends Error { constructor(readonly status: number) { super("API error"); } },
   cancelAppointment: vi.fn(),
   createAvailabilitySession: vi.fn(),

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import type { OrganizationScope, Hospital, Department, TenantMembership, TenantMembershipScopeInput } from "../../api/compilecare";
+import type { OrganizationScope, Hospital, Department, TenantMembership, TenantMembershipScopeInput } from "../../api/heapcare";
 import {
   ApiError,
   createTenantMembership,
@@ -9,7 +9,7 @@ import {
   listTenantMemberships,
   reactivateTenantMembership,
   updateTenantMembership
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 
 const roles = ["HospitalAdmin", "FacilityManager", "FacilityViewer", "PatientRegistrar", "ClinicalUser"];
 

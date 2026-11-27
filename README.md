@@ -24,7 +24,7 @@ Copy .env.example to .env.local and set:
 
 - VITE_OIDC_AUTHORITY, VITE_OIDC_CLIENT_ID and registered redirect URIs for the hospital identity provider.
 - VITE_OIDC_SCOPE to include the API resource scope required by the configured OIDC provider. The example only includes openid/profile scopes and is not sufficient unless the API accepts that audience.
-- VITE_API_BASE_URL to the HTTPS base URL of CompileCare.Api.
+- VITE_API_BASE_URL to the HTTPS base URL of HeapCare.Api.
 
 Do not commit secrets. Configure the identity provider's allowed redirect URI, silent callback URI (`/auth/silent-callback`), API audience/scope and CORS origin for this web application. Enable refresh-token issuance/rotation or the provider's supported silent-renew flow for this public PKCE client; do not place client secrets in the browser. The API remains authoritative for identity, tenant membership, hospital/department scope and permissions.
 
@@ -52,7 +52,7 @@ Open http://localhost:8080.
 - GET /api/v1/hospitals/{hospitalId}/billing/visits/{queueEntryId}/invoice — retrieve an existing invoice by OPD visit, including its settlement status and balance.
 - GET /api/v1/hospitals/{hospitalId}/billing/invoices/{invoiceId}/payments — retrieve the department-scoped payment history for reopening and reprinting receipts.
 
-The current-user tenant context and effective-permission contract is implemented in CompileCare.Api main. The web client uses these permissions only to control feature visibility; every protected API request remains independently authorized.
+The current-user tenant context and effective-permission contract is implemented in HeapCare.Api main. The web client uses these permissions only to control feature visibility; every protected API request remains independently authorized.
 
 ## Privacy and access boundaries
 
@@ -81,4 +81,9 @@ environment:
   CSP_FRAME_SRC: "https://identity.example.com"
 ```
 
-The repository's standalone Docker smoke Compose file uses reserved `example.com` origins only to validate header generation; they are not deployment defaults. CompileCare.Local supplies its own loopback origins and explicitly opts into HTTP for local development. Never set `ALLOW_INSECURE_CSP_ORIGINS=true` outside local development. The browser's same-origin Web origin is automatically included as `'self'`.
+The repository's standalone Docker smoke Compose file uses reserved `example.com` origins only to validate header generation; they are not deployment defaults. HeapCare.Local supplies its own loopback origins and explicitly opts into HTTP for local development. Never set `ALLOW_INSECURE_CSP_ORIGINS=true` outside local development. The browser's same-origin Web origin is automatically included as `'self'`.
+
+
+## HeapCare technical migration
+
+The authenticated workspace package name, API client module path and user-facing copy now use HeapCare. Existing tab-scoped workspace selections are migrated from the old session-storage keys to HeapCare keys on first read. The existing Keycloak OIDC client ID (compilecare-web) remains a compatibility contract until the local and production identity configurations are migrated together; no issuer, realm or callback origin is changed by this frontend update.

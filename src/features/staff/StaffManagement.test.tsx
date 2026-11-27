@@ -2,10 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createStaffProfile, listStaffProfiles, setStaffProfileActive
-} from "../../api/compilecare";
+} from "../../api/heapcare";
 import { StaffManagement } from "./StaffManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   ApiError: class ApiError extends Error { constructor(readonly status: number) { super("API error"); } },
   addStaffAssignment: vi.fn(),
   createStaffProfile: vi.fn(),

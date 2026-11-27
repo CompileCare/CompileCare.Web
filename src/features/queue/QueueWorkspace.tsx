@@ -1,5 +1,5 @@
 import { QueueEntryRow } from "./QueueEntryRow";
-import type { Appointment, Department, QueueAction, QueueEntry } from "../../api/compilecare";
+import type { Appointment, Department, QueueAction, QueueEntry } from "../../api/heapcare";
 export interface QueueWorkspaceProps {
   hasSelectedPatient:boolean; selectedPatientName:string; selectedDepartmentName:string; selectedDepartmentId:string; departments:Department[]; isWorkflowBusy:boolean;
   hospitalTimeZone:string; walkInLoading:boolean; walkInError:string; queueEntry:QueueEntry|null; bookedAppointment:Appointment|null; queueDate:string;

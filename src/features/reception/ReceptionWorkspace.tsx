@@ -1,5 +1,5 @@
 import { PatientSearchResults } from "./PatientSearchResults";
-import type { Patient } from "../../api/compilecare";
+import type { Patient } from "../../api/heapcare";
 
 export type PatientSearchMode = "name" | "mrn";
 

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { PatientDuplicateCheck } from "../../api/compilecare";
+import type { PatientDuplicateCheck } from "../../api/heapcare";
 import { PatientRegistrationWorkspace } from "./PatientRegistrationWorkspace";
 
 const duplicateCheck: PatientDuplicateCheck = {

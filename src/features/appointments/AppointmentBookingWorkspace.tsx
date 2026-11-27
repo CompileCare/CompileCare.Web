@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { AppointmentSlotGrid } from "./AppointmentSlotGrid";
-import type { Appointment, AppointmentSlot, AvailabilitySession, Department, QueueEntry } from "../../api/compilecare";
+import type { Appointment, AppointmentSlot, AvailabilitySession, Department, QueueEntry } from "../../api/heapcare";
 export interface AppointmentBookingWorkspaceProps {
   hasSelectedPatient:boolean; selectedPatientName:string; departments:Department[]; selectedDepartmentId:string; selectedDepartmentName:string;
   departmentsLoading:boolean; departmentsError:string; isWorkflowBusy:boolean; appointmentDate:string; availabilityLoading:boolean; availabilityError:string;

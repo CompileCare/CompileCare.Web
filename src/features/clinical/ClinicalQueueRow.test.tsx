@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { QueueEntry } from "../../api/compilecare";
+import type { QueueEntry } from "../../api/heapcare";
 import { ClinicalQueueRow } from "./ClinicalQueueRow";
 
 const entry: QueueEntry = {

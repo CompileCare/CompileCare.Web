@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { PatientDuplicateCheck } from "../../api/compilecare";
+import type { PatientDuplicateCheck } from "../../api/heapcare";
 
 export interface PatientRegistrationWorkspaceProps {
   hospitalSelected: boolean;

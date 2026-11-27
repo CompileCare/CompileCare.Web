@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   getDailyCollectionReport, listAppointments, listQueue
-} from "../../api/compilecare";
-import type { DailyCollectionReport, Department } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { DailyCollectionReport, Department } from "../../api/heapcare";
 
 interface Props {
   baseUrl: string;

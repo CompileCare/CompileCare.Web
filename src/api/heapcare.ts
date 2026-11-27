@@ -125,7 +125,7 @@ async function getJson<T>(
   accessToken: string,
   tenantId?: string
 ): Promise<T> {
-  if (!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if (!baseUrl.trim()) throw new Error("The HeapCare API URL is not configured.");
   if (!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
 
   const headers = new Headers({ Accept: "application/json", Authorization: `Bearer ${accessToken}` });
@@ -312,7 +312,7 @@ async function postJson<T>(
   tenantId: string,
   body?: unknown
 ): Promise<T> {
-  if (!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if (!baseUrl.trim()) throw new Error("The HeapCare API URL is not configured.");
   if (!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
   if (!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
 
@@ -753,7 +753,7 @@ export interface OpdEncounterAmendmentInput { reason:string; content:string; }
 export interface OpdEncounterCancelInput { reason:string; }
 
 async function deleteJson(baseUrl:string,path:string,accessToken:string,tenantId:string):Promise<void> {
-  if(!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if(!baseUrl.trim()) throw new Error("The HeapCare API URL is not configured.");
   if(!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
   if(!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
   const headers=new Headers({Accept:"application/json",Authorization:`Bearer ${accessToken}`,"X-Tenant-ID":tenantId});
@@ -762,7 +762,7 @@ async function deleteJson(baseUrl:string,path:string,accessToken:string,tenantId
 }
 
 async function putJson<T>(baseUrl:string,path:string,accessToken:string,tenantId:string,body:unknown):Promise<T> {
-  if(!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if(!baseUrl.trim()) throw new Error("The HeapCare API URL is not configured.");
   if(!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
   if(!tenantId.trim()) throw new Error("Select an active tenant before continuing.");
   const headers=new Headers({Accept:"application/json",Authorization:`Bearer ${accessToken}`,"X-Tenant-ID":tenantId,"Content-Type":"application/json"});
@@ -836,7 +836,7 @@ export interface PlatformTenant {
 }
 
 async function postPlatformJson<T>(baseUrl: string, path: string, accessToken: string, body: unknown): Promise<T> {
-  if (!baseUrl.trim()) throw new Error("The CompileCare API URL is not configured.");
+  if (!baseUrl.trim()) throw new Error("The HeapCare API URL is not configured.");
   if (!accessToken.trim()) throw new Error("A valid API access token is not available. Sign in again.");
   const response = await fetch(endpoint(baseUrl, path), {
     method: "POST",

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { ApiError, createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "../../api/compilecare";
-import type { PatientIdentifierPolicy } from "../../api/compilecare";
+import { ApiError, createPatientIdentifierPolicy, getPatientIdentifierPolicy } from "../../api/heapcare";
+import type { PatientIdentifierPolicy } from "../../api/heapcare";
 
 interface Props {
   baseUrl: string;
