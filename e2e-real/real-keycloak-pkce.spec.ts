@@ -309,7 +309,9 @@ for (const roleCase of persistedRoleBrowserCases) {
       await page.getByLabel("I have verified the patient identity before documenting").check();
       await expect(page.locator("#clinical-chief")).toBeVisible();
       await expect(page.locator("#clinical-assessment")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Review and sign" })).toBeEnabled();
+      // The browser acceptance deliberately does not enter clinical content.
+      // Signing must remain unavailable while required note fields are empty.
+      await expect(page.getByRole("button", { name: "Review and sign" })).toBeDisabled();
 
       expect(queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
       expect(patientRequests.some(item =>
