@@ -19,6 +19,11 @@ type BrowserUserManifest = {
   patientFamilyName?: string;
   billingInvoiceNumber?: string;
   billingReceiptNumber?: string;
+  appointmentDateLocal?: string;
+  appointmentSessionId?: string;
+  appointmentSlotStartsAtUtc?: string;
+  appointmentPatientId?: string;
+  appointmentPatientFamilyName?: string;
 };
 
 function loadBrowserUserManifest(): BrowserUserManifest {
@@ -229,6 +234,7 @@ for (const roleCase of persistedRoleBrowserCases) {
     const hospitalRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const patientRequests: Array<{ method: string; path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+    const appointmentRequests: Array<{ method: string; path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueResponses: number[] = [];
 
     // Record only request metadata. Never retain tokens, credentials, or patient data.
@@ -245,6 +251,13 @@ for (const roleCase of persistedRoleBrowserCases) {
       if (url.pathname.includes("/queue")) queueRequests.push(evidence);
       if (url.pathname.includes("/patients")) {
         patientRequests.push({
+          method: request.method(),
+          path: url.pathname,
+          ...evidence
+        });
+      }
+      if (url.pathname.includes("/availability-sessions") || url.pathname.includes("/appointments")) {
+        appointmentRequests.push({
           method: request.method(),
           path: url.pathname,
           ...evidence
@@ -282,6 +295,8 @@ for (const roleCase of persistedRoleBrowserCases) {
       // Local acceptance seeds an isolated in-progress OPD walk-in. This browser
       // journey verifies the live department queue, encounter and patient identity APIs.
       const manifest = loadBrowserUserManifest();
+      expect(manifest.hospitalAId).toBeTruthy();
+      expect(manifest.appointmentPatientId).toBeTruthy();
       expect(manifest.departmentAId).toBeTruthy();
       expect(manifest.queueEntryId).toBeTruthy();
       expect(manifest.queueTokenNumber).toBeTruthy();
@@ -338,7 +353,99 @@ for (const roleCase of persistedRoleBrowserCases) {
       expect(manifest.queueDateLocal).toBeTruthy();
       expect(manifest.billingInvoiceNumber).toBeTruthy();
       expect(manifest.billingReceiptNumber).toBeTruthy();
+      expect(manifest.appointmentDateLocal).toBeTruthy();
+      expect(manifest.appointmentSessionId).toBeTruthy();
+      expect(manifest.appointmentSlotStartsAtUtc).toBeTruthy();
+      expect(manifest.appointmentPatientId).toBeTruthy();
+      expect(manifest.appointmentPatientFamilyName).toBeTruthy();
 
+      // Book and check in a separate synthetic appointment patient through the
+      // real PatientRegistrar browser session and the live API.
+      await page.getByRole("link", { name: "Reception" }).click();
+      await page.locator("#patient-search").fill("Browser Appointment " + manifest.appointmentPatientFamilyName);
+      const patientSearchResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId + "/patients" &&
+        response.request().method() === "GET"
+      );
+      await page.getByRole("button", { name: "Search patients" }).click();
+      expect((await patientSearchResponse).status()).toBe(200);
+      const appointmentPatientResult = page.getByRole("group", { name: "Patient search results" })
+        .getByRole("button").filter({ hasText: manifest.appointmentPatientFamilyName! });
+      await expect(appointmentPatientResult).toHaveCount(1);
+      await appointmentPatientResult.click();
+
+      await page.getByRole("link", { name: "Appointments" }).click();
+      await expect(page.getByRole("heading", { name: "Book a consultation" })).toBeVisible();
+      await page.locator("#appointment-department").selectOption(manifest.departmentAId!);
+      await page.locator("#appointment-date").fill(manifest.appointmentDateLocal!);
+
+      const availabilityResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId + "/availability-sessions" &&
+        response.request().method() === "GET"
+      );
+      await page.getByRole("button", { name: "Find available appointments" }).click();
+      expect((await availabilityResponse).status()).toBe(200);
+      const slotsResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.endsWith("/availability-sessions/" + manifest.appointmentSessionId + "/slots") &&
+        response.request().method() === "GET"
+      );
+      // Selecting the session triggers the slot lookup. Register the response
+      // wait before the select change to avoid racing a fast local API response.
+      await page.locator("#availability-session").selectOption(manifest.appointmentSessionId!);
+      expect((await slotsResponse).status()).toBe(200);
+
+      const slotLabel = new Date(manifest.appointmentSlotStartsAtUtc!).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Kolkata"
+      });
+      const availableSlot = page.getByRole("group", { name: "Available appointment slots" })
+        .getByRole("button", { name: slotLabel + ", Available" });
+      await expect(availableSlot).toBeEnabled();
+      await availableSlot.click();
+      await page.locator("#appointment-reason").fill("Synthetic browser acceptance");
+      const bookingResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname === "/api/v1/hospitals/" + manifest.hospitalAId + "/appointments" &&
+        response.request().method() === "POST"
+      );
+      await page.getByRole("button", { name: "Confirm appointment" }).click();
+      const bookedResponse = await bookingResponse;
+      expect(bookedResponse.status()).toBe(201);
+      await expect(page.locator(".arrival-success")).toContainText("Appointment confirmed");
+      await expect(page.locator(".arrival-success")).toContainText("Booked");
+
+      const checkInResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.includes("/appointments/") && new URL(response.url()).pathname.endsWith("/check-in") &&
+        response.request().method() === "POST"
+      );
+      await page.locator(".arrival-success").getByRole("button", { name: "Check in patient" }).click();
+      const checkedInResponse = await checkInResponse;
+      expect(checkedInResponse.status()).toBe(200);
+      await expect(page.locator(".token-card")).toBeVisible();
+      await expect(page.locator(".token-card")).toContainText("Waiting");
+
+      expect(appointmentRequests.some(item =>
+        item.method === "GET" &&
+        item.path.endsWith("/availability-sessions") &&
+        item.tenantId === tenantAId && item.hasBearerToken
+      )).toBe(true);
+      expect(appointmentRequests.some(item =>
+        item.method === "POST" &&
+        item.path.endsWith("/appointments") &&
+        item.tenantId === tenantAId && item.hasBearerToken
+      )).toBe(true);
+      expect(appointmentRequests.some(item =>
+        item.method === "POST" &&
+        item.path.includes("/appointments/") && item.path.endsWith("/check-in") &&
+        item.tenantId === tenantAId && item.hasBearerToken
+      )).toBe(true);
+
+      // Continue into the settled synthetic OPD billing and receipt journey.
       await page.getByRole("link", { name: "Billing" }).click();
       await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
       await page.locator("#billing-department").selectOption(manifest.departmentAId!);
