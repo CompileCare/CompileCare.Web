@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { Appointment, AppointmentSlot, AvailabilitySession, Department, QueueEntry } from "../../api/compilecare";
+import type { Appointment, AppointmentSlot, AvailabilitySession, Department, QueueEntry } from "../../api/heapcare";
 import { AppointmentBookingWorkspace } from "./AppointmentBookingWorkspace";
 const department:Department={id:"department-1",hospitalId:"hospital-1",name:"Medicine",code:"MED"};
 const session:AvailabilitySession={id:"session-1",hospitalId:"hospital-1",departmentId:department.id,providerStaffId:"staff-1",localDate:"2026-11-28",startsAtUtc:"2026-11-28T04:00:00Z",endsAtUtc:"2026-11-28T06:00:00Z",slotDurationMinutes:30,timeZoneId:"Asia/Kolkata",createdAtUtc:"2026-11-27T00:00:00Z"};
