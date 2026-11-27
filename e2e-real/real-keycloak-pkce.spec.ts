@@ -441,7 +441,7 @@ for (const roleCase of persistedRoleBrowserCases) {
       )).toBe(true);
       expect(appointmentRequests.some(item =>
         item.method === "POST" &&
-        /\\/appointments\\/[^/]+\\/check-in$/.test(item.path) &&
+        item.path.includes("/appointments/") && item.path.endsWith("/check-in") &&
         item.tenantId === tenantAId && item.hasBearerToken
       )).toBe(true);
 
