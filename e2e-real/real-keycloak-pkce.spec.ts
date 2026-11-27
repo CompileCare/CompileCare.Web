@@ -341,6 +341,7 @@ for (const roleCase of persistedRoleBrowserCases) {
 
       await page.getByRole("link", { name: "Billing" }).click();
       await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+      await expect(page.locator("#billing-department option[value='" + manifest.departmentAId + "']")).toHaveCount(1);
       await page.locator("#billing-department").selectOption(manifest.departmentAId!);
       await page.locator("#billing-date").fill(manifest.queueDateLocal!);
 
