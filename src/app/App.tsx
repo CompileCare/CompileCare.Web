@@ -4,7 +4,7 @@ import { Link,Route,Routes,useLocation,useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
-import { PatientSearchResults } from "../features/reception/PatientSearchResults";
+import { ReceptionWorkspace } from "../features/reception/ReceptionWorkspace";
 import { PatientRegistrationWorkspace } from "../features/reception/PatientRegistrationWorkspace";
 import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
 import { AppointmentManagement } from "../features/appointments/AppointmentManagement";
@@ -1098,53 +1098,50 @@ function Workspace() {
           onBusyChange={setMembershipBusy}
         /></div>}
 
-        {canReadPatients && (<section className="section reception-section workspace-route" hidden={activeSection !== "reception"} id="reception">
-          <div className="section-heading"><div><label>RECEPTION</label><h2>Find a registered patient</h2></div></div>
-          <div className="search-panel">
-            <div className="appointment-grid">
-              <div>
-                <label htmlFor="patient-search-mode">Search by</label>
-                <select id="patient-search-mode" value={patientSearchMode} onChange={event => {
-                  setPatientSearchMode(event.target.value as "name"|"mrn");
-                  setPatientQuery("");
-                  setSelectedPatient(null);
-                  setHasSearched(false);
-                  setPatients([]);
-                  setPatientTotal(0);
-                  setPatientTotalPages(0);
-                  setSearchError("");
-                }} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}>
-                  <option value="name">Patient name</option>
-                  {canReadPatientIdentifiers && <option value="mrn">Medical record number (MRN)</option>}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="patient-search">{patientSearchMode === "mrn" ? "Medical record number (MRN)" : "Patient name"}</label>
-                <div className="search-row">
-                  <input id="patient-search" type="search" value={patientQuery} onChange={event => { setPatientQuery(event.target.value); setSelectedPatient(null); setHasSearched(false); setPatients([]); setPatientTotal(0); setPatientTotalPages(0); setSearchError(""); }} placeholder={patientSearchMode === "mrn" ? "Enter the exact hospital MRN" : "Search by given or family name"} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy}/>
-                  <button onClick={() => handlePatientSearch()} disabled={!selectedHospitalId || searchLoading || isWorkflowBusy || (patientSearchMode === "name" ? patientQuery.trim().length < 2 : !patientQuery.trim())}>{searchLoading ? "Searching…" : "Search patients"}</button>
-                </div>
-              </div>
-            </div>
-            <p className="helper-text">{patientSearchMode === "mrn" ? "Exact MRN lookup is limited to the selected hospital and requires patient identifier read permission." : "Search is limited to the selected hospital. Results are not stored in browser storage."}</p>
-            {searchError && <p className="inline-error" role="alert">{searchError}</p>}
-            {hasSearched && <p className="result-count" role="status">Showing {patientTotal === 0 ? 0 : (patientPage - 1) * 25 + 1}–{Math.min(patientPage * 25,patientTotal)} of {patientTotal} matching patients</p>}
-            {hasSearched && patients.length === 0 && <p className="inline-status">No matching patients were found.</p>}
-            {patients.length > 0 && <PatientSearchResults
-              patients={patients}
-              selectedPatientId={selectedPatient?.id}
-              disabled={isWorkflowBusy}
-              onSelect={patient => {
-                setSelectedPatient(patient);
-                setBookedAppointment(null);
-                setQueueEntry(null);
-                setBookingError("");
-                setWalkInError("");
-              }}
-            />}
-            {hasSearched && patientTotalPages > 1 && <div className="pagination"><button onClick={() => handlePatientSearch(patientPage - 1)} disabled={searchLoading || patientPage <= 1}>Previous</button><span>Page {patientPage} of {patientTotalPages}</span><button onClick={() => handlePatientSearch(patientPage + 1)} disabled={searchLoading || patientPage >= patientTotalPages}>Next</button></div>}
-          </div>
-        </section>)}
+        {canReadPatients && <div className="workspace-route" hidden={activeSection !== "reception"}>
+          <ReceptionWorkspace
+            hasSelectedHospital={!!selectedHospitalId}
+            patientSearchMode={patientSearchMode}
+            patientQuery={patientQuery}
+            searchLoading={searchLoading}
+            isWorkflowBusy={isWorkflowBusy}
+            canReadPatientIdentifiers={canReadPatientIdentifiers}
+            searchError={searchError}
+            hasSearched={hasSearched}
+            patientPage={patientPage}
+            patientTotal={patientTotal}
+            patientTotalPages={patientTotalPages}
+            patients={patients}
+            selectedPatientId={selectedPatient?.id}
+            onSearchModeChange={mode => {
+              setPatientSearchMode(mode);
+              setPatientQuery("");
+              setSelectedPatient(null);
+              setHasSearched(false);
+              setPatients([]);
+              setPatientTotal(0);
+              setPatientTotalPages(0);
+              setSearchError("");
+            }}
+            onQueryChange={query => {
+              setPatientQuery(query);
+              setSelectedPatient(null);
+              setHasSearched(false);
+              setPatients([]);
+              setPatientTotal(0);
+              setPatientTotalPages(0);
+              setSearchError("");
+            }}
+            onSearch={handlePatientSearch}
+            onSelectPatient={patient => {
+              setSelectedPatient(patient);
+              setBookedAppointment(null);
+              setQueueEntry(null);
+              setBookingError("");
+              setWalkInError("");
+            }}
+          />
+        </div>}
 
 
         {canManageAppointments && (<section className="section appointment-section workspace-route" hidden={activeSection !== "appointment-management"} id="appointments">
