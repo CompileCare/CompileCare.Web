@@ -151,6 +151,32 @@ describe("TenantMembershipManagement", () => {
     expect(screen.getByRole("button", { name: "Deactivate" })).toBeDisabled();
   });
 
+  it("announces membership list failures through the alert role", async () => {
+    vi.mocked(listTenantMemberships).mockRejectedValueOnce(new Error("Membership service unavailable."));
+
+    render(<TenantMembershipManagement {...props} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Membership service unavailable.");
+  });
+
+  it("announces a rejected membership mutation and preserves the form for correction", async () => {
+    const { ApiError } = await import("../../api/heapcare");
+    vi.mocked(createTenantMembership).mockRejectedValueOnce(new ApiError(409));
+
+    render(<TenantMembershipManagement {...props} />);
+
+    fireEvent.change(screen.getByLabelText("OIDC subject *"), {
+      target: { value: "conflicting-user-subject" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create membership" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The membership changed or a protected administrator rule prevents this action."
+    );
+    expect(screen.getByLabelText("OIDC subject *")).toHaveValue("conflicting-user-subject");
+    expect(createTenantMembership).toHaveBeenCalledTimes(1);
+  });
+
   it("reactivates an inactive membership after explicit confirmation", async () => {
     vi.mocked(listTenantMemberships).mockResolvedValue(page([{ ...membership, isActive: false }]));
     render(<TenantMembershipManagement {...props} />);
