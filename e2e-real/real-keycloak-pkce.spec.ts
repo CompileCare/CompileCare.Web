@@ -283,13 +283,12 @@ for (const roleCase of persistedRoleBrowserCases) {
       await page.locator("#clinical-queue-date").fill(manifest.queueDateLocal!);
       const refreshClinicalQueue = page.getByRole("button", { name: "Refresh clinical queue" });
       await expect(refreshClinicalQueue).toBeEnabled();
-      await refreshClinicalQueue.click();
-
       const queueResponse = page.waitForResponse(response =>
         new URL(response.url()).origin === "http://localhost:8081" &&
         new URL(response.url()).pathname.includes("/queue") &&
         response.request().method() === "GET"
       );
+      await refreshClinicalQueue.click();
       await expect(page.getByRole("article", {
         name: "Clinical queue token " + manifest.queueTokenNumber
       })).toBeVisible();
