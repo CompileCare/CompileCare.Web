@@ -15,9 +15,13 @@ export const WORKSPACE_MODULE_SECTIONS = [
 
 export type WorkspaceModuleSection = typeof WORKSPACE_MODULE_SECTIONS[number];
 
+export function isWorkspaceModuleSection(value: string): value is WorkspaceModuleSection {
+  return (WORKSPACE_MODULE_SECTIONS as readonly string[]).includes(value);
+}
+
 export function getRequestedWorkspaceSection(pathname: string, hash: string): string {
   const fragment = hash.startsWith("#") ? hash.slice(1) : hash;
-  if (WORKSPACE_MODULE_SECTIONS.includes(fragment as WorkspaceModuleSection)) return fragment;
+  if (isWorkspaceModuleSection(fragment)) return fragment;
   return pathname === "/" ? "" : pathname.replace(/^\/+|\/+$/g, "");
 }
 
