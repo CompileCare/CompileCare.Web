@@ -7,11 +7,11 @@ import {
   listPlatformTenants,
   provisionInitialTenantAdministrator,
   suspendPlatformTenant
-} from "../../api/compilecare";
-import type { PlatformTenant } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { PlatformTenant } from "../../api/heapcare";
 import { PlatformTenantManagement } from "./PlatformTenantManagement";
 
-vi.mock("../../api/compilecare", () => ({
+vi.mock("../../api/heapcare", () => ({
   activatePlatformTenant: vi.fn(),
   closePlatformTenant: vi.fn(),
   createPlatformTenant: vi.fn(),
