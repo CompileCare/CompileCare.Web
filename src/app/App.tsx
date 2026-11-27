@@ -5,6 +5,7 @@ import type { User } from "oidc-client-ts";
 import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import { PatientSearchResults } from "../features/reception/PatientSearchResults";
+import { PatientRegistrationWorkspace } from "../features/reception/PatientRegistrationWorkspace";
 import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
 import { AppointmentManagement } from "../features/appointments/AppointmentManagement";
 import { StaffManagement } from "../features/staff/StaffManagement";
@@ -1228,49 +1229,29 @@ function Workspace() {
 
         {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "clinical"}><ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/></div>}
 
-        {canRegisterPatients && (<section className="section registration-section workspace-route" hidden={activeSection !== "patient-registration"} id="patient-registration">
-          <div className="section-heading">
-            <div><label>PATIENT REGISTRATION</label><h2>Register a new patient</h2></div>
-          </div>
-          <form className="search-panel" onSubmit={handlePatientRegistration}>
-            <p className="helper-text">Patient master and hospital registration are created together by the API. Contact details are intentionally not collected in this initial workflow.</p>
-            <div className="registration-grid">
-              <div><label htmlFor="registration-given-name">Given name *</label><input id="registration-given-name" value={registrationGivenName} maxLength={100} onChange={event => { setRegistrationGivenName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} required /></div>
-              <div><label htmlFor="registration-middle-name">Middle name</label><input id="registration-middle-name" value={registrationMiddleName} maxLength={100} onChange={event => { setRegistrationMiddleName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
-              <div><label htmlFor="registration-family-name">Family name</label><input id="registration-family-name" value={registrationFamilyName} maxLength={100} onChange={event => { setRegistrationFamilyName(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
-              <div><label htmlFor="registration-dob">Date of birth (if known)</label><input id="registration-dob" type="date" max={new Date().toISOString().slice(0,10)} value={registrationDob} onChange={event => { setRegistrationDob(event.target.value); resetRegistrationReview(); }} disabled={!selectedHospitalId || registrationLoading} /></div>
-            </div>
-            <div className="registration-actions">
-              <button type="button" onClick={handleDuplicateCheck} disabled={!selectedHospitalId || !registrationGivenName.trim() || duplicateLoading || registrationLoading}>
-                {duplicateLoading ? "Checking…" : "Check for possible duplicates"}
-              </button>
-            </div>
-            {duplicateError && <p className="inline-error" role="alert">{duplicateError}</p>}
-            {duplicateCheck && <div className="duplicate-review" aria-live="polite">
-              <strong>{duplicateCheck.evaluated ? "Duplicate review completed" : "Manual identity review required"}</strong>
-              <p>{duplicateCheck.evaluationMessage || (duplicateCheck.candidates.length ? "Review the possible matches below. Do not create a second record if this is the same person." : "No candidates were returned by the hospital-local check. This does not prove that no duplicate exists.")}</p>
-              {duplicateCheck.candidates.length > 0 && <div className="duplicate-candidates">
-                {duplicateCheck.candidates.map(candidate => <article key={candidate.patientId}>
-                  <strong>{[candidate.givenName,candidate.middleName,candidate.familyName].filter(Boolean).join(" ")}</strong>
-                  <span>DOB: {candidate.dateOfBirth}</span>
-                  <small>Match signals: {candidate.matchSignals.join(", ")}</small>
-                </article>)}
-              </div>}
-              {duplicateCheck.hasMoreCandidates && <p className="inline-error">More possible candidates exist than are displayed. Stop and follow the hospital identity-review procedure before creating a record.</p>}
-              <label className="review-confirmation">
-                <input type="checkbox" checked={duplicateAcknowledged} onChange={event => setDuplicateAcknowledged(event.target.checked)} disabled={duplicateCheck.hasMoreCandidates || registrationLoading} />
-                I reviewed the result and followed the hospital identity-check procedure. This is a new patient, not an existing candidate.
-              </label>
-            </div>}
-            {registrationError && <p className="inline-error" role="alert">{registrationError}</p>}
-            {registrationSuccess && <p className="registration-success" role="status">{registrationSuccess}</p>}
-            <div className="registration-actions">
-              <button type="submit" disabled={!duplicateCheck || !duplicateAcknowledged || duplicateCheck.hasMoreCandidates || registrationLoading}>
-                {registrationLoading ? "Registering…" : "Register patient"}
-              </button>
-            </div>
-          </form>
-        </section>)}
+        {canRegisterPatients && <div className="workspace-route" hidden={activeSection !== "patient-registration"}>
+          <PatientRegistrationWorkspace
+            hospitalSelected={!!selectedHospitalId}
+            givenName={registrationGivenName}
+            middleName={registrationMiddleName}
+            familyName={registrationFamilyName}
+            dateOfBirth={registrationDob}
+            duplicateLoading={duplicateLoading}
+            duplicateError={duplicateError}
+            duplicateCheck={duplicateCheck}
+            duplicateAcknowledged={duplicateAcknowledged}
+            registrationLoading={registrationLoading}
+            registrationError={registrationError}
+            registrationSuccess={registrationSuccess}
+            onGivenNameChange={value => { setRegistrationGivenName(value); resetRegistrationReview(); }}
+            onMiddleNameChange={value => { setRegistrationMiddleName(value); resetRegistrationReview(); }}
+            onFamilyNameChange={value => { setRegistrationFamilyName(value); resetRegistrationReview(); }}
+            onDateOfBirthChange={value => { setRegistrationDob(value); resetRegistrationReview(); }}
+            onCheckDuplicates={handleDuplicateCheck}
+            onDuplicateAcknowledgedChange={setDuplicateAcknowledged}
+            onSubmit={handlePatientRegistration}
+          />
+        </div>}
       </>}
 
       {!user && !sessionLoading && <section className="hero"><label>YOUR HOSPITAL, ONE WORKSPACE</label><h2>Good care starts with<br/><em>connected workflows.</em></h2><p>Sign in with your hospital identity to access the work areas assigned to you.</p><div className="symbol" aria-hidden="true">✚</div></section>}
