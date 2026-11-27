@@ -24,6 +24,10 @@ type BrowserUserManifest = {
   appointmentSlotStartsAtUtc?: string;
   appointmentPatientId?: string;
   appointmentPatientFamilyName?: string;
+  clinicalQueueEntryId?: string;
+  clinicalQueueTokenNumber?: number;
+  clinicalQueueDateLocal?: string;
+  clinicalPatientFamilyName?: string;
 };
 
 function loadBrowserUserManifest(): BrowserUserManifest {
@@ -302,6 +306,10 @@ for (const roleCase of persistedRoleBrowserCases) {
       expect(manifest.queueTokenNumber).toBeTruthy();
       expect(manifest.queueDateLocal).toBeTruthy();
       expect(manifest.patientFamilyName).toBeTruthy();
+      expect(manifest.clinicalQueueEntryId).toBeTruthy();
+      expect(manifest.clinicalQueueTokenNumber).toBeTruthy();
+      expect(manifest.clinicalQueueDateLocal).toBeTruthy();
+      expect(manifest.clinicalPatientFamilyName).toBeTruthy();
 
       await page.getByRole("link", { name: "Clinical workspace" }).click();
       await page.locator("#clinical-department").selectOption(manifest.departmentAId!);
@@ -337,6 +345,57 @@ for (const roleCase of persistedRoleBrowserCases) {
       // The browser acceptance deliberately does not enter clinical content.
       // Signing must remain unavailable while required note fields are empty.
       await expect(page.getByRole("button", { name: "Review and sign" })).toBeDisabled();
+
+      // Re-open a separate CI-only encounter that the Local API fixture has
+      // drafted, signed, closed and amended through the real ClinicalUser token.
+      // The original empty encounter above remains untouched and unsigned.
+      await page.keyboard.press("Tab");
+      await page.locator("#clinical-queue-date").fill(manifest.clinicalQueueDateLocal!);
+      const signedQueueResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.includes("/queue") &&
+        response.request().method() === "GET"
+      );
+      await refreshClinicalQueue.click();
+      expect((await signedQueueResponse).status()).toBe(200);
+
+      await expect(page.getByRole("article", {
+        name: "Clinical queue token " + manifest.clinicalQueueTokenNumber
+      })).toBeVisible();
+      const openSignedEncounter = page.getByRole("button", {
+        name: "Open encounter for queue token " + manifest.clinicalQueueTokenNumber
+      });
+      await expect(openSignedEncounter).toBeEnabled();
+
+      const signedEncounterResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.endsWith(
+          "/opd/queue/" + manifest.clinicalQueueEntryId + "/encounter"
+        ) &&
+        response.request().method() === "GET"
+      );
+      await openSignedEncounter.click();
+      expect((await signedEncounterResponse).status()).toBe(200);
+      await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
+      await expect(page.locator(".clinical-patient-banner"))
+        .toContainText("CI Synthetic " + manifest.clinicalPatientFamilyName);
+      await expect(page.locator(".clinical-patient-banner"))
+        .toContainText("Date of birth: 1991-05-14");
+      await page.getByLabel("I have verified the patient identity before documenting").check();
+
+      await expect(page.locator("#clinical-chief")).toHaveValue("CI synthetic encounter fixture");
+      await expect(page.locator("#clinical-history")).toHaveValue("Automated acceptance placeholder; no real patient history.");
+      await expect(page.locator("#clinical-examination")).toHaveValue("Automated acceptance placeholder; no clinical findings recorded.");
+      await expect(page.locator("#clinical-assessment")).toHaveValue("Synthetic CI assessment placeholder only.");
+      await expect(page.locator("#clinical-plan")).toHaveValue("Synthetic CI plan placeholder only; not a care instruction.");
+      await expect(page.locator("#clinical-chief")).toBeDisabled();
+      await expect(page.locator("#clinical-assessment")).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Review and sign" })).toHaveCount(0);
+      const amendmentPanel = page.locator(".amendment-panel");
+      await expect(amendmentPanel).toContainText("Amendment history");
+      await expect(amendmentPanel).toContainText("Synthetic CI amendment");
+      await expect(amendmentPanel).toContainText("Synthetic amendment fixture only; not a clinical instruction.");
+      await expect(amendmentPanel.getByRole("button", { name: "Add append-only amendment" })).toBeVisible();
 
       expect(queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
       expect(patientRequests.some(item =>
