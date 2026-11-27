@@ -1,6 +1,6 @@
-# CompileCare Web browser test scope
+# HeapCare Web browser test scope
 
-The Playwright suite in this directory is a deterministic UI regression suite. It runs the Vite application locally, installs a synthetic OIDC session, and intercepts API calls with isolated in-memory route handlers. It does not contact the real Keycloak instance, CompileCare.Api or PostgreSQL.
+The Playwright suite in this directory is a deterministic UI regression suite. It runs the Vite application locally, installs a synthetic OIDC session, and intercepts API calls with isolated in-memory route handlers. It does not contact the real Keycloak instance, HeapCare.Api or PostgreSQL.
 
 This is intentional: it makes reception, queue, clinical, billing, keyboard and responsive UI tests repeatable without creating real patient or billing data.
 
@@ -35,8 +35,8 @@ Record the run environment, commit SHAs, service health, test evidence and any b
 
 ## Real Keycloak + API browser acceptance
 
-The separate `e2e-real/` suite exercises the deployed Docker Web image against the real local Keycloak and CompileCare.Api services. It does not intercept the identity provider or API. It follows the Authorization Code + PKCE redirect, signs in with a synthetic CI user, and verifies that the same persisted identity can switch between HospitalAdmin and FacilityViewer memberships in two tenants. It checks the selected hospital and role-specific workspace navigation, and confirms that API hospital-list requests carry a bearer token and the selected X-Tenant-ID.
+The separate `e2e-real/` suite exercises the deployed Docker Web image against the real local Keycloak and HeapCare.Api services. It does not intercept the identity provider or API. It follows the Authorization Code + PKCE redirect, signs in with a synthetic CI user, and verifies that the same persisted identity can switch between HospitalAdmin and FacilityViewer memberships in two tenants. It checks the selected hospital and role-specific workspace navigation, and confirms that API hospital-list requests carry a bearer token and the selected X-Tenant-ID.
 
-This suite is run by CompileCare.Local's isolated full-stack CI job after it provisions the temporary Keycloak user and PostgreSQL memberships. It is deliberately excluded from the default mock-based `npm run test:e2e` suite. The Web CI validates that the real-OIDC Playwright configuration and spec are discoverable; the Local full-stack workflow supplies the real identity provider, API, database and temporary user credentials.
+This suite is run by HeapCare.Local's isolated full-stack CI job after it provisions the temporary Keycloak user and PostgreSQL memberships. It is deliberately excluded from the default mock-based `npm run test:e2e` suite. The Web CI validates that the real-OIDC Playwright configuration and spec are discoverable; the Local full-stack workflow supplies the real identity provider, API, database and temporary user credentials.
 
 The test uses an ephemeral credential file in the GitHub runner's temporary directory. It does not print credentials, access tokens or authorization codes, and the file is removed during Local CI cleanup. Use synthetic identities only.
