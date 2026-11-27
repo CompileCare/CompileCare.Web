@@ -262,3 +262,55 @@ for (const roleCase of persistedRoleBrowserCases) {
     }
   });
 }
+
+
+test("real Keycloak Authorization Code + PKCE grants only the persisted PlatformOperator control plane", async ({ page }) => {
+  const credentials = loadBrowserUserForRole("platform");
+  const platformRequests: Array<{ path: string; hasBearerToken: boolean }> = [];
+
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.origin !== "http://localhost:8081") return;
+    const headers = request.headers();
+    if (url.pathname.startsWith("/api/v1/platform/")) {
+      platformRequests.push({
+        path: url.pathname,
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
+      });
+    }
+  });
+
+  await signInWithKeycloak(page, credentials);
+
+  await expect(page.getByRole("link", { name: "Tenant lifecycle" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tenant lifecycle administration" })).toBeVisible();
+  await expect(page.getByText(
+    "Platform operator access is active. Use Platform tenants to provision and manage customer tenants."
+  )).toBeVisible();
+
+  for (const label of [
+    "Reception",
+    "Patient registration",
+    "Appointments",
+    "Staff",
+    "Queue",
+    "Billing",
+    "Facilities",
+    "Memberships"
+  ]) {
+    await expect(page.getByRole("link", { name: label })).toHaveCount(0);
+  }
+
+  await expect(page.getByRole("button", { name: "Create tenant" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Registered tenants" })).toBeVisible();
+  await expect.poll(
+    () => platformRequests.some(item =>
+      item.path === "/api/v1/platform/operator/status" && item.hasBearerToken
+    )
+  ).toBe(true);
+  await expect.poll(
+    () => platformRequests.some(item =>
+      item.path === "/api/v1/platform/tenants" && item.hasBearerToken
+    )
+  ).toBe(true);
+});
