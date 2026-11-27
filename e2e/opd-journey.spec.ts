@@ -47,6 +47,7 @@ const billingPermissions = [
 ];
 
 type State = {
+  role: string;
   permissions: string[];
   patientRegistered: boolean;
   queueStatus: string;
@@ -82,6 +83,7 @@ async function installSession(page: Page) {
 
 async function installApi(page: Page, seedRegisteredPatient = false, initialQueueStatus = "Waiting") {
   const state: State = {
+    role: "HospitalAdmin",
     permissions: receptionPermissions,
     patientRegistered: seedRegisteredPatient,
     queueStatus: initialQueueStatus,
@@ -150,17 +152,12 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
     }
 
     if (method === "GET" && path === "/api/v1/me/tenant-contexts") {
-      const role = state.permissions.includes("encounter.read")
-        ? "ClinicalUser"
-        : state.permissions.includes("billing.invoice.read")
-          ? "PatientRegistrar"
-          : "HospitalAdmin";
       return json(route, {
         items: [{
           tenantId,
           tenantName: "HeapCare Demo Group",
           tenantSlug: "heapcare-demo",
-          role,
+          role: state.role,
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions: state.permissions
         }],
@@ -388,6 +385,7 @@ async function installApi(page: Page, seedRegisteredPatient = false, initialQueu
   });
 
   return {
+    setRole: (role: string) => { state.role = role; },
     setPermissions: (permissions: string[]) => { state.permissions = permissions; }
   };
 }
@@ -701,4 +699,92 @@ test("authenticated HospitalAdmin workspace keeps visible controls accessible by
       .map(element => element.outerHTML.slice(0, 180))
   );
   expect(unlabeledFields, "authenticated form fields must have associated labels").toEqual([]);
+});
+
+
+test("authenticated workspace controls remain accessible across all persisted tenant roles", async ({ page }) => {
+  await installSession(page);
+  const api = await installApi(page);
+
+  const roleProfiles = [
+    {
+      role: "HospitalAdmin",
+      permissions: [
+        ...receptionPermissions,
+        "facility.write",
+        "facility.delete",
+        "membership.manage",
+        "audit.read",
+        "patient.identity.read",
+        "appointment.read",
+        "appointment.manage",
+        "appointment.availability.read",
+        "appointment.availability.manage",
+        "staff.read",
+        "staff.manage",
+        "billing.catalogue.manage",
+        "billing.invoice.read",
+        "billing.invoice.manage",
+        "billing.payment.manage",
+        "billing.report.read"
+      ]
+    },
+    { role: "FacilityManager", permissions: ["facility.read", "facility.write"] },
+    { role: "FacilityViewer", permissions: ["facility.read"] },
+    {
+      role: "PatientRegistrar",
+      permissions: [
+        ...receptionPermissions,
+        "appointment.read",
+        "appointment.manage",
+        "billing.invoice.read",
+        "billing.invoice.manage",
+        "billing.payment.manage",
+        "billing.report.read"
+      ]
+    },
+    { role: "ClinicalUser", permissions: clinicalPermissions }
+  ];
+
+  for (let index = 0; index < roleProfiles.length; index++) {
+    const profile = roleProfiles[index];
+    api.setRole(profile.role);
+    api.setPermissions(profile.permissions);
+
+    if (index === 0) await page.goto("/");
+    else await page.reload();
+
+    const main = page.getByRole("main");
+    await expect(main, profile.role + " must expose one main landmark").toHaveCount(1);
+    await expect(main).toBeVisible();
+
+    await page.keyboard.press("Tab");
+    const skipLink = page.getByRole("link", { name: "Skip to main content" });
+    await expect(skipLink, profile.role + " skip link must be keyboard reachable").toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(main, profile.role + " skip link must move focus to main").toBeFocused();
+
+    const unnamedControls = await page.locator("main button:visible, main a[href]:visible").evaluateAll(elements =>
+      elements
+        .filter(element =>
+          !element.getAttribute("aria-label") &&
+          !element.getAttribute("aria-labelledby") &&
+          !element.getAttribute("title") &&
+          !(element.textContent ?? "").trim()
+        )
+        .map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(unnamedControls, profile.role + " controls must have accessible names").toEqual([]);
+
+    const unlabeledFields = await page.locator("main input:visible, main select:visible, main textarea:visible").evaluateAll(elements =>
+      elements
+        .filter(element =>
+          !((element as HTMLInputElement).labels?.length) &&
+          !element.getAttribute("aria-label") &&
+          !element.getAttribute("aria-labelledby")
+        )
+        .map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(unlabeledFields, profile.role + " form fields must have associated labels").toEqual([]);
+  }
 });
