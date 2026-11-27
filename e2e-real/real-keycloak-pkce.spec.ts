@@ -6,6 +6,48 @@ type BrowserUserCredentials = {
   password: string;
 };
 
+type BrowserUserManifest = {
+  users?: Record<string, BrowserUserCredentials>;
+  tenantAId?: string;
+  hospitalAId?: string;
+  departmentAId?: string;
+};
+
+function loadBrowserUserForRole(roleKey: string): BrowserUserCredentials {
+  const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
+  if (!path) {
+    throw new Error("HEAPCARE_BROWSER_TEST_USER_FILE must point to the ephemeral CI user credentials file.");
+  }
+
+  const manifest = JSON.parse(readFileSync(path, "utf8")) as BrowserUserManifest;
+  const credentials = manifest.users?.[roleKey];
+  if (!credentials?.username || !credentials.password) {
+    throw new Error("The ephemeral browser test file is missing the requested synthetic role identity.");
+  }
+  return credentials;
+}
+
+async function signInWithKeycloak(page: import("@playwright/test").Page, credentials: BrowserUserCredentials) {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await page.waitForURL(url =>
+    url.origin === "http://keycloak.localhost:8082" &&
+    url.pathname.endsWith("/protocol/openid-connect/auth")
+  );
+  await expect(page.locator("#kc-form-login")).toBeVisible();
+  await page.locator("#username").fill(credentials.username);
+  await page.locator("#password").fill(credentials.password);
+  await page.locator("#kc-login").click();
+
+  await page.waitForURL(url =>
+    url.origin === "http://localhost:8080" &&
+    url.pathname === "/"
+  );
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+}
+
 function loadBrowserUser(): BrowserUserCredentials {
   const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
   if (!path) {
@@ -39,7 +81,7 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
     const headers = request.headers();
     const evidence = {
       tenantId: headers["x-tenant-id"] ?? "",
-      hasBearerToken: /^Bearer\s+\S+$/i.test(headers.authorization ?? "")
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
     };
 
     if (url.pathname === "/api/v1/hospitals") {
@@ -142,3 +184,81 @@ test("real Keycloak Authorization Code + PKCE sign-in loads persisted tenant wor
   ).toBe(true);
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
 });
+
+
+const persistedRoleBrowserCases = [
+  {
+    name: "FacilityManager",
+    key: "facility-manager",
+    visible: ["Facilities"],
+    hidden: ["Patient registration", "Reception", "Appointments", "Queue", "Billing", "Clinical workspace"]
+  },
+  {
+    name: "PatientRegistrar",
+    key: "patient-registrar",
+    visible: ["Patient registration", "Reception", "Appointments", "Queue", "Billing"],
+    hidden: ["Clinical workspace"]
+  },
+  {
+    name: "ClinicalUser",
+    key: "clinical-user",
+    visible: ["Clinical workspace", "Facilities"],
+    hidden: ["Patient registration", "Reception", "Appointments", "Queue", "Billing"]
+  }
+] as const;
+
+for (const roleCase of persistedRoleBrowserCases) {
+  test("real Keycloak Authorization Code + PKCE exposes the persisted " + roleCase.name + " workspace", async ({ page }) => {
+    const credentials = loadBrowserUserForRole(roleCase.key);
+    const hospitalRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+    const queueRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+
+    // Record only request metadata. Never retain tokens, credentials, or patient data.
+    page.on("request", request => {
+      const url = new URL(request.url());
+      if (url.origin !== "http://localhost:8081") return;
+      const headers = request.headers();
+      const evidence = {
+        path: url.pathname,
+        tenantId: headers["x-tenant-id"] ?? "",
+        hasBearerToken: (headers.authorization ?? "").startsWith("Bearer ")
+      };
+      if (url.pathname === "/api/v1/hospitals") hospitalRequests.push(evidence);
+      if (url.pathname.includes("/queue")) queueRequests.push(evidence);
+    });
+
+    await signInWithKeycloak(page, credentials);
+
+    const tenantSelect = page.locator("#tenant-select");
+    await expect(tenantSelect.locator("option").filter({ hasText: "CI Tenant A" })).toHaveCount(1);
+    const tenantAId = await tenantSelect.locator("option").filter({ hasText: "CI Tenant A" }).getAttribute("value");
+    expect(tenantAId).toBeTruthy();
+    await expect(page.locator("#hospital-select option:checked")).toHaveText(/CI Hospital A/);
+
+    for (const label of roleCase.visible) {
+      await expect(page.getByRole("link", { name: label }), roleCase.name + " should see " + label).toBeVisible();
+    }
+    for (const label of roleCase.hidden) {
+      await expect(page.getByRole("link", { name: label }), roleCase.name + " must not see " + label).toHaveCount(0);
+    }
+
+    await expect.poll(
+      () => hospitalRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
+    ).toBe(true);
+
+    if (roleCase.name === "ClinicalUser") {
+      // The synthetic department is provisioned through the live API by the Local
+      // acceptance harness. This exercises the actual ClinicalUser queue permission.
+      await page.getByRole("link", { name: "Clinical workspace" }).click();
+      const refreshClinicalQueue = page.getByRole("button", { name: "Refresh clinical queue" });
+      await expect(refreshClinicalQueue).toBeEnabled();
+      await refreshClinicalQueue.click();
+      await expect(page.getByText(
+        "Refresh the clinical queue to see in-progress consultations and recent completed visits."
+      )).toBeVisible();
+      await expect.poll(
+        () => queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
+      ).toBe(true);
+    }
+  });
+}
