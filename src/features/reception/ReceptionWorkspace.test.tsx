@@ -1,19 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Patient } from "../../api/compilecare";
+import type { ComponentProps } from "react";
 import { ReceptionWorkspace } from "./ReceptionWorkspace";
 
-const patient: Patient = {
-  id: "patient-1",
-  givenName: "Asha",
-  middleName: "R.",
-  familyName: "Patil",
-  dateOfBirth: "1990-04-12",
-  createdAtUtc: "2026-11-27T00:00:00Z"
-};
-
-function renderWorkspace(overrides: Partial<React.ComponentProps<typeof ReceptionWorkspace>> = {}) {
-  const props: React.ComponentProps<typeof ReceptionWorkspace> = {
+function renderWorkspace(overrides: Partial<ComponentProps<typeof ReceptionWorkspace>> = {}) {
+  const props: ComponentProps<typeof ReceptionWorkspace> = {
     hasSelectedHospital: true,
     patientSearchMode: "name",
     patientQuery: "Asha",
@@ -46,7 +37,7 @@ describe("ReceptionWorkspace", () => {
   it("requires two characters for name search and exact non-empty text for MRN search", () => {
     const { rerender, props } = renderWorkspace({ patientQuery: "A" });
     expect(screen.getByRole("button", { name: "Search patients" })).toBeDisabled();
-    rerender(<ReceptionWorkspace {...props} patientSearchMode="mrn" patientQuery="1"/>);
+    rerender(<ReceptionWorkspace {...props} canReadPatientIdentifiers={true} patientSearchMode="mrn" patientQuery="1"/>);
     expect(screen.getByRole("button", { name: "Search patients" })).toBeEnabled();
   });
 
