@@ -972,7 +972,179 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments || canManageAppointments || canPublishAvailability) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "appointment-management"}>
+        {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments||canManageAppointments||canPublishAvailability)&&<Link className={activeSection==="appointment-management"?"selected":undefined} aria-current={activeSection==="appointment-management"?"location":undefined} to="/appointment-management#appointment-management">Appointments</Link>}{(canReadStaff||canManageStaff)&&<Link className={activeSection==="staff-management"?"selected":undefined} aria-current={activeSection==="staff-management"?"location":undefined} to="/staff-management#staff-management">Staff</Link>}{canReadQueue&&!isClinicalWorkspace&&<Link className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} to="/queue#queue">Queue</Link>}{canReadBilling&&<Link className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} to="/billing#billing">Billing</Link>}{canReadFacilities&&<Link className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} to="/facilities#facilities">Facilities</Link>}{canAccessIdentifierPolicy&&selectedHospitalId&&<Link className={activeSection==="mrn-policy"?"selected":undefined} aria-current={activeSection==="mrn-policy"?"location":undefined} to="/mrn-policy#mrn-policy">MRN policy</Link>}{canManageMemberships&&<Link className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} to="/memberships#memberships">Memberships</Link>}{isPlatformOperator&&<><p>PLATFORM</p><Link className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} to="/platform-tenants#platform-tenants">Tenant lifecycle</Link></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canAccessIdentifierPolicy&&!canReadAppointments&&!canManageAppointments&&!canPublishAvailability&&!canReadStaff&&!canManageStaff&&!canViewOverview&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
+      </nav>
+      <footer>Secure by design<br/><small>{isPlatformOperator && activeSection==="platform-tenants" ? "Platform control plane" : "Tenant-scoped access"}</small></footer>
+    </aside>
+    <main className="content" id="workspace-main" tabIndex={-1}>
+      <header>
+        <div><label>{activeSection==="platform-tenants" ? "COMPILECARE PLATFORM" : "HOSPITAL OPERATIONS"}</label><h1>{activeWorkspaceTitle}</h1></div>
+        <div className="session">
+          {sessionLoading ? "Checking session…" : user ?
+            <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
+            <button onClick={() => userManager?.signoutRedirect()}>Sign out</button></> :
+            <button disabled={!isAuthenticationConfigured} onClick={() => userManager?.signinRedirect()}>Sign in</button>}
+        </div>
+      </header>
+
+      {authError && <div className="notice" role="alert">{authError}</div>}
+      {platformOperatorError && <div className="notice" role="status">{platformOperatorError}</div>}
+      {!isAuthenticationConfigured && <div className="notice" role="status"><b>Authentication setup required.</b> Configure the OIDC environment variables before enabling staff sign-in.</div>}
+      {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
+      {user && apiBaseUrl && <>
+        <section className="context-panel">
+          <div className="context-intro">
+            <label>ACTIVE ORGANIZATION</label>
+            <h2>{selectedHospital?.name ?? selectedContext?.tenantName ?? "Select your hospital context"}</h2>
+            <p>{selectedHospital ? `Working in ${selectedHospital.name}. Data access is scoped to this selected hospital.` : selectedContext ? `Tenant ${selectedContext.tenantName} is selected. Choose a hospital to continue.` : "Only active memberships assigned to your validated sign-in are listed."}</p>
+            {selectedContext && <div className="context-tags"><span>{selectedContext.role}</span><span>{selectedHospital ? "Hospital selected" : "Hospital required"}</span></div>}
+          </div>
+          <div className="context-controls">
+            <label htmlFor="tenant-select">Tenant</label>
+            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || isWorkflowBusy}>
+              <option value="">Select a tenant</option>
+              {contexts.map(context => <option key={context.tenantId} value={context.tenantId}>{context.tenantName} · {context.role}</option>)}
+            </select>
+            <label htmlFor="hospital-select">Hospital</label>
+            <select id="hospital-select" value={selectedHospitalId} onChange={event => changeHospital(event.target.value)} disabled={!selectedTenantId || hospitalsLoading || hospitals.length === 0 || isWorkflowBusy}>
+              <option value="">Select a hospital</option>
+              {hospitals.map(hospital => <option key={hospital.id} value={hospital.id}>{hospital.name}{hospital.code ? ` · ${hospital.code}` : ""}</option>)}
+            </select>
+          </div>
+          {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
+          {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
+          {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
+          {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
+          {hospitalsError && <p className="inline-error" role="alert">{hospitalsError}</p>}
+          {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
+        </section>
+
+        {canViewOverview && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "overview"}><HospitalOverview
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          hospitalId={selectedHospital.id}
+          hospitalName={selectedHospital.name}
+          departments={departments}
+          timeZoneId={hospitalTimeZone}
+          canReadAppointments={canReadAppointments}
+          canReadQueue={canReadQueue}
+          canReadCollection={canReadDailyCollection}
+          canReadBilling={canReadBilling}
+          canReadPatients={canReadPatients}
+          canReadStaff={canReadStaff}
+          isActive={activeSection === "overview"}
+        /></div>}
+
+        {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
+
+        {isPlatformOperator && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "platform-tenants"}><PlatformTenantManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          currentIssuer={String(user.profile.iss ?? "")}
+          onBusyChange={setPlatformBusy}
+        /></div>}
+
+        {canReadFacilities && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "facilities"}><FacilityManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          hospital={selectedHospital}
+          departments={departments}
+          departmentsLoading={departmentsLoading}
+          permissions={selectedContext.permissions ?? []}
+          scopes={selectedContext.scopes ?? []}
+          onRefreshHospitals={refreshHospitals}
+          onRefreshDepartments={refreshDepartments}
+          onBusyChange={setFacilityBusy}
+        /></div>}
+
+        {(canReadStaff || canManageStaff) && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "staff-management"}><StaffManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          hospitalId={selectedHospital.id}
+          hospitalName={selectedHospital.name}
+          departments={departments}
+          canRead={canReadStaff}
+          canManage={canManageStaff}
+          onBusyChange={setStaffManagementBusy}
+          onDirectoryChanged={() => setStaffDirectoryRevision(current => current + 1)}
+        /></div>}
+
+        {canAccessIdentifierPolicy && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "mrn-policy"}><PatientIdentifierPolicyManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          hospitalId={selectedHospital.id}
+          hospitalName={selectedHospital.name}
+          canRead={canReadIdentifierPolicy}
+          canManage={canManageIdentifierPolicy}
+          onBusyChange={setIdentifierPolicyBusy}
+        /></div>}
+
+        {canManageMemberships && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "memberships"}><TenantMembershipManagement
+          baseUrl={apiBaseUrl}
+          accessToken={user.access_token}
+          tenantId={selectedTenantId}
+          currentIssuer={String(user.profile.iss ?? "")}
+          currentSubject={String(user.profile.sub ?? "")}
+          permissions={selectedContext.permissions ?? []}
+          scopes={selectedContext.scopes ?? []}
+          hospitals={hospitals}
+          onBusyChange={setMembershipBusy}
+        /></div>}
+
+        {canReadPatients && <div className="workspace-route" hidden={activeSection !== "reception"}>
+          <ReceptionWorkspace
+            hasSelectedHospital={!!selectedHospitalId}
+            patientSearchMode={patientSearchMode}
+            patientQuery={patientQuery}
+            searchLoading={searchLoading}
+            isWorkflowBusy={isWorkflowBusy}
+            canReadPatientIdentifiers={canReadPatientIdentifiers}
+            searchError={searchError}
+            hasSearched={hasSearched}
+            patientPage={patientPage}
+            patientTotal={patientTotal}
+            patientTotalPages={patientTotalPages}
+            patients={patients}
+            selectedPatientId={selectedPatient?.id}
+            onSearchModeChange={mode => {
+              setPatientSearchMode(mode);
+              setPatientQuery("");
+              setSelectedPatient(null);
+              setHasSearched(false);
+              setPatients([]);
+              setPatientTotal(0);
+              setPatientTotalPages(0);
+              setSearchError("");
+            }}
+            onQueryChange={query => {
+              setPatientQuery(query);
+              setSelectedPatient(null);
+              setHasSearched(false);
+              setPatients([]);
+              setPatientTotal(0);
+              setPatientTotalPages(0);
+              setSearchError("");
+            }}
+            onSearch={handlePatientSearch}
+            onSelectPatient={patient => {
+              setSelectedPatient(patient);
+              setBookedAppointment(null);
+              setQueueEntry(null);
+              setBookingError("");
+              setWalkInError("");
+            }}
+          />
+        </div>}
+
+
+        {canManageAppointments && <div className="workspace-route" hidden={activeSection !== "appointment-management"}>
           <AppointmentBookingWorkspace hasSelectedPatient={!!selectedPatient} selectedPatientName={selectedPatient ? patientName(selectedPatient) : ""} departments={departments} selectedDepartmentId={selectedDepartmentId} selectedDepartmentName={selectedDepartment?.name || ""} departmentsLoading={departmentsLoading} departmentsError={departmentsError} isWorkflowBusy={isWorkflowBusy} appointmentDate={appointmentDate} availabilityLoading={availabilityLoading} availabilityError={availabilityError} availabilitySessions={availabilitySessions} selectedSessionId={selectedSessionId} slotsLoading={slotsLoading} slots={slots} selectedSlotStart={selectedSlotStart} selectedSessionTimeZoneId={selectedSession?.timeZoneId} bookedAppointment={bookedAppointment} appointmentReason={appointmentReason} bookingLoading={bookingLoading} bookingError={bookingError} checkInLoading={checkInLoading} checkInError={checkInError} queueEntry={queueEntry}
             onDepartmentChange={value=>{setSelectedDepartmentId(value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}}
             onAppointmentDateChange={value=>{setAppointmentDate(value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}}
