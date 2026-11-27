@@ -3,8 +3,8 @@ import type { FormEvent } from "react";
 import {
   ApiError, addStaffAssignment, createStaffProfile, endStaffAssignment,
   listStaffProfiles, setStaffProfileActive, updateStaffProfile
-} from "../../api/compilecare";
-import type { Department, StaffAssignment, StaffProfile } from "../../api/compilecare";
+} from "../../api/heapcare";
+import type { Department, StaffAssignment, StaffProfile } from "../../api/heapcare";
 
 interface Props {
   baseUrl: string;
