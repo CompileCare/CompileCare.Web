@@ -6,11 +6,11 @@ import { isAuthenticationConfigured,userManager } from "../auth/oidc";
 import { BillingWorkspace } from "../features/billing/BillingWorkspace";
 import { ReceptionWorkspace } from "../features/reception/ReceptionWorkspace";
 import { PatientRegistrationWorkspace } from "../features/reception/PatientRegistrationWorkspace";
-import { AppointmentSlotGrid } from "../features/appointments/AppointmentSlotGrid";
+import { AppointmentBookingWorkspace } from "../features/appointments/AppointmentBookingWorkspace";
 import { AppointmentManagement } from "../features/appointments/AppointmentManagement";
 import { StaffManagement } from "../features/staff/StaffManagement";
 import { HospitalOverview } from "../features/overview/HospitalOverview";
-import { QueueEntryRow } from "../features/queue/QueueEntryRow";
+import { QueueWorkspace } from "../features/queue/QueueWorkspace";
 import { ClinicalQueueRow } from "../features/clinical/ClinicalQueueRow";
 import { FacilityManagement } from "../features/facilities/FacilityManagement";
 import { PatientIdentifierPolicyManagement } from "../features/reception/PatientIdentifierPolicyManagement";
@@ -972,212 +972,13 @@ function Workspace() {
       <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
-        {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments||canManageAppointments||canPublishAvailability)&&<Link className={activeSection==="appointment-management"?"selected":undefined} aria-current={activeSection==="appointment-management"?"location":undefined} to="/appointment-management#appointment-management">Appointments</Link>}{(canReadStaff||canManageStaff)&&<Link className={activeSection==="staff-management"?"selected":undefined} aria-current={activeSection==="staff-management"?"location":undefined} to="/staff-management#staff-management">Staff</Link>}{canReadQueue&&!isClinicalWorkspace&&<Link className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} to="/queue#queue">Queue</Link>}{canReadBilling&&<Link className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} to="/billing#billing">Billing</Link>}{canReadFacilities&&<Link className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} to="/facilities#facilities">Facilities</Link>}{canAccessIdentifierPolicy&&selectedHospitalId&&<Link className={activeSection==="mrn-policy"?"selected":undefined} aria-current={activeSection==="mrn-policy"?"location":undefined} to="/mrn-policy#mrn-policy">MRN policy</Link>}{canManageMemberships&&<Link className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} to="/memberships#memberships">Memberships</Link>}{isPlatformOperator&&<><p>PLATFORM</p><Link className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} to="/platform-tenants#platform-tenants">Tenant lifecycle</Link></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canAccessIdentifierPolicy&&!canReadAppointments&&!canManageAppointments&&!canPublishAvailability&&!canReadStaff&&!canManageStaff&&!canViewOverview&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
-      </nav>
-      <footer>Secure by design<br/><small>{isPlatformOperator && activeSection==="platform-tenants" ? "Platform control plane" : "Tenant-scoped access"}</small></footer>
-    </aside>
-    <main className="content" id="workspace-main" tabIndex={-1}>
-      <header>
-        <div><label>{activeSection==="platform-tenants" ? "COMPILECARE PLATFORM" : "HOSPITAL OPERATIONS"}</label><h1>{activeWorkspaceTitle}</h1></div>
-        <div className="session">
-          {sessionLoading ? "Checking session…" : user ?
-            <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
-            <button onClick={() => userManager?.signoutRedirect()}>Sign out</button></> :
-            <button disabled={!isAuthenticationConfigured} onClick={() => userManager?.signinRedirect()}>Sign in</button>}
-        </div>
-      </header>
-
-      {authError && <div className="notice" role="alert">{authError}</div>}
-      {platformOperatorError && <div className="notice" role="status">{platformOperatorError}</div>}
-      {!isAuthenticationConfigured && <div className="notice" role="status"><b>Authentication setup required.</b> Configure the OIDC environment variables before enabling staff sign-in.</div>}
-      {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
-      {user && apiBaseUrl && <>
-        <section className="context-panel">
-          <div className="context-intro">
-            <label>ACTIVE ORGANIZATION</label>
-            <h2>{selectedHospital?.name ?? selectedContext?.tenantName ?? "Select your hospital context"}</h2>
-            <p>{selectedHospital ? `Working in ${selectedHospital.name}. Data access is scoped to this selected hospital.` : selectedContext ? `Tenant ${selectedContext.tenantName} is selected. Choose a hospital to continue.` : "Only active memberships assigned to your validated sign-in are listed."}</p>
-            {selectedContext && <div className="context-tags"><span>{selectedContext.role}</span><span>{selectedHospital ? "Hospital selected" : "Hospital required"}</span></div>}
-          </div>
-          <div className="context-controls">
-            <label htmlFor="tenant-select">Tenant</label>
-            <select id="tenant-select" value={selectedTenantId} onChange={event => changeTenant(event.target.value)} disabled={contextsLoading || contexts.length === 0 || isWorkflowBusy}>
-              <option value="">Select a tenant</option>
-              {contexts.map(context => <option key={context.tenantId} value={context.tenantId}>{context.tenantName} · {context.role}</option>)}
-            </select>
-            <label htmlFor="hospital-select">Hospital</label>
-            <select id="hospital-select" value={selectedHospitalId} onChange={event => changeHospital(event.target.value)} disabled={!selectedTenantId || hospitalsLoading || hospitals.length === 0 || isWorkflowBusy}>
-              <option value="">Select a hospital</option>
-              {hospitals.map(hospital => <option key={hospital.id} value={hospital.id}>{hospital.name}{hospital.code ? ` · ${hospital.code}` : ""}</option>)}
-            </select>
-          </div>
-          {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
-          {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
-          {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
-          {hospitalsLoading && <p className="inline-status" role="status">Loading hospitals available to this membership…</p>}
-          {hospitalsError && <p className="inline-error" role="alert">{hospitalsError}</p>}
-          {selectedTenantId && !hospitalsLoading && !hospitalsError && hospitals.length === 0 && <p className="inline-status">No hospitals are available in the selected tenant or within your assigned scope.</p>}
-        </section>
-
-        {canViewOverview && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "overview"}><HospitalOverview
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          tenantId={selectedTenantId}
-          hospitalId={selectedHospital.id}
-          hospitalName={selectedHospital.name}
-          departments={departments}
-          timeZoneId={hospitalTimeZone}
-          canReadAppointments={canReadAppointments}
-          canReadQueue={canReadQueue}
-          canReadCollection={canReadDailyCollection}
-          canReadBilling={canReadBilling}
-          canReadPatients={canReadPatients}
-          canReadStaff={canReadStaff}
-          isActive={activeSection === "overview"}
-        /></div>}
-
-        {localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && !contextsLoading && !contextsError && contexts.length===0 && user && <PlatformOnboarding user={user} onComplete={async()=>{const page=await getCurrentUserTenantContexts(apiBaseUrl??"",user.access_token);setContexts(page.items);setSelectedTenantId(page.items[0]?.tenantId??"");}}/>}
-
-        {isPlatformOperator && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "platform-tenants"}><PlatformTenantManagement
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          currentIssuer={String(user.profile.iss ?? "")}
-          onBusyChange={setPlatformBusy}
-        /></div>}
-
-        {canReadFacilities && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "facilities"}><FacilityManagement
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          tenantId={selectedTenantId}
-          hospital={selectedHospital}
-          departments={departments}
-          departmentsLoading={departmentsLoading}
-          permissions={selectedContext.permissions ?? []}
-          scopes={selectedContext.scopes ?? []}
-          onRefreshHospitals={refreshHospitals}
-          onRefreshDepartments={refreshDepartments}
-          onBusyChange={setFacilityBusy}
-        /></div>}
-
-        {(canReadStaff || canManageStaff) && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "staff-management"}><StaffManagement
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          tenantId={selectedTenantId}
-          hospitalId={selectedHospital.id}
-          hospitalName={selectedHospital.name}
-          departments={departments}
-          canRead={canReadStaff}
-          canManage={canManageStaff}
-          onBusyChange={setStaffManagementBusy}
-          onDirectoryChanged={() => setStaffDirectoryRevision(current => current + 1)}
-        /></div>}
-
-        {canAccessIdentifierPolicy && selectedHospital && selectedTenantId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "mrn-policy"}><PatientIdentifierPolicyManagement
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          tenantId={selectedTenantId}
-          hospitalId={selectedHospital.id}
-          hospitalName={selectedHospital.name}
-          canRead={canReadIdentifierPolicy}
-          canManage={canManageIdentifierPolicy}
-          onBusyChange={setIdentifierPolicyBusy}
-        /></div>}
-
-        {canManageMemberships && selectedContext && selectedTenantId && <div className="workspace-route" hidden={activeSection !== "memberships"}><TenantMembershipManagement
-          baseUrl={apiBaseUrl}
-          accessToken={user.access_token}
-          tenantId={selectedTenantId}
-          currentIssuer={String(user.profile.iss ?? "")}
-          currentSubject={String(user.profile.sub ?? "")}
-          permissions={selectedContext.permissions ?? []}
-          scopes={selectedContext.scopes ?? []}
-          hospitals={hospitals}
-          onBusyChange={setMembershipBusy}
-        /></div>}
-
-        {canReadPatients && <div className="workspace-route" hidden={activeSection !== "reception"}>
-          <ReceptionWorkspace
-            hasSelectedHospital={!!selectedHospitalId}
-            patientSearchMode={patientSearchMode}
-            patientQuery={patientQuery}
-            searchLoading={searchLoading}
-            isWorkflowBusy={isWorkflowBusy}
-            canReadPatientIdentifiers={canReadPatientIdentifiers}
-            searchError={searchError}
-            hasSearched={hasSearched}
-            patientPage={patientPage}
-            patientTotal={patientTotal}
-            patientTotalPages={patientTotalPages}
-            patients={patients}
-            selectedPatientId={selectedPatient?.id}
-            onSearchModeChange={mode => {
-              setPatientSearchMode(mode);
-              setPatientQuery("");
-              setSelectedPatient(null);
-              setHasSearched(false);
-              setPatients([]);
-              setPatientTotal(0);
-              setPatientTotalPages(0);
-              setSearchError("");
-            }}
-            onQueryChange={query => {
-              setPatientQuery(query);
-              setSelectedPatient(null);
-              setHasSearched(false);
-              setPatients([]);
-              setPatientTotal(0);
-              setPatientTotalPages(0);
-              setSearchError("");
-            }}
-            onSearch={handlePatientSearch}
-            onSelectPatient={patient => {
-              setSelectedPatient(patient);
-              setBookedAppointment(null);
-              setQueueEntry(null);
-              setBookingError("");
-              setWalkInError("");
-            }}
+        {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments || canManageAppointments || canPublishAvailability) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "appointment-management"}>
+          <AppointmentBookingWorkspace hasSelectedPatient={!!selectedPatient} selectedPatientName={selectedPatient ? patientName(selectedPatient) : ""} departments={departments} selectedDepartmentId={selectedDepartmentId} selectedDepartmentName={selectedDepartment?.name || ""} departmentsLoading={departmentsLoading} departmentsError={departmentsError} isWorkflowBusy={isWorkflowBusy} appointmentDate={appointmentDate} availabilityLoading={availabilityLoading} availabilityError={availabilityError} availabilitySessions={availabilitySessions} selectedSessionId={selectedSessionId} slotsLoading={slotsLoading} slots={slots} selectedSlotStart={selectedSlotStart} selectedSessionTimeZoneId={selectedSession?.timeZoneId} bookedAppointment={bookedAppointment} appointmentReason={appointmentReason} bookingLoading={bookingLoading} bookingError={bookingError} checkInLoading={checkInLoading} checkInError={checkInError} queueEntry={queueEntry}
+            onDepartmentChange={value=>{setSelectedDepartmentId(value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}}
+            onAppointmentDateChange={value=>{setAppointmentDate(value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}}
+            onLoadAvailability={loadAvailability} onSelectSession={selectAvailabilitySession} onSelectSlot={setSelectedSlotStart} onSubmit={handleBookAppointment} onAppointmentReasonChange={setAppointmentReason} onCheckIn={handleAppointmentCheckIn}
           />
         </div>}
-
-
-        {canManageAppointments && (<section className="section appointment-section workspace-route" hidden={activeSection !== "appointment-management"} id="appointments">
-          <div className="section-heading"><div><label>APPOINTMENTS</label><h2>Book a consultation</h2><p className="helper-text">Select a patient from the search results above, then choose a published provider slot.</p></div></div>
-          <div className="search-panel">
-            <div className="workflow-step"><span>01</span><div><strong>Patient</strong><small>{selectedPatient?patientName(selectedPatient):"Choose a patient from the search results"}</small></div></div>
-            <div className="appointment-grid">
-              <div><label htmlFor="appointment-department">Department</label><select id="appointment-department" value={selectedDepartmentId} onChange={e=>{setSelectedDepartmentId(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");setQueueEntries([]);setBookedAppointment(null);setQueueEntry(null);}} disabled={departmentsLoading||departments.length===0||isWorkflowBusy}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}{d.code?" · "+d.code:""}</option>)}</select></div>
-              <div><label htmlFor="appointment-date">Appointment date</label><input id="appointment-date" type="date" min={localDateToday()} value={appointmentDate} disabled={isWorkflowBusy} onChange={e=>{setAppointmentDate(e.target.value);setAvailabilitySessions([]);setSlots([]);setSelectedSessionId("");setSelectedSlotStart("");}} /></div>
-            </div>
-            {departmentsLoading&&<p className="inline-status" role="status">Loading departments available to your hospital context…</p>}{departmentsError&&<p className="inline-error" role="alert">{departmentsError}</p>}
-            <div className="registration-actions"><button type="button" onClick={loadAvailability} disabled={!selectedPatient||!selectedDepartmentId||!appointmentDate||availabilityLoading}>{availabilityLoading?"Finding availability…":"Find available appointments"}</button></div>
-            {availabilityError&&<p className="inline-error" role="alert">{availabilityError}</p>}
-            {availabilitySessions.length>0&&<div className="slot-panel">
-              <label htmlFor="availability-session">Provider availability</label>
-              <select id="availability-session" value={selectedSessionId} onChange={e=>selectAvailabilitySession(e.target.value)}><option value="">Choose a provider session</option>{availabilitySessions.map(session=><option key={session.id} value={session.id}>Session · {new Date(session.startsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}–{new Date(session.endsAtUtc).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",timeZone:session.timeZoneId})}</option>)}</select>
-              {slotsLoading&&<p className="inline-status" role="status">Loading available slots…</p>}{selectedSessionId&&!slotsLoading&&slots.length===0&&<p className="inline-status">No slots are available in this session.</p>}
-              {slots.length>0&&<AppointmentSlotGrid
-                slots={slots}
-                selectedSlotStart={selectedSlotStart}
-                timeZoneId={selectedSession?.timeZoneId}
-                disabled={isWorkflowBusy || !!bookedAppointment}
-                onSelect={setSelectedSlotStart}
-              />}
-            </div>}
-            {selectedSlotStart&&<form onSubmit={handleBookAppointment} className="booking-review">
-              <div className="review-summary"><strong>Review appointment</strong><span>{selectedPatient?patientName(selectedPatient):""} · {selectedDepartment?.name}</span><span>{new Date(selectedSlotStart).toLocaleString([],{dateStyle:"medium",timeStyle:"short",timeZone:selectedSession?.timeZoneId})} ({selectedSession?.timeZoneId})</span></div>
-              <label htmlFor="appointment-reason">Visit reason (optional)</label><input id="appointment-reason" maxLength={250} value={appointmentReason} onChange={e=>setAppointmentReason(e.target.value)} placeholder="e.g. Follow-up" />
-              <div className="registration-actions"><button type="submit" disabled={bookingLoading||!!bookedAppointment}>{bookingLoading?"Confirming booking…":bookedAppointment?"Appointment confirmed":"Confirm appointment"}</button></div>
-            </form>}
-            {bookingError&&<p className="inline-error" role="alert">{bookingError}</p>}
-            {bookedAppointment&&<div className="arrival-success" role="status"><div><strong>Appointment confirmed</strong><span>Reference {bookedAppointment.id.slice(0,8)} · {bookedAppointment.status}</span></div><button type="button" onClick={handleAppointmentCheckIn} disabled={checkInLoading||!!queueEntry}>{checkInLoading?"Checking in…":queueEntry?"Checked in":"Check in patient"}</button></div>}
-            {checkInError&&<p className="inline-error" role="alert">{checkInError}</p>}
-            {queueEntry&&<div className="token-card" role="status"><small>QUEUE TOKEN</small><strong>{queueEntry.tokenNumber.toString().padStart(2,"0")}</strong><span>{queueEntry.status} · {queueEntry.queueDateLocal}</span></div>}
-          </div>
-        </section>)}
 
         {(canReadAppointments || canManageAppointments || canPublishAvailability) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "appointment-management"}><AppointmentManagement
           baseUrl={apiBaseUrl}
@@ -1192,66 +993,11 @@ function Workspace() {
           onBusyChange={setAppointmentManagementBusy}
         /></div>}
 
-        {canManageQueue && (<section className="section walkin-section workspace-route" hidden={activeSection !== "queue"}>
-          <div className="section-heading"><div><label>WALK-IN ARRIVAL</label><h2>Register a walk-in</h2><p className="helper-text">Walk-ins are registered directly into the department queue. The API assigns the token.</p></div></div>
-          <div className="search-panel walkin-panel">
-            <div className="workflow-step"><span>02</span><div><strong>Selected patient</strong><small>{selectedPatient?patientName(selectedPatient):"Select a patient from search results"}</small></div></div>
-            <div className="walkin-action"><div><strong>{selectedDepartment?.name||"Choose a department above"}</strong><label htmlFor="walkin-timezone">Hospital time zone</label><input id="walkin-timezone" value={hospitalTimeZone} onChange={e=>setHospitalTimeZone(e.target.value)} maxLength={100} /></div><button type="button" onClick={handleWalkIn} disabled={!selectedPatient||!selectedDepartmentId||walkInLoading||!!queueEntry}>{walkInLoading?"Registering…":queueEntry?"Added to queue":"Add to queue"}</button></div>
-            {walkInError&&<p className="inline-error" role="alert">{walkInError}</p>}
-            {queueEntry&&!bookedAppointment&&<div className="token-card" role="status"><small>WALK-IN QUEUE TOKEN</small><strong>{queueEntry.tokenNumber.toString().padStart(2,"0")}</strong><span>{queueEntry.status} · {queueEntry.queueDateLocal}</span></div>}
-          </div>
-        </section>)}
-
-        {canReadQueue && !isClinicalWorkspace && (<section className="section queue-section workspace-route" hidden={activeSection !== "queue"} id="queue">
-          <div className="section-heading"><div><label>LIVE OPERATIONS</label><h2>Department queue</h2></div></div>
-          <div className="search-panel">
-            <div className="appointment-grid"><div><label htmlFor="queue-department">Department</label><select id="queue-department" value={selectedDepartmentId} disabled={isWorkflowBusy} onChange={e=>{setSelectedDepartmentId(e.target.value);setQueueEntries([]);}}><option value="">Select department</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div><label htmlFor="queue-date">Queue date</label><input id="queue-date" type="date" value={queueDate} disabled={isWorkflowBusy} onChange={e=>{setQueueDate(e.target.value);setQueueEntries([]);}} /></div></div>
-            <div className="registration-actions"><button type="button" onClick={loadQueue} disabled={!selectedDepartmentId||queueLoading}>{queueLoading?"Refreshing queue…":"Refresh queue"}</button></div>
-            {queueError&&<p className="inline-error" role="alert">{queueError}</p>}
-            {canManageQueue&&queueEntries.some(entry=>entry.status==="Waiting"||entry.status==="Called")&&<div className="queue-reason-field"><label htmlFor="queue-action-reason">Reason for cancellation or no-show (required for those actions)</label><input id="queue-action-reason" value={queueActionReason} maxLength={250} onChange={event=>setQueueActionReason(event.target.value)} placeholder="e.g. Patient confirmed cancellation" /></div>}
-            {queueActionError&&<p className="inline-error" role="alert">{queueActionError}</p>}
-            {queueEntries.length>0?<div className="queue-list">{queueEntries.map(entry=><QueueEntryRow
-              key={entry.id}
-              entry={entry}
-              canManageQueue={canManageQueue}
-              actionBusy={!!queueActionLoadingId}
-              saving={queueActionLoadingId===entry.id}
-              cancellationReasonProvided={!!queueActionReason.trim()}
-              onAction={handleQueueAction}
-            />)}</div>:!queueLoading&&!queueError&&<p className="inline-status">Queue is empty or has not been loaded for this department and date.</p>}
-          </div>
-        </section>)}
-
-        {canReadBilling && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "billing"}><BillingWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]}/></div>}
-
-        {isClinicalWorkspace && selectedTenantId && selectedHospitalId && user && <div className="workspace-route" hidden={activeSection !== "clinical"}><ClinicalWorkspace baseUrl={apiBaseUrl} accessToken={user.access_token} tenantId={selectedTenantId} hospitalId={selectedHospitalId} departments={departments} permissions={selectedContext?.permissions??[]} onBusyChange={setClinicalBusy}/></div>}
-
-        {canRegisterPatients && <div className="workspace-route" hidden={activeSection !== "patient-registration"}>
-          <PatientRegistrationWorkspace
-            hospitalSelected={!!selectedHospitalId}
-            givenName={registrationGivenName}
-            middleName={registrationMiddleName}
-            familyName={registrationFamilyName}
-            dateOfBirth={registrationDob}
-            duplicateLoading={duplicateLoading}
-            duplicateError={duplicateError}
-            duplicateCheck={duplicateCheck}
-            duplicateAcknowledged={duplicateAcknowledged}
-            registrationLoading={registrationLoading}
-            registrationError={registrationError}
-            registrationSuccess={registrationSuccess}
-            onGivenNameChange={value => { setRegistrationGivenName(value); resetRegistrationReview(); }}
-            onMiddleNameChange={value => { setRegistrationMiddleName(value); resetRegistrationReview(); }}
-            onFamilyNameChange={value => { setRegistrationFamilyName(value); resetRegistrationReview(); }}
-            onDateOfBirthChange={value => { setRegistrationDob(value); resetRegistrationReview(); }}
-            onCheckDuplicates={handleDuplicateCheck}
-            onDuplicateAcknowledgedChange={setDuplicateAcknowledged}
-            onSubmit={handlePatientRegistration}
+        {(canManageQueue || canReadQueue) && selectedTenantId && selectedHospitalId && user && apiBaseUrl && <div className="workspace-route" hidden={activeSection !== "queue"}>
+          <QueueWorkspace hasSelectedPatient={!!selectedPatient} selectedPatientName={selectedPatient ? patientName(selectedPatient) : ""} selectedDepartmentName={selectedDepartment?.name || ""} selectedDepartmentId={selectedDepartmentId} departments={departments} isWorkflowBusy={isWorkflowBusy} hospitalTimeZone={hospitalTimeZone} walkInLoading={walkInLoading} walkInError={walkInError} queueEntry={queueEntry} bookedAppointment={bookedAppointment} queueDate={queueDate} queueLoading={queueLoading} queueError={queueError} canManageQueue={canManageQueue} canReadQueue={canReadQueue} queueEntries={queueEntries} queueActionReason={queueActionReason} queueActionError={queueActionError} queueActionLoadingId={queueActionLoadingId}
+            onHospitalTimeZoneChange={setHospitalTimeZone} onWalkIn={handleWalkIn} onDepartmentChange={value=>{setSelectedDepartmentId(value);setQueueEntries([]);}} onQueueDateChange={value=>{setQueueDate(value);setQueueEntries([]);}} onLoadQueue={loadQueue} onQueueActionReasonChange={setQueueActionReason} onQueueAction={handleQueueAction}
           />
         </div>}
-      </>}
-
-      {!user && !sessionLoading && <section className="hero"><label>YOUR HOSPITAL, ONE WORKSPACE</label><h2>Good care starts with<br/><em>connected workflows.</em></h2><p>Sign in with your hospital identity to access the work areas assigned to you.</p><div className="symbol" aria-hidden="true">✚</div></section>}
       <footer className="pagefoot">CompileCare · Hospital information workspace <span>API authorization is enforced on every request.</span></footer>
     </main>
   </div>;
