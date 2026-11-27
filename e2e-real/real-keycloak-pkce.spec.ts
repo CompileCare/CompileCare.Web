@@ -420,7 +420,7 @@ for (const roleCase of persistedRoleBrowserCases) {
 
       const checkInResponse = page.waitForResponse(response =>
         new URL(response.url()).origin === "http://localhost:8081" &&
-        new URL(response.url()).pathname.match(/\\/appointments\\/[^/]+\\/check-in$/) !== null &&
+        new URL(response.url()).pathname.includes("/appointments/") && new URL(response.url()).pathname.endsWith("/check-in") &&
         response.request().method() === "POST"
       );
       await page.locator(".arrival-success").getByRole("button", { name: "Check in patient" }).click();
