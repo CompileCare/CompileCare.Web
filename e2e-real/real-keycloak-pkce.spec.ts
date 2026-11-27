@@ -295,6 +295,8 @@ for (const roleCase of persistedRoleBrowserCases) {
       // Local acceptance seeds an isolated in-progress OPD walk-in. This browser
       // journey verifies the live department queue, encounter and patient identity APIs.
       const manifest = loadBrowserUserManifest();
+      expect(manifest.hospitalAId).toBeTruthy();
+      expect(manifest.appointmentPatientId).toBeTruthy();
       expect(manifest.departmentAId).toBeTruthy();
       expect(manifest.queueEntryId).toBeTruthy();
       expect(manifest.queueTokenNumber).toBeTruthy();
@@ -385,8 +387,6 @@ for (const roleCase of persistedRoleBrowserCases) {
       );
       await page.getByRole("button", { name: "Find available appointments" }).click();
       expect((await availabilityResponse).status()).toBe(200);
-      await page.locator("#availability-session").selectOption(manifest.appointmentSessionId!);
-
       const slotsResponse = page.waitForResponse(response =>
         new URL(response.url()).origin === "http://localhost:8081" &&
         new URL(response.url()).pathname.endsWith("/availability-sessions/" + manifest.appointmentSessionId + "/slots") &&
