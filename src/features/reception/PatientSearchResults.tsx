@@ -1,4 +1,4 @@
-import type { Patient } from "../../api/compilecare";
+import type { Patient } from "../../api/heapcare";
 
 interface PatientSearchResultsProps {
   patients: Patient[];
