@@ -25,4 +25,9 @@ describe("QueueWorkspace",()=>{
     fireEvent.change(screen.getByLabelText("Reason for cancellation or no-show (required for those actions)"),{target:{value:"Patient request"}});
     expect(props.onQueueActionReasonChange).toHaveBeenCalledWith("Patient request");
   });
+  it("shows the walk-in token card when a walk-in queue entry is present without an active booking",()=>{
+    renderWorkspace({queueEntry});
+    expect(screen.getByText("WALK-IN QUEUE TOKEN")).toBeInTheDocument();
+    expect(screen.getByText("01")).toBeInTheDocument();
+  });
 });
