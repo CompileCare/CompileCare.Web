@@ -132,7 +132,13 @@ describe("TenantMembershipManagement", () => {
     render(<TenantMembershipManagement {...props} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Deactivate" }));
-    expect(screen.getByText(/Deactivate membership for/)).toBeInTheDocument();
+    const confirmation = screen.getByRole("group", {
+      name: "Deactivate membership for another-user-subject?"
+    });
+    expect(confirmation).toBeInTheDocument();
+    expect(confirmation).toHaveAccessibleName("Deactivate membership for another-user-subject?");
+    expect(screen.getByRole("button", { name: "Confirm deactivation" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(deactivateTenantMembership).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm deactivation" }));
