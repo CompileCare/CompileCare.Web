@@ -969,7 +969,7 @@ function Workspace() {
   return <div className="shell">
     <a className="skip-link" href="#workspace-main">Skip to main content</a>
     <aside className="sidebar">
-      <div className="brand"><b>C</b><span>CompileCare<small>HOSPITAL WORKSPACE</small></span></div>
+      <div className="brand"><b>C</b><span>HeapCare<small>HOSPITAL WORKSPACE</small></span></div>
       <nav aria-label="Primary navigation">
         <p>WORKSPACE</p>
         {isClinicalWorkspace&&<Link className={activeSection==="clinical"?"selected":undefined} aria-current={activeSection==="clinical"?"location":undefined} to="/clinical#clinical">Clinical workspace</Link>}{canReadPatients&&<Link className={activeSection==="reception"?"selected":undefined} aria-current={activeSection==="reception"?"location":undefined} to="/reception#reception">Reception</Link>}{canRegisterPatients&&<Link className={activeSection==="patient-registration"?"selected":undefined} aria-current={activeSection==="patient-registration"?"location":undefined} to="/patient-registration#patient-registration">Patient registration</Link>}{canViewOverview&&<Link className={activeSection==="overview"?"selected":undefined} aria-current={activeSection==="overview"?"location":undefined} to="/overview#overview">Overview</Link>}{(canReadAppointments||canManageAppointments||canPublishAvailability)&&<Link className={activeSection==="appointment-management"?"selected":undefined} aria-current={activeSection==="appointment-management"?"location":undefined} to="/appointment-management#appointment-management">Appointments</Link>}{(canReadStaff||canManageStaff)&&<Link className={activeSection==="staff-management"?"selected":undefined} aria-current={activeSection==="staff-management"?"location":undefined} to="/staff-management#staff-management">Staff</Link>}{canReadQueue&&!isClinicalWorkspace&&<Link className={activeSection==="queue"?"selected":undefined} aria-current={activeSection==="queue"?"location":undefined} to="/queue#queue">Queue</Link>}{canReadBilling&&<Link className={activeSection==="billing"?"selected":undefined} aria-current={activeSection==="billing"?"location":undefined} to="/billing#billing">Billing</Link>}{canReadFacilities&&<Link className={activeSection==="facilities"?"selected":undefined} aria-current={activeSection==="facilities"?"location":undefined} to="/facilities#facilities">Facilities</Link>}{canAccessIdentifierPolicy&&selectedHospitalId&&<Link className={activeSection==="mrn-policy"?"selected":undefined} aria-current={activeSection==="mrn-policy"?"location":undefined} to="/mrn-policy#mrn-policy">MRN policy</Link>}{canManageMemberships&&<Link className={activeSection==="memberships"?"selected":undefined} aria-current={activeSection==="memberships"?"location":undefined} to="/memberships#memberships">Memberships</Link>}{isPlatformOperator&&<><p>PLATFORM</p><Link className={activeSection==="platform-tenants"?"selected":undefined} aria-current={activeSection==="platform-tenants"?"location":undefined} to="/platform-tenants#platform-tenants">Tenant lifecycle</Link></>}{!isClinicalWorkspace&&!canReadPatients&&!canManageAppointments&&!canReadQueue&&!canReadBilling&&!canRegisterPatients&&!canReadFacilities&&!canAccessIdentifierPolicy&&!canReadAppointments&&!canManageAppointments&&!canPublishAvailability&&!canReadStaff&&!canManageStaff&&!canViewOverview&&!canManageMemberships&&!isPlatformOperator&&<span className="inline-status">No workspace modules are assigned to this membership.</span>}
@@ -978,7 +978,7 @@ function Workspace() {
     </aside>
     <main className="content" id="workspace-main" tabIndex={-1}>
       <header>
-        <div><label>{activeSection==="platform-tenants" ? "COMPILECARE PLATFORM" : "HOSPITAL OPERATIONS"}</label><h1>{activeWorkspaceTitle}</h1></div>
+        <div><label>{activeSection==="platform-tenants" ? "HEAPCARE PLATFORM" : "HOSPITAL OPERATIONS"}</label><h1>{activeWorkspaceTitle}</h1></div>
         <div className="session">
           {sessionLoading ? "Checking session…" : user ?
             <><span>{String(user.profile.name ?? user.profile.preferred_username ?? "Signed-in user")}</span>
@@ -1013,7 +1013,7 @@ function Workspace() {
           </div>
           {contextsLoading && <p className="inline-status" role="status">Loading your active tenant memberships…</p>}
           {contextsError && <p className="inline-error" role="alert">{contextsError}</p>}
-          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your CompileCare administrator.</p>}
+          {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && !isPlatformOperator && !localPlatformBootstrapEnabled && <p className="inline-status">No active tenant membership was found for this identity. Contact your HeapCare administrator.</p>}
           {!contextsLoading && !contextsError && contexts.length === 0 && !platformOperatorLoading && isPlatformOperator && <p className="inline-status">Platform operator access is active. Use Platform tenants to provision and manage customer tenants.</p>}
           {!contextsLoading && !contextsError && contexts.length === 0 && localPlatformBootstrapEnabled && !platformOperatorLoading && !platformOperatorError && !isPlatformOperator && <p className="inline-status">If this is your first local installation, use the guided setup below to provision the first platform operator, tenant, hospital and department.</p>}
           {selectedContext && <p className="context-scope">Role: <strong>{selectedContext.role}</strong> · {selectedContext.scopes.map(scope => scope.scopeType).join(", ")} scope</p>}
@@ -1201,7 +1201,7 @@ function Workspace() {
       </>}
 
       {!user && !sessionLoading && <section className="hero"><label>YOUR HOSPITAL, ONE WORKSPACE</label><h2>Good care starts with<br/><em>connected workflows.</em></h2><p>Sign in with your hospital identity to access the work areas assigned to you.</p><div className="symbol" aria-hidden="true">✚</div></section>}
-      <footer className="pagefoot">CompileCare · Hospital information workspace <span>API authorization is enforced on every request.</span></footer>
+      <footer className="pagefoot">HeapCare · Hospital information workspace <span>API authorization is enforced on every request.</span></footer>
     </main>
   </div>;
 }
