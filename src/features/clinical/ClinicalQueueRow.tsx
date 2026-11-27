@@ -1,4 +1,4 @@
-import type { QueueEntry } from "../../api/compilecare";
+import type { QueueEntry } from "../../api/heapcare";
 
 interface ClinicalQueueRowProps {
   entry: QueueEntry;
