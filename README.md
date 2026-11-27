@@ -82,3 +82,8 @@ environment:
 ```
 
 The repository's standalone Docker smoke Compose file uses reserved `example.com` origins only to validate header generation; they are not deployment defaults. HeapCare.Local supplies its own loopback origins and explicitly opts into HTTP for local development. Never set `ALLOW_INSECURE_CSP_ORIGINS=true` outside local development. The browser's same-origin Web origin is automatically included as `'self'`.
+
+
+## HeapCare technical migration
+
+The authenticated workspace package name, API client module path and user-facing copy now use HeapCare. Existing tab-scoped workspace selections are migrated from the old session-storage keys to HeapCare keys on first read. The existing Keycloak OIDC client ID (compilecare-web) remains a compatibility contract until the local and production identity configurations are migrated together; no issuer, realm or callback origin is changed by this frontend update.
