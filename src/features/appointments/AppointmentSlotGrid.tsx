@@ -1,4 +1,4 @@
-import type { AppointmentSlot } from "../../api/compilecare";
+import type { AppointmentSlot } from "../../api/heapcare";
 
 interface AppointmentSlotGridProps {
   slots: AppointmentSlot[];
