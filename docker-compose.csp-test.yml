@@ -3,7 +3,7 @@ services:
     build:
       args:
         VITE_OIDC_AUTHORITY: https://identity.test
-        VITE_OIDC_CLIENT_ID: heapcare-web
+        VITE_OIDC_CLIENT_ID: compilecare-web
         VITE_OIDC_REDIRECT_URI: http://127.0.0.1:8080/auth/callback
         VITE_OIDC_POST_LOGOUT_REDIRECT_URI: http://127.0.0.1:8080/
         VITE_OIDC_SCOPE: "openid profile"
