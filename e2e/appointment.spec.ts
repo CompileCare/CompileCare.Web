@@ -244,6 +244,9 @@ test("reception searches a patient, books an appointment and checks in to the se
   await page.keyboard.press("Enter");
   await expect(patientResult).toHaveAttribute("aria-pressed", "true");
 
+  await page.getByRole("link", { name: "Appointments" }).click();
+  await expect(page.getByRole("heading", { name: "Appointments" })).toBeVisible();
+
   const findAvailability = page.getByRole("button", { name: "Find available appointments" });
   await findAvailability.focus();
   await page.keyboard.press("Enter");
