@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { AppointmentSlot } from "../../api/compilecare";
+import type { AppointmentSlot } from "../../api/heapcare";
 import { AppointmentSlotGrid } from "./AppointmentSlotGrid";
 
 const slots: AppointmentSlot[] = [
