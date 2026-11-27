@@ -9,9 +9,23 @@ type BrowserUserCredentials = {
 type BrowserUserManifest = {
   users?: Record<string, BrowserUserCredentials>;
   tenantAId?: string;
+  tenantBId?: string;
   hospitalAId?: string;
+  hospitalBId?: string;
   departmentAId?: string;
+  queueEntryId?: string;
+  queueTokenNumber?: number;
+  queueDateLocal?: string;
+  patientFamilyName?: string;
 };
+
+function loadBrowserUserManifest(): BrowserUserManifest {
+  const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
+  if (!path) {
+    throw new Error("HEAPCARE_BROWSER_TEST_USER_FILE must point to the ephemeral CI user credentials file.");
+  }
+  return JSON.parse(readFileSync(path, "utf8")) as BrowserUserManifest;
+}
 
 function loadBrowserUserForRole(roleKey: string): BrowserUserCredentials {
   const path = process.env.HEAPCARE_BROWSER_TEST_USER_FILE;
@@ -255,22 +269,54 @@ for (const roleCase of persistedRoleBrowserCases) {
     ).toBe(true);
 
     if (roleCase.name === "ClinicalUser") {
-      // The synthetic department is provisioned through the live API by the Local
-      // acceptance harness. This exercises the actual ClinicalUser queue permission.
+      // Local acceptance seeds an isolated in-progress OPD walk-in. This browser
+      // journey verifies the live department queue, encounter and patient identity APIs.
+      const manifest = loadBrowserUserManifest();
+      expect(manifest.departmentAId).toBeTruthy();
+      expect(manifest.queueEntryId).toBeTruthy();
+      expect(manifest.queueTokenNumber).toBeTruthy();
+      expect(manifest.queueDateLocal).toBeTruthy();
+      expect(manifest.patientFamilyName).toBeTruthy();
+
       await page.getByRole("link", { name: "Clinical workspace" }).click();
+      await page.locator("#clinical-department").selectOption(manifest.departmentAId!);
+      await page.locator("#clinical-queue-date").fill(manifest.queueDateLocal!);
       const refreshClinicalQueue = page.getByRole("button", { name: "Refresh clinical queue" });
       await expect(refreshClinicalQueue).toBeEnabled();
+      const queueResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.includes("/queue") &&
+        response.request().method() === "GET"
+      );
       await refreshClinicalQueue.click();
-      await expect.poll(
-        () => queueResponses.some(status => status === 200)
-      ).toBe(true);
-      await expect(page.getByText(
-        "Refresh the clinical queue to see in-progress consultations and completed visits."
-      )).toBeVisible();
-      await expect(page.getByRole("alert")).toHaveCount(0);
-      await expect.poll(
-        () => queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)
-      ).toBe(true);
+      await expect(page.getByRole("article", {
+        name: "Clinical queue token " + manifest.queueTokenNumber
+      })).toBeVisible();
+      const liveQueueResponse = await queueResponse;
+      expect(liveQueueResponse.status()).toBe(200);
+
+      const openEncounter = page.getByRole("button", {
+        name: "Open encounter for queue token " + manifest.queueTokenNumber
+      });
+      await expect(openEncounter).toBeEnabled();
+      await openEncounter.click();
+      await expect(page.getByRole("heading", { name: "Consultation note" })).toBeVisible();
+      await expect(page.locator(".clinical-patient-banner"))
+        .toContainText("HeapCare Scope " + manifest.patientFamilyName);
+      await expect(page.locator(".clinical-patient-banner"))
+        .toContainText("Date of birth: 1990-01-02");
+
+      await page.getByLabel("I have verified the patient identity before documenting").check();
+      await expect(page.locator("#clinical-chief")).toBeVisible();
+      await expect(page.locator("#clinical-assessment")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Review and sign" })).toBeEnabled();
+
+      expect(queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
+      expect(patientRequests.some(item =>
+        item.method === "GET" &&
+        item.path.includes("/patients/departments/" + manifest.departmentAId + "/patients/") &&
+        item.tenantId === tenantAId && item.hasBearerToken
+      )).toBe(true);
     }
   });
 }
