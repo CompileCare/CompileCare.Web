@@ -17,6 +17,8 @@ type BrowserUserManifest = {
   queueTokenNumber?: number;
   queueDateLocal?: string;
   patientFamilyName?: string;
+  billingInvoiceNumber?: string;
+  billingReceiptNumber?: string;
 };
 
 function loadBrowserUserManifest(): BrowserUserManifest {
@@ -327,6 +329,47 @@ for (const roleCase of persistedRoleBrowserCases) {
         item.path.includes("/patients/departments/" + manifest.departmentAId + "/patients/") &&
         item.tenantId === tenantAId && item.hasBearerToken
       )).toBe(true);
+    } else if (roleCase.name === "PatientRegistrar") {
+      // The Local acceptance harness issues and fully settles a synthetic OPD
+      // invoice using this real persisted PatientRegistrar identity.
+      const manifest = loadBrowserUserManifest();
+      expect(manifest.departmentAId).toBeTruthy();
+      expect(manifest.queueEntryId).toBeTruthy();
+      expect(manifest.queueDateLocal).toBeTruthy();
+      expect(manifest.billingInvoiceNumber).toBeTruthy();
+      expect(manifest.billingReceiptNumber).toBeTruthy();
+
+      await page.getByRole("link", { name: "Billing" }).click();
+      await expect(page.getByRole("heading", { name: "OPD billing and settlement" })).toBeVisible();
+      await page.locator("#billing-department").selectOption(manifest.departmentAId!);
+      await page.locator("#billing-date").fill(manifest.queueDateLocal!);
+
+      const queueResponse = page.waitForResponse(response =>
+        new URL(response.url()).origin === "http://localhost:8081" &&
+        new URL(response.url()).pathname.endsWith("/queue") &&
+        response.request().method() === "GET"
+      );
+      await page.getByRole("button", { name: "Load billable visits" }).click();
+      const liveQueueResponse = await queueResponse;
+      expect(liveQueueResponse.status()).toBe(200);
+
+      const visitSelect = page.locator("#billing-visit");
+      await expect(visitSelect).toBeEnabled();
+      await visitSelect.selectOption(manifest.queueEntryId!);
+      const invoicePanel = page.locator(".billing-invoice");
+      await expect(invoicePanel).toContainText(manifest.billingInvoiceNumber!);
+      await expect(invoicePanel.locator(".invoice-status")).toHaveText("Paid");
+      await expect(page.getByRole("button", { name: "View receipt" })).toHaveCount(2);
+
+      // Billing visit selection and invoice rendering must not expose patient identity.
+      await expect(visitSelect).not.toContainText(manifest.patientFamilyName ?? "");
+      await page.getByRole("button", { name: "View receipt" }).last().click();
+      const receiptPanel = page.locator(".billing-receipt");
+      await expect(receiptPanel).toContainText(manifest.billingReceiptNumber!);
+      await expect(receiptPanel).toContainText(manifest.billingInvoiceNumber!);
+      await expect(receiptPanel.getByRole("button", { name: "Print receipt" })).toBeVisible();
+
+      expect(queueRequests.some(item => item.tenantId === tenantAId && item.hasBearerToken)).toBe(true);
     }
   });
 }
