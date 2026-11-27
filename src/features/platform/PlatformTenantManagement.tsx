@@ -154,7 +154,7 @@ export function PlatformTenantManagement({ baseUrl, accessToken, currentIssuer, 
   }
 
   return <section className="section platform-tenant-section" id="platform-tenants">
-    <div className="section-heading"><div><label>COMPILECARE PLATFORM</label><h2>Tenant lifecycle administration</h2><p className="helper-text">Global customer tenant operations. Every action is protected by the persisted PlatformOperator policy and recorded by the API audit pipeline.</p></div></div>
+    <div className="section-heading"><div><label>HEAPCARE PLATFORM</label><h2>Tenant lifecycle administration</h2><p className="helper-text">Global customer tenant operations. Every action is protected by the persisted PlatformOperator policy and recorded by the API audit pipeline.</p></div></div>
     {error && <p className="inline-error" role="alert">{error}</p>}
     {success && <p className="registration-success" role="status">{success}</p>}
 
@@ -168,13 +168,13 @@ export function PlatformTenantManagement({ baseUrl, accessToken, currentIssuer, 
     </div>
 
     <div className="platform-list-panel">
-      <div className="platform-panel-heading"><div><h3>Registered tenants</h3><p className="helper-text">{totalCount} tenant{totalCount === 1 ? "" : "s"} across the CompileCare platform</p></div><button type="button" className="clinical-secondary" onClick={refreshTenants} disabled={loading || busy}>Refresh</button></div>
+      <div className="platform-panel-heading"><div><h3>Registered tenants</h3><p className="helper-text">{totalCount} tenant{totalCount === 1 ? "" : "s"} across the HeapCare platform</p></div><button type="button" className="clinical-secondary" onClick={refreshTenants} disabled={loading || busy}>Refresh</button></div>
       {loading ? <p className="inline-status" role="status">Loading platform tenants…</p> : tenants.length === 0 ? <p className="inline-status">No tenants have been registered yet.</p> :
         <div className="platform-tenant-list">{tenants.map(tenant => <article className="platform-tenant-card" key={tenant.id}>
           <div className="platform-tenant-card-header"><div><h4>{tenant.name}</h4><code>{tenant.slug}</code></div><span className={statusClass(tenant.status)}>{tenant.status}</span></div>
           <dl className="platform-tenant-meta"><div><dt>Tenant ID</dt><dd>{tenant.id}</dd></div><div><dt>Created</dt><dd>{formatDate(tenant.createdAtUtc)}</dd></div><div><dt>Updated</dt><dd>{formatDate(tenant.updatedAtUtc)}</dd></div></dl>
           {tenant.status === "Provisioning" && <div className="platform-provision-panel">
-            <p>Create the identity in your configured OIDC provider first, then enter its exact subject. CompileCare creates the tenant membership; it does not create identity-provider users.</p>
+            <p>Create the identity in your configured OIDC provider first, then enter its exact subject. HeapCare creates the tenant membership; it does not create identity-provider users.</p>
             <label htmlFor={`initial-admin-${tenant.id}`}>Initial administrator OIDC subject</label>
             <input id={`initial-admin-${tenant.id}`} value={initialAdminSubjects[tenant.id] ?? ""} onChange={event=>setInitialAdminSubjects(current=>({...current,[tenant.id]:event.target.value}))} maxLength={255} disabled={busy}/>
             <div className="platform-form-actions"><button type="button" onClick={()=>provisionAndActivate(tenant)} disabled={busy || !currentIssuer || !(initialAdminSubjects[tenant.id] ?? "").trim()}>Provision administrator and activate</button><button type="button" className="queue-action-danger" onClick={()=>setConfirmTarget({tenant,action:"close"})} disabled={busy}>Close tenant</button></div>

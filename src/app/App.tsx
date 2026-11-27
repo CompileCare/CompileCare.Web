@@ -291,10 +291,10 @@ function PlatformOnboarding({user,onComplete}:{user:User;onComplete:()=>Promise<
   const subject=String(user.profile.sub??"");
 
   return <section className="section onboarding-section">
-    <div className="section-heading"><div><label>FIRST-TIME SETUP</label><h2>Set up your hospital organization</h2><p className="helper-text">This guided local setup uses the authenticated identity and protected CompileCare provisioning APIs. No database records are inserted directly.</p></div></div>
+    <div className="section-heading"><div><label>FIRST-TIME SETUP</label><h2>Set up your hospital organization</h2><p className="helper-text">This guided local setup uses the authenticated identity and protected HeapCare provisioning APIs. No database records are inserted directly.</p></div></div>
     <div className="search-panel">
       <h3>Step 1 · Register the first platform operator</h3>
-      <p className="helper-text">Enter the one-time secret configured as PLATFORM_BOOTSTRAP_SECRET in CompileCare.Local/local/.env. This endpoint is available only in Development and only once.</p>
+      <p className="helper-text">Enter the one-time secret configured as PLATFORM_BOOTSTRAP_SECRET in HeapCare.Local/local/.env. This endpoint is available only in Development and only once.</p>
       <label htmlFor="platform-bootstrap-secret">One-time local bootstrap secret</label>
       <input id="platform-bootstrap-secret" type="password" autoComplete="off" value={secret} onChange={e=>setSecret(e.target.value)} disabled={step>0||busy}/>
       <button type="button" onClick={()=>run(async()=>{
@@ -513,7 +513,7 @@ function Workspace() {
       return;
     }
     if (!apiBaseUrl) {
-      setContextsError("Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.");
+      setContextsError("Set VITE_API_BASE_URL to connect this workspace to HeapCare.Api.");
       setContextsResolved(true);
       return;
     }
@@ -725,6 +725,7 @@ function Workspace() {
     setWalkInLoading(true);setWalkInError("");
     try{
       const entry=await createWalkIn(apiBaseUrl,user.access_token,selectedTenantId,selectedHospitalId,{departmentId:selectedDepartmentId,patientId:selectedPatient.id,timeZoneId:hospitalTimeZone});
+      setBookedAppointment(null);
       setQueueEntry(entry);
       await loadQueue();
     }catch(error){setWalkInError(getErrorMessage(error));}
@@ -990,7 +991,7 @@ function Workspace() {
       {authError && <div className="notice" role="alert">{authError}</div>}
       {platformOperatorError && <div className="notice" role="status">{platformOperatorError}</div>}
       {!isAuthenticationConfigured && <div className="notice" role="status"><b>Authentication setup required.</b> Configure the OIDC environment variables before enabling staff sign-in.</div>}
-      {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to CompileCare.Api.</div>}
+      {user && !apiBaseUrl && <div className="notice" role="alert">Set VITE_API_BASE_URL to connect this workspace to HeapCare.Api.</div>}
       {user && apiBaseUrl && <>
         <section className="context-panel">
           <div className="context-intro">
