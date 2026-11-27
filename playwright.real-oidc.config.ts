@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 // This suite connects to the already-running isolated Docker stack. Unlike the
-// normal UI regression suite, it does not mock Keycloak or CompileCare.Api.
+// normal UI regression suite, it does not mock Keycloak or HeapCare.Api.
 export default defineConfig({
   testDir: "./e2e-real",
   testMatch: "**/*.spec.ts",
