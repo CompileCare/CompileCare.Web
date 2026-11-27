@@ -79,6 +79,56 @@ for (const roleCase of authenticatedRoleCases) {
       await expect(page.locator("#hospital-select")).toHaveValue(hospitalId!);
     }
 
+    const documentLanguage = await page.locator("html").getAttribute("lang");
+    expect(documentLanguage?.trim(), roleCase.name + " document must declare its content language").toBeTruthy();
+
+    const duplicateIds = await page.locator("[id]").evaluateAll(elements => {
+      const counts = new Map<string, number>();
+      for (const element of elements) {
+        const id = element.id;
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+      return [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id).sort();
+    });
+    expect(duplicateIds, roleCase.name + " document IDs must be unique").toEqual([]);
+
+    const brokenAriaReferences = await page.locator("[aria-labelledby], [aria-describedby]").evaluateAll(elements =>
+      elements.flatMap(element =>
+        ["aria-labelledby", "aria-describedby"].flatMap(attribute => {
+          const value = element.getAttribute(attribute);
+          if (!value) return [];
+          return value.split(/\\s+/).filter(Boolean)
+            .filter(id => !document.getElementById(id))
+            .map(id => attribute + " references missing #" + id);
+        })
+      )
+    );
+    expect(
+      brokenAriaReferences,
+      roleCase.name + " ARIA label and description references must resolve"
+    ).toEqual([]);
+
+    const brokenLabelTargets = await page.locator("label[for]").evaluateAll(elements =>
+      elements
+        .filter(element => {
+          const targetId = element.getAttribute("for");
+          return !targetId || !document.getElementById(targetId);
+        })
+        .map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(
+      brokenLabelTargets,
+      roleCase.name + " explicit form label targets must resolve"
+    ).toEqual([]);
+
+    const missingImageAlt = await main.locator("img:visible:not([alt])").evaluateAll(elements =>
+      elements.map(element => element.outerHTML.slice(0, 180))
+    );
+    expect(
+      missingImageAlt,
+      roleCase.name + " visible images must declare alt text (empty is allowed for decorative images)"
+    ).toEqual([]);
+
     const main = page.getByRole("main");
     await expect(main).toHaveCount(1);
     await expect(main).toHaveAttribute("id", "workspace-main");
