@@ -225,6 +225,7 @@ for (const roleCase of persistedRoleBrowserCases) {
   test("real Keycloak Authorization Code + PKCE exposes the persisted " + roleCase.name + " workspace", async ({ page }) => {
     const credentials = loadBrowserUserForRole(roleCase.key);
     const hospitalRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
+    const patientRequests: Array<{ method: string; path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueRequests: Array<{ path: string; tenantId: string; hasBearerToken: boolean }> = [];
     const queueResponses: number[] = [];
 
@@ -240,6 +241,13 @@ for (const roleCase of persistedRoleBrowserCases) {
       };
       if (url.pathname === "/api/v1/hospitals") hospitalRequests.push(evidence);
       if (url.pathname.includes("/queue")) queueRequests.push(evidence);
+      if (url.pathname.includes("/patients")) {
+        patientRequests.push({
+          method: request.method(),
+          path: url.pathname,
+          ...evidence
+        });
+      }
     });
 
     page.on("response", response => {
