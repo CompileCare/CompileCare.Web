@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
+import type { ComponentProps } from "react";
 import { ReceptionWorkspace } from "./ReceptionWorkspace";
 
 function renderWorkspace(overrides: Partial<ComponentProps<typeof ReceptionWorkspace>> = {}) {
