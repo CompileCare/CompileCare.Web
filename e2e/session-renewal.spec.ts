@@ -100,8 +100,8 @@ test("OIDC silently renews a short-lived session and uses the renewed token for 
       return json(route, {
         items: [{
           tenantId,
-          tenantName: "CompileCare Demo Group",
-          tenantSlug: "compilecare-demo",
+          tenantName: "HeapCare Demo Group",
+          tenantSlug: "heapcare-demo",
           role: "PatientRegistrar",
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions: ["facility.read", "patient.read", "patient.register", "patient.duplicate.review"]
@@ -115,7 +115,7 @@ test("OIDC silently renews a short-lived session and uses the renewed token for 
 
     if (request.method === "GET" && url.pathname === "/api/v1/hospitals") {
       return json(route, {
-        items: [{ id: hospitalId, name: "CompileCare Demo Hospital", code: "DEMO01" }],
+        items: [{ id: hospitalId, name: "HeapCare Demo Hospital", code: "DEMO01" }],
         page: 1,
         pageSize: 100,
         totalCount: 1,
@@ -208,8 +208,8 @@ test("shows a safe reauthentication warning then returns to sign-in when the acc
       return json(route, {
         items: [{
           tenantId,
-          tenantName: "CompileCare Demo Group",
-          tenantSlug: "compilecare-demo",
+          tenantName: "HeapCare Demo Group",
+          tenantSlug: "heapcare-demo",
           role: "PatientRegistrar",
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions: ["facility.read", "patient.read"]
@@ -223,7 +223,7 @@ test("shows a safe reauthentication warning then returns to sign-in when the acc
 
     if (request.method() === "GET" && url.pathname === "/api/v1/hospitals") {
       return json(route, {
-        items: [{ id: hospitalId, name: "CompileCare Demo Hospital", code: "DEMO01" }],
+        items: [{ id: hospitalId, name: "HeapCare Demo Hospital", code: "DEMO01" }],
         page: 1,
         pageSize: 100,
         totalCount: 1,

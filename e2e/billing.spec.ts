@@ -46,10 +46,10 @@ async function json(route: Route, body: unknown, status = 200) {
 async function installAuthenticatedSession(page: Page) {
   await page.addInitScript(({ storageKey, storedUser }) => {
     sessionStorage.setItem(storageKey, JSON.stringify(storedUser));
-    const printableWindow = window as Window & { __compileCarePrintCount?: number };
-    printableWindow.__compileCarePrintCount = 0;
+    const printableWindow = window as Window & { __heapCarePrintCount?: number };
+    printableWindow.__heapCarePrintCount = 0;
     window.print = () => {
-      printableWindow.__compileCarePrintCount = (printableWindow.__compileCarePrintCount ?? 0) + 1;
+      printableWindow.__heapCarePrintCount = (printableWindow.__heapCarePrintCount ?? 0) + 1;
     };
   }, {
     storageKey: "oidc.user:https://identity.test:compilecare-web",
@@ -125,8 +125,8 @@ async function installApiMocks(page: Page, permissions: string[] = billingPermis
       return json(route, {
         items: [{
           tenantId,
-          tenantName: "CompileCare Demo Group",
-          tenantSlug: "compilecare-demo",
+          tenantName: "HeapCare Demo Group",
+          tenantSlug: "heapcare-demo",
           role: "HospitalAdmin",
           scopes: [{ scopeType: "Hospital", hospitalId, departmentId: null }],
           permissions
@@ -140,7 +140,7 @@ async function installApiMocks(page: Page, permissions: string[] = billingPermis
 
     if (method === "GET" && path === "/api/v1/hospitals") {
       return json(route, {
-        items: [{ id: hospitalId, name: "CompileCare Demo Hospital", code: "DEMO01" }],
+        items: [{ id: hospitalId, name: "HeapCare Demo Hospital", code: "DEMO01" }],
         page: 1,
         pageSize: 100,
         totalCount: 1,
@@ -294,7 +294,7 @@ test("cashier issues an invoice, records payment, reloads and reprints the recei
   await expect(page.getByText("Reference: E2E-UPI-001")).toBeVisible();
   await page.getByRole("button", { name: "Print receipt" }).click();
   const printCount = await page.evaluate(() =>
-    (window as Window & { __compileCarePrintCount?: number }).__compileCarePrintCount ?? 0
+    (window as Window & { __heapCarePrintCount?: number }).__heapCarePrintCount ?? 0
   );
   expect(printCount).toBe(1);
 });
@@ -440,7 +440,7 @@ test("cashier can record a payment and print its receipt using keyboard controls
   await printReceipt.focus();
   await page.keyboard.press("Enter");
   const printCount = await page.evaluate(() =>
-    (window as Window & { __compileCarePrintCount?: number }).__compileCarePrintCount ?? 0
+    (window as Window & { __heapCarePrintCount?: number }).__heapCarePrintCount ?? 0
   );
   expect(printCount).toBe(1);
 });
