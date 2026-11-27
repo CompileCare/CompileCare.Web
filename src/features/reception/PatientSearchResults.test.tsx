@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import type { Patient } from "../../api/compilecare";
+import type { Patient } from "../../api/heapcare";
 import { PatientSearchResults } from "./PatientSearchResults";
 
 const patient: Patient = {
