@@ -256,11 +256,9 @@ for (const roleCase of authenticatedRoleCases) {
 // API and PostgreSQL stack. The Local fixture creates this tenant-A administrator
 // before Playwright starts and removes the entire environment after the run.
 test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant role", async ({ page, browserName }, testInfo) => {
-  test.skip(
-    browserName !== "chromium",
-    "This role lifecycle test mutates the shared synthetic tenant database and runs only on Chromium."
-  );
-
+  // The Local full-stack suite reuses one synthetic tenant database across
+  // browser engines. A browser/retry-specific display name keeps each complete
+  // role lifecycle independent without requiring database resets between engines.
   const manifest = loadBrowserUserManifest();
   const credentials = manifest.users?.["tenant-a-admin"];
   const tenantId = manifest.tenantAId;
