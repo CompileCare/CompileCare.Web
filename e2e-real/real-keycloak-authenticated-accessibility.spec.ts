@@ -97,7 +97,7 @@ for (const roleCase of authenticatedRoleCases) {
         ["aria-labelledby", "aria-describedby"].flatMap(attribute => {
           const value = element.getAttribute(attribute);
           if (!value) return [];
-          return value.split(/\\s+/).filter(Boolean)
+          return value.split(/\s+/).filter(Boolean)
             .filter(id => !document.getElementById(id))
             .map(id => attribute + " references missing #" + id);
         })
