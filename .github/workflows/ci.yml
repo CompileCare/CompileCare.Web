@@ -102,3 +102,22 @@ jobs:
           echo "Verified missing CSP origins are rejected at container startup."
       - if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.csp-test.yml down --volumes --remove-orphans
+  cross-browser-accessibility:
+    name: Accessibility browser smoke (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run public accessibility smoke tests
+        run: npm run test:e2e:browser-compat
+        env:
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}

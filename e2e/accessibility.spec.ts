@@ -81,7 +81,11 @@ test("public workspace controls and images expose accessible names and labels", 
   await expect(page.locator("img:not([alt])"), "images must declare alternative text").toHaveCount(0);
 });
 
-test("forced-colors preference preserves visible focus on navigation and an interactive control", async ({ page }) => {
+test("forced-colors preference preserves visible focus on navigation and an interactive control", async ({ page, browserName }) => {
+  test.skip(
+    browserName !== "chromium",
+    "Playwright forced-colors emulation is Chromium-only; native Windows High Contrast remains a manual acceptance check."
+  );
   await page.emulateMedia({ forcedColors: "active" });
   await page.goto("/");
 
