@@ -81,6 +81,32 @@ test("public workspace controls and images expose accessible names and labels", 
   await expect(page.locator("img:not([alt])"), "images must declare alternative text").toHaveCount(0);
 });
 
+test("forced-colors preference preserves visible keyboard focus", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.goto("/");
+
+  const forcedColorsActive = await page.evaluate(() =>
+    window.matchMedia("(forced-colors: active)").matches
+  );
+  expect(forcedColorsActive).toBe(true);
+
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeFocused();
+
+  const focusStyle = await skipLink.evaluate(element => {
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+      outlineColor: style.outlineColor
+    };
+  });
+  expect(focusStyle.outlineStyle).not.toBe("none");
+  expect(focusStyle.outlineWidth).toBeGreaterThan(0);
+  expect(focusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+});
+
 test("reduced-motion preference suppresses nonessential transitions", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
