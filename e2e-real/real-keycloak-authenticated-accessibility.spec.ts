@@ -79,6 +79,7 @@ for (const roleCase of authenticatedRoleCases) {
       await expect(page.locator("#hospital-select")).toHaveValue(hospitalId!);
     }
 
+    const main = page.getByRole("main");
     const documentLanguage = await page.locator("html").getAttribute("lang");
     expect(documentLanguage?.trim(), roleCase.name + " document must declare its content language").toBeTruthy();
 
@@ -129,7 +130,6 @@ for (const roleCase of authenticatedRoleCases) {
       roleCase.name + " visible images must declare alt text (empty is allowed for decorative images)"
     ).toEqual([]);
 
-    const main = page.getByRole("main");
     await expect(main).toHaveCount(1);
     await expect(main).toHaveAttribute("id", "workspace-main");
     await expect(main.locator("h1")).toHaveCount(1);
