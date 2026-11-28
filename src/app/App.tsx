@@ -434,6 +434,7 @@ function Workspace() {
   const [identifierPolicyBusy,setIdentifierPolicyBusy] = useState(false);
   const [membershipBusy,setMembershipBusy] = useState(false);
   const [roleManagementBusy,setRoleManagementBusy] = useState(false);
+  const [tenantRoleRevision,setTenantRoleRevision] = useState(0);
   const [platformBusy,setPlatformBusy] = useState(false);
   const [activeSection,setActiveSection] = useState("");
 
@@ -1101,6 +1102,7 @@ function Workspace() {
           permissions={selectedContext.permissions ?? []}
           scopes={selectedContext.scopes ?? []}
           hospitals={hospitals}
+          roleRevision={tenantRoleRevision}
           onBusyChange={setMembershipBusy}
         /></div>}
 
@@ -1111,6 +1113,7 @@ function Workspace() {
           permissions={selectedContext.permissions ?? []}
           scopes={selectedContext.scopes ?? []}
           onBusyChange={setRoleManagementBusy}
+          onRolesChanged={() => setTenantRoleRevision(value => value + 1)}
         /></div>}
 
         {canReadPatients && <div className="workspace-route" hidden={activeSection !== "reception"}>
