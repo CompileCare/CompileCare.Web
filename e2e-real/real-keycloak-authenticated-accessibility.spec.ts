@@ -57,7 +57,7 @@ const authenticatedRoleCases = [
 ] as const;
 
 for (const roleCase of authenticatedRoleCases) {
-  test("real Keycloak " + roleCase.name + " workspace meets the authenticated shell accessibility baseline", async ({ page }) => {
+  test("real Keycloak " + roleCase.name + " workspace meets the authenticated shell accessibility baseline", async ({ page, browserName }) => {
     const manifest = loadBrowserUserManifest();
     const credentials = manifest.users?.[roleCase.identity];
     expect(credentials?.username, roleCase.name + " synthetic username must be provisioned").toBeTruthy();
@@ -134,14 +134,16 @@ for (const roleCase of authenticatedRoleCases) {
     await expect(main).toHaveAttribute("id", "workspace-main");
     await expect(main.locator("h1")).toHaveCount(1);
 
-    // Validate the signed-in shell under the Windows High Contrast media
-    // preference. Chromium emulation checks CSS behavior; native Windows
-    // High Contrast remains a separate manual host-acceptance item.
-    await page.emulateMedia({ forcedColors: "active" });
-    const forcedColorsActive = await page.evaluate(() =>
-      window.matchMedia("(forced-colors: active)").matches
-    );
-    expect(forcedColorsActive).toBe(true);
+    // Playwright forced-colors emulation is Chromium-only. The native
+    // Windows High Contrast and real assistive-technology checks remain
+    // separate manual acceptance items.
+    if (browserName === "chromium") {
+      await page.emulateMedia({ forcedColors: "active" });
+      const forcedColorsActive = await page.evaluate(() =>
+        window.matchMedia("(forced-colors: active)").matches
+      );
+      expect(forcedColorsActive).toBe(true);
+    }
 
     // The skip link must be the first keyboard stop after OIDC sign-in.
     // Check its forced-colors focus style, then verify activation moves focus
@@ -154,17 +156,19 @@ for (const roleCase of authenticatedRoleCases) {
     await page.keyboard.press("Tab");
     await expect(skipLink).toBeFocused();
 
-    const focusStyle = await skipLink.evaluate(element => {
-      const style = window.getComputedStyle(element);
-      return {
-        outlineStyle: style.outlineStyle,
-        outlineWidth: Number.parseFloat(style.outlineWidth),
-        outlineColor: style.outlineColor
-      };
-    });
-    expect(focusStyle.outlineStyle).not.toBe("none");
-    expect(focusStyle.outlineWidth).toBeGreaterThan(0);
-    expect(focusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+    if (browserName === "chromium") {
+      const focusStyle = await skipLink.evaluate(element => {
+        const style = window.getComputedStyle(element);
+        return {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: Number.parseFloat(style.outlineWidth),
+          outlineColor: style.outlineColor
+        };
+      });
+      expect(focusStyle.outlineStyle).not.toBe("none");
+      expect(focusStyle.outlineWidth).toBeGreaterThan(0);
+      expect(focusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+    }
 
     await page.keyboard.press("Enter");
     await expect(main).toBeFocused();
@@ -190,9 +194,11 @@ for (const roleCase of authenticatedRoleCases) {
       };
     });
     expect(signOutFocusStyle.focusVisible, roleCase.name + " Sign out action must expose keyboard focus").toBe(true);
-    expect(signOutFocusStyle.outlineStyle).not.toBe("none");
-    expect(signOutFocusStyle.outlineWidth).toBeGreaterThan(0);
-    expect(signOutFocusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+    if (browserName === "chromium") {
+      expect(signOutFocusStyle.outlineStyle).not.toBe("none");
+      expect(signOutFocusStyle.outlineWidth).toBeGreaterThan(0);
+      expect(signOutFocusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+    }
 
     // Check the authenticated workspace at the same narrow widths used by the
     // public shell baseline; hidden modules must not force page-level overflow.
