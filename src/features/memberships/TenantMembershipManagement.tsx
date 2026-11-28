@@ -115,6 +115,7 @@ interface Props {
   permissions: string[];
   scopes: OrganizationScope[];
   hospitals: Hospital[];
+  roleRevision: number;
   onBusyChange: (busy: boolean) => void;
 }
 
@@ -138,7 +139,7 @@ function formatScope(scope: OrganizationScope, hospitals: Hospital[], department
 }
 
 export function TenantMembershipManagement({
-  baseUrl, accessToken, tenantId, currentIssuer, currentSubject, permissions, scopes, hospitals, onBusyChange
+  baseUrl, accessToken, tenantId, currentIssuer, currentSubject, permissions, scopes, hospitals, roleRevision, onBusyChange
 }: Props) {
   const canManage = permissions.includes("membership.manage");
   const tenantWide = scopes.some(scope => scope.scopeType === "Tenant");
@@ -238,7 +239,7 @@ export function TenantMembershipManagement({
       .catch(cause => { if (active) setError(getErrorMessage(cause)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [baseUrl, accessToken, tenantId, page]);
+  }, [baseUrl, accessToken, tenantId, page, roleRevision]);
 
   async function runMutation(action: () => Promise<void>, message: string) {
     setBusy(true);
