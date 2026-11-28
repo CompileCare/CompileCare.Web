@@ -274,7 +274,7 @@ test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant ro
   const roleNavigation = page.getByRole("link", { name: "Roles & permissions" });
   await expect(roleNavigation).toBeVisible();
   await roleNavigation.click();
-  await expect(page.getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
+  await expect(page.locator("#tenant-roles").getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
   await expect(page.getByText("CI Identity Reader Custom")).toBeVisible();
 
   const roleName = "CI Browser Role Manager";
