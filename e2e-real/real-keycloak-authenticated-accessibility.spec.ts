@@ -134,8 +134,18 @@ for (const roleCase of authenticatedRoleCases) {
     await expect(main).toHaveAttribute("id", "workspace-main");
     await expect(main.locator("h1")).toHaveCount(1);
 
+    // Validate the signed-in shell under the Windows High Contrast media
+    // preference. Chromium emulation checks CSS behavior; native Windows
+    // High Contrast remains a separate manual host-acceptance item.
+    await page.emulateMedia({ forcedColors: "active" });
+    const forcedColorsActive = await page.evaluate(() =>
+      window.matchMedia("(forced-colors: active)").matches
+    );
+    expect(forcedColorsActive).toBe(true);
+
     // The skip link must be the first keyboard stop after OIDC sign-in.
-    // Check the actual focused style, then verify activation moves focus to main.
+    // Check its forced-colors focus style, then verify activation moves focus
+    // to main. This executes for each persisted Keycloak role below.
     await page.evaluate(() => {
       const active = document.activeElement;
       if (active instanceof HTMLElement) active.blur();
@@ -148,11 +158,13 @@ for (const roleCase of authenticatedRoleCases) {
       const style = window.getComputedStyle(element);
       return {
         outlineStyle: style.outlineStyle,
-        outlineWidth: style.outlineWidth
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+        outlineColor: style.outlineColor
       };
     });
     expect(focusStyle.outlineStyle).not.toBe("none");
-    expect(Number.parseFloat(focusStyle.outlineWidth)).toBeGreaterThan(0);
+    expect(focusStyle.outlineWidth).toBeGreaterThan(0);
+    expect(focusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
 
     await page.keyboard.press("Enter");
     await expect(main).toBeFocused();
