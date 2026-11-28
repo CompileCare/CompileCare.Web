@@ -81,7 +81,7 @@ test("public workspace controls and images expose accessible names and labels", 
   await expect(page.locator("img:not([alt])"), "images must declare alternative text").toHaveCount(0);
 });
 
-test("forced-colors preference preserves visible keyboard focus", async ({ page }) => {
+test("forced-colors preference preserves visible focus on navigation and an interactive control", async ({ page }) => {
   await page.emulateMedia({ forcedColors: "active" });
   await page.goto("/");
 
@@ -90,11 +90,14 @@ test("forced-colors preference preserves visible keyboard focus", async ({ page 
   );
   expect(forcedColorsActive).toBe(true);
 
-  await page.keyboard.press("Tab");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  const signIn = page.getByRole("button", { name: "Sign in" });
+
+  // The skip link is the first keyboard stop in the shell.
+  await page.keyboard.press("Tab");
   await expect(skipLink).toBeFocused();
 
-  const focusStyle = await skipLink.evaluate(element => {
+  const skipLinkStyle = await skipLink.evaluate(element => {
     const style = getComputedStyle(element);
     return {
       outlineStyle: style.outlineStyle,
@@ -102,9 +105,25 @@ test("forced-colors preference preserves visible keyboard focus", async ({ page 
       outlineColor: style.outlineColor
     };
   });
-  expect(focusStyle.outlineStyle).not.toBe("none");
-  expect(focusStyle.outlineWidth).toBeGreaterThan(0);
-  expect(focusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(skipLinkStyle.outlineStyle).not.toBe("none");
+  expect(skipLinkStyle.outlineWidth).toBeGreaterThan(0);
+  expect(skipLinkStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+
+  // Verify the same forced-colors focus treatment reaches a real action control.
+  await page.keyboard.press("Tab");
+  await expect(signIn).toBeFocused();
+
+  const signInStyle = await signIn.evaluate(element => {
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+      outlineColor: style.outlineColor
+    };
+  });
+  expect(signInStyle.outlineStyle).not.toBe("none");
+  expect(signInStyle.outlineWidth).toBeGreaterThan(0);
+  expect(signInStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
 });
 
 test("reduced-motion preference suppresses nonessential transitions", async ({ page }) => {
