@@ -76,7 +76,8 @@ const props = {
   tenantId: "tenant-1",
   permissions: ["membership.manage", "facility.read", "facility.write"],
   scopes: [{ scopeType: "Tenant" as const, hospitalId: null, departmentId: null }],
-  onBusyChange: vi.fn()
+  onBusyChange: vi.fn(),
+  onRolesChanged: vi.fn()
 };
 
 describe("TenantRoleManagement", () => {
