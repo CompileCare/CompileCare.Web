@@ -255,7 +255,7 @@ for (const roleCase of authenticatedRoleCases) {
 // Exercise the persisted role-management workspace against the real Keycloak,
 // API and PostgreSQL stack. The Local fixture creates this tenant-A administrator
 // before Playwright starts and removes the entire environment after the run.
-test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant role", async ({ page, browserName }) => {
+test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant role", async ({ page, browserName }, testInfo) => {
   test.skip(
     browserName !== "chromium",
     "This role lifecycle test mutates the shared synthetic tenant database and runs only on Chromium."
@@ -282,7 +282,7 @@ test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant ro
   await expect(page.locator("#tenant-roles").getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
   await expect(page.locator("article.tenant-role-card").filter({ hasText: "CI Identity Reader Custom" })).toBeVisible();
 
-  const roleName = "CI Browser Role Manager";
+  const roleName = `CI Browser Role Manager ${browserName} attempt ${testInfo.retry}`;
   await page.getByRole("button", { name: "Create custom role" }).click();
   await page.getByLabel("Role name *").fill(roleName);
   await page.getByLabel("Description *").fill("Created through the real Keycloak role workspace.");
