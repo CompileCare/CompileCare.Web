@@ -19,6 +19,7 @@ interface Props {
   permissions: string[];
   scopes: OrganizationScope[];
   onBusyChange: (busy: boolean) => void;
+  onRolesChanged: () => void;
 }
 
 type EditorMode = "create" | "edit";
@@ -43,7 +44,8 @@ export function TenantRoleManagement({
   tenantId,
   permissions,
   scopes,
-  onBusyChange
+  onBusyChange,
+  onRolesChanged
 }: Props) {
   const canManageMemberships = permissions.includes("membership.manage");
   const tenantWide = scopes.some(scope => scope.scopeType === "Tenant");
@@ -172,6 +174,7 @@ export function TenantRoleManagement({
       }
       resetEditor();
       await refresh();
+      onRolesChanged();
     } catch (cause) {
       setError(getErrorMessage(cause));
     } finally {
@@ -202,6 +205,7 @@ export function TenantRoleManagement({
       setLifecycleTarget(null);
       setLifecycleReason("");
       await refresh();
+      onRolesChanged();
     } catch (cause) {
       setError(getErrorMessage(cause));
     } finally {
