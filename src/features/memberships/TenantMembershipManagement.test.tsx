@@ -43,6 +43,7 @@ const membership: TenantMembership = {
 const availableRoles = [
   { id: "role-admin", code: "HospitalAdmin", name: "Hospital Administrator", description: "Tenant administrator", isSystem: true, isActive: true, permissionCodes: ["membership.manage"], createdAtUtc: "", updatedAtUtc: "" },
   { id: "role-viewer", code: "FacilityViewer", name: "Facility Viewer", description: "Read-only facility access", isSystem: true, isActive: true, permissionCodes: ["facility.read"], createdAtUtc: "", updatedAtUtc: "" },
+  { id: "role-manager", code: "FacilityManager", name: "Facility Manager", description: "Facility updates", isSystem: true, isActive: true, permissionCodes: ["facility.read", "facility.write"], createdAtUtc: "", updatedAtUtc: "" },
   { id: "role-clinical", code: "ClinicalUser", name: "Clinical User", description: "Clinical workflow", isSystem: true, isActive: true, permissionCodes: ["encounter.read"], createdAtUtc: "", updatedAtUtc: "" }
 ];
 const page = (items: TenantMembership[]) => ({
@@ -125,6 +126,7 @@ describe("TenantMembershipManagement", () => {
   it("updates role and scopes while preserving the membership identity", async () => {
     render(<TenantMembershipManagement {...props} />);
 
+    await screen.findByRole("option", { name: "Facility Manager" });
     fireEvent.click(await screen.findByRole("button", { name: "Edit access" }));
     fireEvent.change(screen.getByLabelText("Role"), { target: { value: "FacilityManager" } });
     fireEvent.click(screen.getByRole("button", { name: "Save access" }));
@@ -182,6 +184,7 @@ describe("TenantMembershipManagement", () => {
 
     render(<TenantMembershipManagement {...props} />);
 
+    await screen.findByRole("option", { name: "Facility Viewer" });
     fireEvent.change(screen.getByLabelText("OIDC subject *"), {
       target: { value: "conflicting-user-subject" }
     });
