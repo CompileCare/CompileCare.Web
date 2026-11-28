@@ -251,3 +251,69 @@ for (const roleCase of authenticatedRoleCases) {
     ).toEqual([]);
   });
 }
+
+// Exercise the persisted role-management workspace against the real Keycloak,
+// API and PostgreSQL stack. The Local fixture creates this tenant-A administrator
+// before Playwright starts and removes the entire environment after the run.
+test("real Keycloak HospitalAdmin can create, edit and manage a custom tenant role", async ({ page }) => {
+  const manifest = loadBrowserUserManifest();
+  const credentials = manifest.users?.["tenant-a-admin"];
+  const tenantId = manifest.tenantAId;
+
+  expect(credentials?.username, "tenant administrator username must be provisioned").toBeTruthy();
+  expect(credentials?.password, "tenant administrator password must be provisioned").toBeTruthy();
+  expect(tenantId, "tenant A fixture must be provisioned").toBeTruthy();
+
+  await signInWithKeycloak(page, credentials!);
+
+  const tenantSelect = page.locator("#tenant-select");
+  await expect(tenantSelect.locator("option[value='" + tenantId + "']")).toHaveCount(1);
+  await tenantSelect.selectOption(tenantId!);
+  await expect(tenantSelect).toHaveValue(tenantId!);
+
+  const roleNavigation = page.getByRole("link", { name: "Roles & permissions" });
+  await expect(roleNavigation).toBeVisible();
+  await roleNavigation.click();
+  await expect(page.getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
+  await expect(page.getByText("CI Identity Reader Custom")).toBeVisible();
+
+  const roleName = "CI Browser Role Manager";
+  await page.getByRole("button", { name: "Create custom role" }).click();
+  await page.getByLabel("Role name *").fill(roleName);
+  await page.getByLabel("Description *").fill("Created through the real Keycloak role workspace.");
+  await page.getByLabel(/View facility structure/).check();
+  await page.getByLabel("Reason for this change *").fill("Verify browser-based custom role creation.");
+  await page.getByRole("button", { name: "Create role" }).click();
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Custom role created." })
+  ).toBeVisible();
+  const roleCard = page.locator("article.tenant-role-card").filter({ hasText: roleName });
+  await expect(roleCard).toBeVisible();
+  await expect(roleCard.locator(".membership-status")).toHaveText("Active");
+
+  await roleCard.getByRole("button", { name: "Edit role" }).click();
+  await page.getByLabel(/Create and update facilities/).check();
+  await page.getByLabel("Reason for this change *").fill("Verify browser-based custom role permission update.");
+  await page.getByRole("button", { name: "Save role changes" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Role permissions updated." })
+  ).toBeVisible();
+  await expect(roleCard).toContainText("Create and update facilities");
+
+  await roleCard.getByRole("button", { name: "Deactivate" }).click();
+  let confirmation = roleCard.getByRole("group", {
+    name: roleName + " lifecycle confirmation"
+  });
+  await confirmation.getByLabel("Reason *").fill("Verify browser-based custom role deactivation.");
+  await confirmation.getByRole("button", { name: "Confirm deactivation" }).click();
+  await expect(roleCard.locator(".membership-status")).toHaveText("Inactive");
+
+  await roleCard.getByRole("button", { name: "Reactivate" }).click();
+  confirmation = roleCard.getByRole("group", {
+    name: roleName + " lifecycle confirmation"
+  });
+  await confirmation.getByLabel("Reason *").fill("Verify browser-based custom role reactivation.");
+  await confirmation.getByRole("button", { name: "Confirm reactivation" }).click();
+  await expect(roleCard.locator(".membership-status")).toHaveText("Active");
+});
