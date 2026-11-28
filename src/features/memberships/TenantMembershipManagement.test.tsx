@@ -58,6 +58,7 @@ const props = {
   permissions: ["membership.manage"],
   scopes: tenantScope,
   hospitals: [hospital],
+  roleRevision: 0,
   onBusyChange: vi.fn()
 };
 
