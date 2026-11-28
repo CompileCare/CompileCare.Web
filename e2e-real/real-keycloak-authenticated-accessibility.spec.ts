@@ -169,6 +169,31 @@ for (const roleCase of authenticatedRoleCases) {
     await page.keyboard.press("Enter");
     await expect(main).toBeFocused();
 
+    // Continue keyboard navigation into the authenticated shell. The Sign out
+    // action is present for every persisted role; it must be reachable without
+    // a pointer and retain a visible forced-colors focus indicator.
+    const signOut = page.getByRole("button", { name: "Sign out" });
+    let signOutFocused = false;
+    for (let index = 0; index < 40 && !signOutFocused; index += 1) {
+      await page.keyboard.press("Tab");
+      signOutFocused = await signOut.evaluate(element => element === document.activeElement);
+    }
+    expect(signOutFocused, roleCase.name + " Sign out action must be reachable by keyboard").toBe(true);
+
+    const signOutFocusStyle = await signOut.evaluate(element => {
+      const style = window.getComputedStyle(element);
+      return {
+        focusVisible: element.matches(":focus-visible"),
+        outlineStyle: style.outlineStyle,
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+        outlineColor: style.outlineColor
+      };
+    });
+    expect(signOutFocusStyle.focusVisible, roleCase.name + " Sign out action must expose keyboard focus").toBe(true);
+    expect(signOutFocusStyle.outlineStyle).not.toBe("none");
+    expect(signOutFocusStyle.outlineWidth).toBeGreaterThan(0);
+    expect(signOutFocusStyle.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+
     // Check the authenticated workspace at the same narrow widths used by the
     // public shell baseline; hidden modules must not force page-level overflow.
     for (const width of [768, 375, 320]) {
