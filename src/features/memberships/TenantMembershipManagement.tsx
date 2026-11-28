@@ -24,6 +24,14 @@ interface ScopeEditorProps {
   idPrefix: string;
 }
 
+function chooseLeastPrivilegeRole(roleOptions: TenantRole[]): string {
+  return [...roleOptions]
+    .filter(role => role.isActive)
+    .sort((left, right) =>
+      left.permissionCodes.length - right.permissionCodes.length ||
+      left.name.localeCompare(right.name))[0]?.code ?? "";
+}
+
 function createScope(type: OrganizationScope["scopeType"], hospitalId: string | null = null): OrganizationScope {
   return { scopeType: type, hospitalId: type === "Tenant" ? null : hospitalId, departmentId: null };
 }
@@ -225,7 +233,7 @@ export function TenantMembershipManagement({
         setRoleOptions(availableRoles);
         setNewRole(current => current && availableRoles.some(role => role.code === current && role.isActive)
           ? current
-          : availableRoles.find(role => role.isActive)?.code ?? "");
+          : chooseLeastPrivilegeRole(availableRoles));
       })
       .catch(cause => { if (active) setError(getErrorMessage(cause)); })
       .finally(() => { if (active) setLoading(false); });
@@ -281,7 +289,7 @@ export function TenantMembershipManagement({
         scopes: toScopeInputs(newScopes)
       });
       setNewSubject("");
-      setNewRole(roleOptions.find(role => role.isActive)?.code ?? "");
+      setNewRole(chooseLeastPrivilegeRole(roleOptions));
       setNewScopes([]);
     }, "Membership created.");
   }
