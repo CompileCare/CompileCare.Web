@@ -112,6 +112,7 @@ describe("TenantRoleManagement", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Create custom role" }));
     fireEvent.change(screen.getByLabelText("Role name *"), { target: { value: "Reception Facility Desk" } });
     fireEvent.change(screen.getByLabelText("Description *"), { target: { value: "Can read and update facility structure." } });
+    fireEvent.click(screen.getByLabelText(/View facility structure/));
     fireEvent.click(screen.getByLabelText(/Create and update facilities/));
     fireEvent.change(screen.getByLabelText("Reason for this change *"), {
       target: { value: "Create a scoped facility maintenance role." }
