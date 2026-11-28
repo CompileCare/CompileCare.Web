@@ -269,7 +269,7 @@ export function TenantMembershipManagement({
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!currentIssuer || !newSubject.trim() || !validScopes(newScopes)) {
+    if (!currentIssuer || !newSubject.trim() || !newRole || !validScopes(newScopes)) {
       setError("Enter the OIDC subject and complete at least one valid organization scope.");
       return;
     }
@@ -332,7 +332,7 @@ export function TenantMembershipManagement({
         <div><label htmlFor="membership-subject">OIDC subject *</label><input id="membership-subject" value={newSubject} onChange={event=>setNewSubject(event.target.value)} maxLength={255} required disabled={busy}/></div>
         <div><label htmlFor="membership-role">Tenant role</label><select id="membership-role" value={newRole} onChange={event=>setNewRole(event.target.value)} disabled={busy || roleOptions.filter(role => role.isActive).length === 0}><option value="">Choose an available role</option>{roleOptions.filter(role => role.isActive).map(role=><option key={role.code} value={role.code}>{role.name}</option>)}</select></div>
         <div className="membership-scope-section"><strong>Organization scope</strong><ScopeEditor value={newScopes} onChange={setNewScopes} allowedScopeTypes={allowedScopeTypes} hospitals={hospitals} departmentsByHospital={departmentsByHospital} onLoadDepartments={loadDepartmentsForHospital} disabled={busy} idPrefix="membership-create"/></div>
-        <div className="membership-form-actions"><button type="submit" disabled={busy || !currentIssuer || !newSubject.trim() || !validScopes(newScopes)}>{busy ? "Saving…" : "Create membership"}</button></div>
+        <div className="membership-form-actions"><button type="submit" disabled={busy || !currentIssuer || !newSubject.trim() || !newRole || !validScopes(newScopes)}>{busy ? "Saving…" : "Create membership"}</button></div>
       </form>
     </div>
 
@@ -349,7 +349,7 @@ export function TenantMembershipManagement({
             <div className="membership-card-meta"><span>Role: <strong>{membership.role}</strong></span><span>{membership.scopes.map(scope => formatScope(scope, hospitals, departmentsByHospital)).join(" · ")}</span></div>
             {editingId === membership.id ? <form className="membership-edit-form" onSubmit={submitEdit}>
               <div><label htmlFor={`membership-role-${membership.id}`}>Role</label><select id={`membership-role-${membership.id}`} value={editingRole} onChange={event=>setEditingRole(event.target.value)} disabled={busy}>
-                {!roleOptions.some(role => role.code === editingRole) && <option value={editingRole} disabled>{editingRole} · current assignment (not delegable)</option>}
+                {!roleOptions.some(role => role.code === editingRole && role.isActive) && <option value={editingRole} disabled>{editingRole} · current assignment (not delegable)</option>}
                 {roleOptions.filter(role => role.isActive).map(role=><option key={role.code} value={role.code}>{role.name}</option>)}
               </select></div>
               <div className="membership-scope-section"><strong>Organization scopes</strong><ScopeEditor value={editingScopes} onChange={setEditingScopes} allowedScopeTypes={allowedScopeTypes} hospitals={hospitals} departmentsByHospital={departmentsByHospital} onLoadDepartments={loadDepartmentsForHospital} disabled={busy} idPrefix={`membership-edit-${membership.id}`}/></div>
