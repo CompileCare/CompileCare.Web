@@ -1796,3 +1796,17 @@ a {
 
 /* Route-level workspaces retain mounted state while exposing one module page at a time. */
 .workspace-route[hidden]{display:none!important}
+
+/* Keep focus indicators visible when Windows High Contrast / forced-colors is active. */
+@media (forced-colors: active) {
+  :focus-visible,
+  .skip-link:focus {
+    outline-color: Highlight !important;
+    outline-style: solid !important;
+  }
+
+  .patient-result-selectable:focus-visible {
+    background: Canvas !important;
+    color: CanvasText !important;
+  }
+}
